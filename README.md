@@ -85,6 +85,18 @@ La primera orden confirma que la máquina ve los modelos de `nan`; la segunda, q
 
 El modelo `nan/glm5.3` sin flash y las variantes del plan original quedaron fuera: la API key no tenía acceso a él cuando se montó esto. La comparación de los dos modelos como agente de trabajo —`glm5.3-flash` frente a `deepseek-v4-flash`— dio 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 s para `glm5.3-flash` frente a 32,0 s para `deepseek-v4-flash`; ese es el dato que sostiene el modelo de `general`.
 
+## Servidor y visor
+
+```sh
+./serve.sh start    # deja el tablero en http://127.0.0.1:8891
+./serve.sh status
+./serve.sh stop
+```
+
+`serve.sh` arranca el servidor del tablero en segundo plano, con su registro y su pid en `.run/`. Escucha en el `127.0.0.1:8891` de `.tasks-ai/settings.json`: el 8890 queda para el tablero de tasks-ai, y así los dos servidores conviven en la misma máquina.
+
+El visor de escritorio vive en [`tasks-viewer/`](tasks-viewer/): la misma interfaz en una ventana nativa, con el binario oficial de tasks-ai para Windows (amd64) y un `config.json` que ya apunta al servidor del paquete. Copia la carpeta donde quieras tenerla y lanza el exe con el servidor en marcha; sin él, la ventana no tendrá nada que mostrar.
+
 ## Límites conocidos
 
 - La delegación se sostiene por prompt: si el orquestador no delega, nada lo obliga.

@@ -17,6 +17,8 @@ enlaza.
 | Ramas, commits, verificación, integración y operaciones con autorización | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Catálogo enlazable para agentes | [`llms.txt`](llms.txt) |
 | Trabajo del repositorio: crear, mover, bloquear y cerrar tareas | [`.tasks-ai/AGENTS.md`](.tasks-ai/AGENTS.md) |
+| Servidor del tablero en segundo plano | [`serve.sh`](serve.sh) |
+| Visor de escritorio del tablero | [`tasks-viewer/`](tasks-viewer/config.json) |
 
 ## Encargo → qué leer antes → con qué se cierra
 

@@ -26,12 +26,14 @@ Desktop.ini
 
 # --- Tablero tasks-ai ----------------------------------------------------------
 # El estado, el binario incrustado y la extensión quedan fuera; las instrucciones,
-# el contrato de etiquetas y los ajustes sí se versionan, como en tasks-ai.
+# el contrato de etiquetas y los ajustes sí se versionan, como en tasks-ai. En .run/
+# viven los pid y los registros de serve.sh.
 .tasks-ai/tasks.db
 .tasks-ai/tasks.db-wal
 .tasks-ai/tasks.db-shm
 .tasks-ai/bin/
 .tasks-ai/extensions/
+.run/
 
 # --- Secretos y ficheros con claves -------------------------------------------
 *.pem
