@@ -60,7 +60,7 @@ unas pocas órdenes:
 bash -n install.sh
 python3 -c "import json; json.load(open('config/opencode.jsonc'))"
 diff -r agents ~/.config/opencode/agents
-HOME=$(mktemp -d) bash install.sh      # instalación limpia
+env -u XDG_CONFIG_HOME HOME=$(mktemp -d) bash install.sh   # instalación limpia
 ```
 
 Y, cuando la fusión o el camino JSONC cambien: instalación sobre una configuración con

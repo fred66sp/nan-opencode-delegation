@@ -47,7 +47,7 @@ En Windows (PowerShell):
 powershell -ExecutionPolicy Bypass -File install.ps1
 ```
 
-La carpeta completa viaja como llega: copia directa, zip o clon del repositorio. Todas las rutas que usa el instalador son relativas a su propia ubicación.
+El instalador resuelve todo desde su propia carpeta y el destino queda en el usuario actual: no hay nada que apunte a la máquina de origen.
 
 ### A mano
 

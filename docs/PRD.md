@@ -69,8 +69,7 @@ ser una introducción a la orquestación en general.
   paquete no es el lugar de donde nacen los cambios, sino por donde viajan.
 - La variante de modelo usa `#variant` solo en el frontmatter Markdown; en la clave
   `agent` de la configuración va en campo `variant` propio.
-- Todos los títulos de documentos empiezan por un identificador estable y la prosa vive en
-  castellano; los identificadores, rutas y comandos no se traducen.
+- La prosa documental vive en castellano; los identificadores, rutas y comandos no se traducen.
 - La guía solo usa el verde donde algo se ha comprobado; los datos de medición nombran su
   método y su alcance.
 

@@ -69,7 +69,7 @@
   }
   .topbar .wrap { display: flex; align-items: center; gap: 12px; height: 52px; }
   .brand { font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
-  .brand .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 8px; vertical-align: 1px; }
+  .brand .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 8px; vertical-align: 1px; }
   .topnav { margin-left: auto; display: flex; gap: 4px; overflow-x: auto; }
   .topnav a { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; color: var(--ink-muted); padding: 6px 10px; border-radius: 999px; white-space: nowrap; }
   .topnav a:hover { color: var(--ink); background: var(--surface-sunken); text-decoration: none; }
@@ -192,7 +192,7 @@
       <span class="pill"><span class="ok-dot"></span>Probada de punta a punta</span>
       <span class="pill">OpenCode V2</span>
       <span class="pill">5 ficheros de agente · 2 integrados</span>
-      <span class="pill">versión 0.1.0</span>
+      <span class="pill">instaladores para Windows y Linux</span>
     </div>
     <div class="toc">
       <h2>En esta página</h2>
@@ -216,7 +216,7 @@
 <section id="que-es">
   <div class="wrap">
     <div class="section-head"><span class="section-num">01</span><h2 class="title">Qué es</h2></div>
-    <p class="prose">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <span class="mono">orchestrator</span>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cuatro subagentes que solo pueden hacer su parte: comprobar, revisar, documentar o recorrer la interfaz. Los planes y los cierres se quedan en el orquestador; los subagentes no editan fuera de su perímetro porque sus permisos lo impiden, no porque se les pida con educación.</p>
+    <p class="prose">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <span class="mono">orchestrator</span>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cuatro subagentes que solo pueden hacer su parte: comprobar, revisar, documentar o recorrer la interfaz. Los planes y los cierres se quedan en el orquestador; tres de los cuatro subagentes tienen la edición denegada del todo, y el cuarto, <span class="mono">ui</span>, pide permiso persona a persona antes de tocar el navegador.</p>
     <p class="prose">Con la delegación no cambia la forma de trabajar: <span class="mono">build</span> sigue siendo el agente de arranque y <span class="mono">orchestrator</span> se elige cuando quieres orquestar. La delegación vive por prompt: el contrato está en el texto del agente. Si el orquestador no delega, no hay mecanismo de configuración que lo obligue.</p>
     <div class="cards">
       <div class="card">
@@ -227,7 +227,7 @@
       <div class="card">
         <h3>Cuatro subagentes acotados</h3>
         <p><span class="mono">verify</span> ejecuta las comprobaciones, <span class="mono">review</span> juzga sin tocar nada, <span class="mono">docs</span> escribe solo Markdown y <span class="mono">ui</span> recorre el navegador pidiendo permiso antes de Playwright.</p>
-        <span class="mono">edición denegada por defecto</span>
+        <span class="mono">verify, review y docs sin edición · ui con ask</span>
       </div>
       <div class="card">
         <h3>Dos integrados afinados</h3>
@@ -324,10 +324,10 @@
 <section id="permisos">
   <div class="wrap">
     <div class="section-head"><span class="section-num">05</span><h2 class="title">Los permisos</h2></div>
-    <p class="prose">La defensa es en profundidad: el prompt marca la intención, pero son los permisos del frontmatter de cada agente los que impiden la acción. La política base de OpenCode permite todo; por eso cada lista empieza por un <span class="mono">deny</span> que cierra el campo y después abre solo lo que toca.</p>
+    <p class="prose">La defensa es en profundidad: el prompt marca la intención, pero son los permisos del frontmatter de cada agente los que impiden la acción. La política base de OpenCode permite todo; por eso las listas que restringen empiezan por un <span class="mono">deny</span> que cierra el campo y después abren solo lo que se necesita. La de <span class="mono">ui</span> es la excepción deliberada: no limita la edición, lo suyo es pedir permiso antes de tocar el navegador.</p>
     <div class="table-scroll">
       <table>
-        <thead><tr><th>Agente</th><th>Editar</th><th>Shell</th><th>Skills</th></tr></thead>
+        <thead><tr><th>Agente</th><th>Editar</th><th>Shell</th><th>Skills y subagentes</th></tr></thead>
         <tbody>
           <tr>
             <td class="mono">orchestrator</td><td>Sí</td><td>Sí</td><td>Solo puede lanzar los subagentes que declara su lista</td>
@@ -443,7 +443,7 @@
           </tr>
           <tr>
             <td>El instalador imprime el bloque para pegar a mano</td>
-            <td>Tu configuración lleva comentarios JSONC, que el fusionado no reescribe</td>
+            <td>Tu configuración lleva comentarios JSONC o la máquina no tiene python3: el fusionado no reescribe</td>
             <td>Pegar el bloque dentro del objeto raíz; la copia con fecha ya está hecha</td>
           </tr>
           <tr>
@@ -504,9 +504,9 @@
       <dt>¿Cualquier máquina con OpenCode V2 vale?</dt>
       <dd>Cualquiera con OpenCode V2 y acceso a los modelos <span class="mono">nan</span>. Windows y Linux llevan su instalador; la ruta de configuración es la de tu usuario en ambas.</dd>
       <dt>¿Se puede desinstalar?</dt>
-      <dd>Borra los cinco ficheros de <span class="mono">~/.config/opencode/agents/</span> y quita del bloque <span class="mono">agent</span> los pares <span class="mono">explore</span> y <span class="mono">general</span>. No queda nada más que instalarlo haya creado.</dd>
+      <dd>Borra los cinco ficheros de <span class="mono">~/.config/opencode/agents/</span> y quita del bloque <span class="mono">agent</span> los pares <span class="mono">explore</span> y <span class="mono">general</span>. Si el instalador creó el <span class="mono">opencode.jsonc</span> en una máquina limpia, bórralo también; las copias con fecha <span class="mono">.bak</span> que dejara al fusionar son tuyas: llévatelas o bórralas con él.</dd>
       <dt>¿Afecta al agente <span class="mono">build</span>?</dt>
-      <dd>No. El paquete no toca agentes existentes ni el agente de arranque; solo añade ficheros y dos overrides de modelo.</dd>
+      <dd>No toca agentes existentes ni el agente de arranque: añade ficheros y funde dos overrides de modelo. Dentro de <span class="mono">explore</span> y <span class="mono">general</span> la entrada se sustituye entera, así que si administrabas otras claves aparte de <span class="mono">model</span> y <span class="mono">variant</span>, trasládala antes de instalar.</dd>
       <dt>¿De dónde salen los datos de la medición?</dt>
       <dd>Del plan de puesta a punto del epic tk-276 del tablero tasks-ai: tres proyectos reales, tres tareas por proyecto, los dos modelos candidatos como trabajador. El paquete recoge la decisión, no el banco de pruebas.</dd>
     </dl>
@@ -515,8 +515,8 @@
 
 <footer>
   <div class="wrap">
-    <span>Paquete <span class="mono">nan-opencode-delgation</span>, versión 0.1.0</span>
-    <span>Origen: las subtareas tk-277 a tk-281 del epic tk-276 del tablero tasks-ai</span>
+    <span>Paquete <span class="mono">nan-opencode-delgation</span>, sin publicar: la versión, cuando la haya, vive en <a href="CHANGELOG.md">CHANGELOG.md</a></span>
+    <span>Origen: las subtareas tk-277 a tk-282 del epic tk-276 del tablero tasks-ai</span>
     <span>La referencia breve vive en <a href="README.md">README.md</a></span>
     <span>7 de noviembre de 2026</span>
   </div>
