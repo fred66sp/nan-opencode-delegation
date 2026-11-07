@@ -62,7 +62,7 @@ else {
                     $oldProp.Value.PSObject.Properties.Remove($name)
                 }
             }
-            if ($oldProp.Value.PSObject.Properties.Count -eq 0) {
+            if (@($oldProp.Value.PSObject.Properties).Count -eq 0) {
                 $data.PSObject.Properties.Remove('agent')
             }
             else {
