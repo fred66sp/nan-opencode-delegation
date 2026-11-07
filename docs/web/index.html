@@ -201,7 +201,7 @@
       <div class="grid cols-3">
         <div class="card">
           <h3>Orquestador primario</h3>
-          <p>Clasifica la petición, implementa lo pequeño, delega lo que toca más de tres ficheros o cruza capas, y es el único que cierra el trabajo.</p>
+          <p>Clasifica la petición, delega por defecto la implementación y se reserva solo lo trivial, y es el único que cierra el trabajo.</p>
           <span class="mono">orchestrator · nan/glm5.3-flash#high</span>
         </div>
         <div class="card">
@@ -232,12 +232,12 @@
       <div class="section-head"><span class="section-num">03</span><h2 class="title">La arquitectura</h2></div>
       <p class="sub">El padre decide cuándo delegar con la herramienta <code>subagent</code> y revisa lo que devuelve antes de integrarlo: un subagente lanzado no es evidencia. Un subagente no puede lanzar otro; el anidamiento llega a un nivel, y el orquestador es quien junta los resultados.</p>
       <div class="flow">
-        <div class="flow-step is-primary"><code>orchestrator</code><strong>nan/glm5.3-flash · high · 60 pasos · primario</strong><p>Clasifica la petición, delega lo grande, verifica siempre, revisa si cambia el comportamiento, y cierra.</p></div>
+        <div class="flow-step is-primary"><code>orchestrator</code><strong>nan/glm5.3-flash · high · 60 pasos · primario</strong><p>Clasifica la petición, delega la implementación, verifica siempre, revisa si cambia el comportamiento, y cierra.</p></div>
         <div class="flow-step"><code>verify</code><strong>qwen3.8-flash#medium · 12</strong><p>Corre las pruebas y devuelve evidencia. No edita.</p></div>
         <div class="flow-step"><code>review</code><strong>glm5.3-flash#xhigh · 12</strong><p>Hallazgos con fichero y línea. No edita.</p></div>
         <div class="flow-step"><code>docs</code><strong>deepseek-v4-flash#medium · 20</strong><p>Markdown, docs/ y CHANGELOG. Nada de código.</p></div>
         <div class="flow-step"><code>ui</code><strong>mimo-v2.6-flash#medium · 20</strong><p>Navegador con permiso ask para Playwright.</p></div>
-        <div class="flow-step"><code>general</code><strong>deepseek-v4-flash · variant high · config</strong><p>Trabajos de muchos ficheros que el orquestador le delega.</p></div>
+        <div class="flow-step"><code>general</code><strong>deepseek-v4-flash · variant high · config</strong><p>La implementación que el orquestador le delega por defecto.</p></div>
         <div class="flow-step"><code>explore</code><strong>glm5.3-flash · variant low · config</strong><p>Búsqueda y contexto rápido. No edita por diseño.</p></div>
         <div class="flow-step"><code>build</code><strong>arranque por defecto, sin cambios</strong><p>Sigue siendo el agente con el que se abre OpenCode.</p></div>
       </div>
@@ -249,7 +249,7 @@
       <p class="sub">Estas seis reglas son el prompt del orquestador, como están en <code>agents/orchestrator.md</code>. Vale leerlas antes de confiar en el reparto.</p>
       <ol class="rules">
         <li><strong>Clasifica la petición</strong>: pregunta, revisión, plan o implementación.</li>
-        <li><strong>Implementa tú si toca tres ficheros o menos y una sola capa</strong>. Delega a <code>general</code> si toca más archivos o cruza capas.</li>
+        <li><strong>Delega por defecto la implementación a <code>general</code>, sea cual sea su tamaño</strong>. Implementa tú solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor. Usa <code>explore</code> cuando una exploración independiente prepare mejor el encargo y <code>docs</code> para las actualizaciones documentales. No delegues preguntas sencillas ni lo que resuelvas sin tocar archivos; evita delegaciones redundantes.</li>
         <li><strong>Después de implementar, lanza <code>verify</code> siempre</strong>. Lanza <code>review</code> solo si cambia comportamiento o contrato.</li>
         <li><strong>Todo encargo a un subagente lleva objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación</strong>. Si el proyecto tiene sistema de seguimiento, pásale la referencia; el subagente no lo modifica.</li>
         <li><strong>Un subagente lanzado no es evidencia</strong>: revisa su salida antes de integrarla. El orquestador es el único que cierra.</li>
@@ -320,7 +320,7 @@
           </tbody>
         </table>
       </div>
-      <p>El modelo <code>nan/glm5.3</code> sin flash quedó fuera del reparto: la API key no tenía acceso cuando se montó todo. Con las dos alternativas que sí hubo, se midió el rol de trabajador —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,0 segundos para <code>glm5.3-flash</code> frente a 31,5 para <code>deepseek-v4-flash</code>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <code>general</code>. El registro completo de la prueba —transcripciones, CSV y resúmenes— está en <a href="evals.html">la evaluación de los agentes</a>; si <code>nan/glm5.3</code> vuelve a estar disponible, la comparación merece repetirse antes de mover el orquestador o la revisión. <code>opencode models</code> lista hoy <code>nan/glm5.3</code>, pero no se comprobó que responda.</p>
+      <p>Se midió el rol de trabajador con dos alternativas —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,0 segundos para <code>glm5.3-flash</code> frente a 31,5 para <code>deepseek-v4-flash</code>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <code>general</code>. El registro completo de la prueba —transcripciones, CSV y resúmenes— está en <a href="evals.html">la evaluación de los agentes</a>.</p>
     </section>
 
     <section id="verificacion">

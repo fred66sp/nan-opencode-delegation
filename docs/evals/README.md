@@ -30,13 +30,10 @@ Repo sembrado con un fallo (`Mul` con `a+b` en `calc.go:5`) y un encargo complet
 - **orchestrator**: delegó la implementación en `general`, verificó la salida por
   su cuenta (`git status`, `go vet && go test`) y lanzó `review` después.
 
-El propio smoke destapó tres fallos de configuración, corregidos en los agentes
+El propio smoke destapó dos fallos de configuración, corregidos en los agentes
 actuales: los globs de `edit` (`*` incluye `/`, así que `**/*.md` no casaba los
-`.md` de la raíz y se usan `*.md`), `#variant` en el modelo bajo la clave legacy
-`agent` (no se aceptaba; `variant` va aparte) y `nan/glm5.3` inaccesible con la
-API key (orchestrator y review usan `glm5.3-flash`). Las dos transcripciones
-`review-…-1s.md` conservan la prueba del último: `nan/glm5.3#xhigh` termina en
-`failed` sin generar respuesta.
+`.md` de la raíz y se usan `*.md`) y `#variant` en el modelo bajo la clave legacy
+`agent` (no se aceptaba; `variant` va aparte).
 
 ## Qué demostró la medición (tk-281 del tablero de tasks-ai)
 

@@ -85,7 +85,7 @@ El frontmatter de `agents/` es la fuente canónica de modelos, pasos y permisos;
 | `explore` | integrado | `nan/glm5.3-flash` | low | — | Solo configuración |
 | `general` | integrado | `nan/deepseek-v4-flash` | high | — | Solo configuración |
 
-El modelo `nan/glm5.3` sin flash y las variantes del plan original quedaron fuera: la API key no tenía acceso a él cuando se montó esto. La comparación de los dos modelos como agente de trabajo —`glm5.3-flash` frente a `deepseek-v4-flash`— se hizo con tres proyectos y tres tareas por proyecto, y dio 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 s para `glm5.3-flash` frente a 32,0 s para `deepseek-v4-flash`; ese es el dato que sostiene el modelo de `general`. El banco de pruebas no se conserva en el repositorio, así que la medición no es reproducible desde aquí.
+La comparación de los dos modelos como agente de trabajo —`glm5.3-flash` frente a `deepseek-v4-flash`— se hizo con tres proyectos y tres tareas por proyecto, y dio 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 s para `glm5.3-flash` frente a 32,0 s para `deepseek-v4-flash`; ese es el dato que sostiene el modelo de `general`. El banco de pruebas no se conserva en el repositorio, así que la medición no es reproducible desde aquí.
 
 ## Servidor y visor
 

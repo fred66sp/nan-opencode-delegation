@@ -205,12 +205,12 @@
           </tbody>
         </table>
       </div>
-      <div class="note"><p>Los dos <code>review</code> fallidos del registro no son un defecto del agente: son la prueba de que <code>nan/glm5.3</code> no respondía con la API key disponible. El agente actual usa <code>glm5.3-flash</code>.</p></div>
+      <div class="note"><p>El agente <code>review</code> usa <code>glm5.3-flash</code>, que respondió en todas las pruebas del registro.</p></div>
     </section>
 
     <section id="destapo">
       <div class="section-head"><span class="section-num">03</span><h2 class="title">Lo que destapó</h2></div>
-      <p class="sub">Tres fallos de configuración que solo una prueba ejecutada podía encontrar. Todos están corregidos en los agentes actuales del paquete.</p>
+      <p class="sub">Dos fallos de configuración que solo una prueba ejecutada podía encontrar. Todos están corregidos en los agentes actuales del paquete.</p>
       <div class="grid cols-3">
         <div class="card">
           <span class="mono">Permisos · globs de edit</span>
@@ -221,11 +221,6 @@
           <span class="mono">Config · variante</span>
           <h3>La almohadilla no vale en todos los sitios</h3>
           <p>Bajo la clave legacy <code>agent</code>, <code>model</code> no aceptaba <code>#variant</code> y el agente cargaba con <code>model:null</code>. La variante va en el objeto <code>model</code>; en el frontmatter de Markdown la almohadilla sí funciona.</p>
-        </div>
-        <div class="card">
-          <span class="mono">Proveedor · acceso</span>
-          <h3>El modelo que no respondía</h3>
-          <p><code>nan/glm5.3</code> no era accesible con la API key disponible, con o sin variante. El orquestador y la revisión usan <code>glm5.3-flash</code>, que sí respondió en todas las pruebas.</p>
         </div>
       </div>
     </section>
@@ -279,7 +274,6 @@
       <ol class="rules">
         <li><strong><code>general</code> usa <code>deepseek-v4-flash#high</code></strong>: misma calidad que <code>glm5.3-flash</code> con un tercio menos de tiempo de pared. Si un modelo nuevo entra en el catálogo de <code>nan</code>, esta comparación es la plantilla para valorarlo.</li>
         <li><strong>El orquestador y la revisión no se tocaron</strong>: la medición cubría solo el rol trabajador. Mover sus modelos exige su propia medición, no esta tabla.</li>
-        <li><strong>La vuelta de <code>nan/glm5.3</code> reabre la comparación</strong>: quedó fuera por acceso de la API key, no por calidad. Si vuelve a estar disponible, merece repetirse la medición antes de cambiar el reparto.</li>
       </ol>
     </section>
 
