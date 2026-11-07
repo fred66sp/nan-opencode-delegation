@@ -44,6 +44,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Corregido
 
+- `install.ps1` no retire la clave obsoleta `agent` cuando quedaba vacía tras la
+  migración: en Windows PowerShell 5.1, `PSObject.Properties.Count` resuelve a `$null`
+  sobre un objeto vacío y el borrado saltaba al aviso. Ahora se cuenta envolviendo la
+  colección en `@()`.
+
 - Antes de reemplazar un agente existente con el mismo nombre, el instalador guarda una
   copia `.bak` con fecha; si el contenido es idéntico, no crea copia.
 
