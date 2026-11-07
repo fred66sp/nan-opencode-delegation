@@ -47,6 +47,10 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   la documentación usan `agents`; el instalador mueve los overrides `explore` y `general`
   desde la clave obsoleta `agent` y conserva el resto de claves.
 
+- `orchestrator` delega por defecto la implementación a `general`, sea cual sea su tamaño;
+  solo implementa directamente lo trivial, inequívoco y de bajo riesgo, y prepara los
+  encargos con `explore` y la documentación con `docs`.
+
 ### Corregido
 
 - La guía deja de presentar el instalador de Windows como pendiente de prueba: se ha
