@@ -25,11 +25,12 @@ Desktop.ini
 .skills/
 
 # --- Tablero tasks-ai ----------------------------------------------------------
-# El estado y la extensión quedan fuera; las instrucciones, el contrato de
-# etiquetas y los ajustes sí se versionan, como en el proyecto tasks-ai.
+# El estado, el binario incrustado y la extensión quedan fuera; las instrucciones,
+# el contrato de etiquetas y los ajustes sí se versionan, como en tasks-ai.
 .tasks-ai/tasks.db
 .tasks-ai/tasks.db-wal
 .tasks-ai/tasks.db-shm
+.tasks-ai/bin/
 .tasks-ai/extensions/
 
 # --- Secretos y ficheros con claves -------------------------------------------
