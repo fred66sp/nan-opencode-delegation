@@ -67,3 +67,7 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 - Guía y README corregidos en permisos, clave `agents` y salidas de verificación; el pie
   de la guía deja de llevar fecha y estado de publicación.
+
+- La prosa de README, guía y evals ya no menciona el modelo `nan/glm5.3` sin flash, fuera
+  del plan del proveedor; las transcripciones históricas de `docs/evals/` se conservan tal
+  como se ejecutaron.
