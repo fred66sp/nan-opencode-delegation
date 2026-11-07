@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Cómo se evaluaron los agentes de delegación de nan en OpenCode: el smoke test de los cinco agentes y la medición del modelo trabajador, con sus resultados y las decisiones que sostienen.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/svg+xml" href="assets/img/favicons/favicon.svg">
+<title>Evaluación de los agentes · Delegación de subagentes nan</title>
+<link rel="stylesheet" href="assets/vendor/icons/icons.css">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/chrome.css">
+<link rel="stylesheet" href="assets/css/content.css">
+<script src="assets/vendor/vue.global.prod.js"></script>
+<script src="assets/js/docs.js"></script>
+<style>
+  /* Esta página comparte el contenido con content.css; solo aporta su
+     cabecera compacta y las dos figuras que dibuja ella sola. */
+  html { scroll-padding-top: 88px; }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .catalog-btn { text-decoration: none; }
+  .catalog-btn:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(40px, 7vw, 80px) clamp(16px, 4vw, 40px) clamp(32px, 5vw, 56px);
+    border-bottom: 1px solid var(--border);
+  }
+  .hero-inner { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; }
+  .hero-inner > * { animation: rise .6s ease-out both; }
+  .hero-inner > *:nth-child(2) { animation-delay: .08s; }
+  .hero-inner > *:nth-child(3) { animation-delay: .16s; }
+  .hero-inner > *:nth-child(4) { animation-delay: .24s; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--bg-elev);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .01em;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+  .hero h1 {
+    margin: 20px 0 0;
+    font-size: clamp(30px, 5vw, 50px);
+    line-height: 1.06;
+    letter-spacing: -.03em;
+    font-weight: 800;
+  }
+  .hero p.lead {
+    margin: 16px 0 0;
+    max-width: 680px;
+    font-size: clamp(15px, 2vw, 17px);
+    color: var(--muted);
+  }
+  .hero-actions { display: flex; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border-radius: var(--radius-sm);
+    font-weight: 650;
+    font-size: 14px;
+    border: 1px solid transparent;
+    cursor: pointer;
+  }
+  .btn:hover { text-decoration: none; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; }
+  .btn-ghost { background: var(--bg-elev); border-color: var(--border-strong); color: var(--text); }
+
+  /* — Figuras: el diagrama del humo y las barras de la medición. Las dos
+     son SVG en línea con los tokens de la página; sin dependencias. — */
+  figure.fig { margin: 24px 0 0; }
+  figure.fig svg { width: 100%; height: auto; display: block; }
+  figure.fig figcaption {
+    margin-top: 8px;
+    color: var(--muted);
+    font-size: 12.5px;
+  }
+  .fig-box { fill: var(--bg-elev); stroke: var(--border-strong); }
+  .fig-box--primary { stroke: var(--accent); }
+  .fig-arrow { stroke: var(--muted); fill: none; stroke-width: 1.5; }
+  .fig-name { font: 700 13px var(--mono); fill: var(--accent); }
+  .fig-sub { font: 500 11px var(--sans, sans-serif); fill: var(--muted); }
+  .fig-label { font: 600 11.5px var(--sans, sans-serif); fill: var(--text); }
+  .bar--dflash { fill: var(--accent); }
+  .bar--glm { fill: color-mix(in srgb, var(--accent) 38%, var(--muted)); }
+  .bar-val { font: 600 10.5px var(--sans, sans-serif); fill: var(--muted); }
+  .legend { display: flex; gap: 18px; margin-top: 10px; flex-wrap: wrap; }
+  .legend span { display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: 12.5px; }
+  .legend i { width: 12px; height: 12px; border-radius: 3px; }
+  .legend .sw-dflash { background: var(--accent); }
+  .legend .sw-glm { background: color-mix(in srgb, var(--accent) 38%, var(--muted)); }
+
+  /* El veredicto por agente del humo lleva su marca de color en la primera celda. */
+  .verdict { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 5px; font-size: 11px; font-weight: 800; }
+  .verdict--ok { background: color-mix(in srgb, var(--ok) 18%, transparent); color: var(--ok-text); }
+  .verdict--fail { background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--warn-text); }
+</style>
+</head>
+<body>
+
+<div id="top" class="page-top" aria-hidden="true"></div>
+<a class="skip" href="#main">Saltar al contenido</a>
+
+<header class="topbar" id="docs-topbar"></header>
+
+<section class="hero">
+  <div class="hero-mesh" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <span class="pill"><span class="dot" aria-hidden="true"></span>Evidencia del 6 y 7 de noviembre de 2026</span>
+    <h1>Cómo se evaluaron <span class="grad">los agentes</span></h1>
+    <p class="lead">Antes de empaquetar la delegación, los cinco agentes pasaron un smoke test contra un repositorio desechable y el rol de trabajador se midió con dos modelos candidatos sobre tres proyectos reales. Esta página es la síntesis; las transcripciones completas viven en <code>docs/evals/</code> del repositorio.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#humo">El smoke test</a>
+      <a class="btn btn-ghost" href="#medicion">La medición</a>
+    </div>
+  </div>
+</section>
+
+<div class="layout">
+  <nav class="toc" aria-label="Índice de la página"
+      data-spy data-spy-target="main section" data-spy-margin="-20% 0px -70% 0px">
+    <h2>En esta página</h2>
+    <a href="#prueba">01 · Qué se puso a prueba</a>
+    <a href="#humo">02 · El smoke test</a>
+    <a href="#destapo">03 · Lo que destapó</a>
+    <a href="#medicion">04 · La medición</a>
+    <a href="#decisiones">05 · Decisiones vivas</a>
+    <a href="#procedencia">06 · Procedencia y límites</a>
+  </nav>
+
+  <main id="main">
+
+    <section id="prueba">
+      <div class="section-head"><span class="section-num">01</span><h2 class="title">Qué se puso a prueba</h2></div>
+      <p class="sub">Dos pruebas con propósito distinto: el smoke test comprueba que cada agente se comporta dentro de su perímetro; la medición compara modelos para un mismo rol con tareas reales. Entre las dos destaparon tres fallos de configuración que hoy están corregidos.</p>
+      <div class="grid cols-2">
+        <div class="card">
+          <h3>Smoke test de los cinco agentes</h3>
+          <p>Un repositorio Go desechable con un fallo sembrado (<code>Mul</code> con <code>a+b</code>) y un encargo completo. Cada agente debía hacer solo su parte: delegar y no inventar, ejecutar y no editar, juzgar sin tocar, escribir solo Markdown y pedir permiso antes del navegador.</p>
+          <span class="mono">5 agentes · 1 encargo · 9 sesiones registradas</span>
+        </div>
+        <div class="card">
+          <h3>Medición del modelo trabajador</h3>
+          <p>Tres proyectos reales (dos Go, uno JavaScript con vitest), tres tareas autocontenidas por proyecto y los dos modelos candidatos como <code>general</code>. Una sesión por tarea desde un worktree limpio, sin estado reutilizado.</p>
+          <span class="mono">2 modelos × 3 proyectos × 3 tareas = 18 ejecuciones</span>
+        </div>
+      </div>
+      <div class="note"><p>El material crudo —transcripciones íntegras y el CSV de la medición— está versionado en <a href="../../docs/evals/README.md"><code>docs/evals/</code></a> del repositorio. Esta página lo resume; no lo sustituye.</p></div>
+    </section>
+
+    <section id="humo">
+      <div class="section-head"><span class="section-num">02</span><h2 class="title">El smoke test</h2></div>
+      <p class="sub">El encargo completo recorría la cadena entera: el orquestador clasificó, delegó la implementación en <code>general</code>, verificó la salida por su cuenta y lanzó <code>review</code> después. Los otros tres agentes se probaron con encargos propios.</p>
+      <figure class="fig">
+        <svg viewBox="0 0 880 168" role="img" aria-label="Diagrama del smoke test: el orquestador delega en general, y después verifican verify y review; docs y ui se probaron aparte">
+          <!-- La cadena del encargo completo -->
+          <rect class="fig-box fig-box--primary" x="8" y="18" width="190" height="64" rx="10"/>
+          <text class="fig-name" x="28" y="44">orchestrator</text>
+          <text class="fig-sub" x="28" y="62">clasifica y delega · cierra</text>
+          <path class="fig-arrow" d="M 198 50 H 246 M 240 44 L 248 50 L 240 56"/>
+          <rect class="fig-box" x="252" y="18" width="190" height="64" rx="10"/>
+          <text class="fig-name" x="272" y="44">general</text>
+          <text class="fig-sub" x="272" y="62">implementa Sub y Div</text>
+          <path class="fig-arrow" d="M 442 50 L 442 100 V 104"/>
+          <rect class="fig-box" x="8" y="108" width="190" height="52" rx="10"/>
+          <text class="fig-name" x="28" y="130">verify</text>
+          <text class="fig-sub" x="28" y="147">make test · go test · vet</text>
+          <path class="fig-arrow" d="M 198 134 H 246 M 240 128 L 248 134 L 240 140"/>
+          <rect class="fig-box" x="252" y="108" width="190" height="52" rx="10"/>
+          <text class="fig-name" x="272" y="130">review</text>
+          <text class="fig-sub" x="272" y="147">hallazgos con calc.go:5</text>
+          <!-- Los dos que se probaron con encargo propio -->
+          <rect class="fig-box" x="496" y="18" width="180" height="64" rx="10"/>
+          <text class="fig-name" x="516" y="44">docs</text>
+          <text class="fig-sub" x="516" y="62">solo CHANGELOG y guide.md</text>
+          <rect class="fig-box" x="496" y="108" width="180" height="52" rx="10"/>
+          <text class="fig-name" x="516" y="130">ui</text>
+          <text class="fig-sub" x="516" y="147">ask antes de playwright-cli</text>
+          <!-- Leyenda de la prueba aparte -->
+          <path class="fig-arrow" d="M 700 50 H 716" stroke-dasharray="4 4"/>
+          <text class="fig-sub" x="724" y="54">encargo propio,</text>
+          <text class="fig-sub" x="724" y="70">fuera de la cadena</text>
+        </svg>
+        <figcaption>Recorrido del smoke test. La flecha de vuelta la da el orquestador: verifica la salida de <code>general</code> por su cuenta antes de lanzar <code>review</code>.</figcaption>
+      </figure>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th></th><th>Agente</th><th>Lo que hizo</th><th>Lo que quedó denegado</th></tr></thead>
+          <tbody>
+            <tr><td><span class="verdict verdict--ok">OK</span></td><td><code>orchestrator</code></td><td>Delegó en <code>general</code>, verificó la salida (<code>git status</code>, <code>go vet</code>, <code>go test</code>) y lanzó <code>review</code></td><td>No inventó estados ni tocó tableros</td></tr>
+            <tr><td><span class="verdict verdict--ok">OK</span></td><td><code>verify</code></td><td><code>make test</code>, <code>go test -count=1</code>, <code>go vet</code>, <code>go build</code> por <code>workdir</code></td><td>El compuesto <code>cd … &amp;&amp; ls …</code>, denegado por el allowlist</td></tr>
+            <tr><td><span class="verdict verdict--ok">OK</span></td><td><code>review</code></td><td>Halló el fallo de <code>Mul</code> en <code>calc.go:5</code>, la falta de test y una entrada inexacta del CHANGELOG</td><td>No editó nada</td></tr>
+            <tr><td><span class="verdict verdict--ok">OK</span></td><td><code>docs</code></td><td>Escribió <code>CHANGELOG.md</code> y <code>docs/guide.md</code></td><td><code>src/keep.txt</code> y <code>calc.go</code>: «Permission denied: edit»</td></tr>
+            <tr><td><span class="verdict verdict--ok">OK</span></td><td><code>ui</code></td><td>Pidió permiso con la pregunta exacta antes de cargar <code>playwright-cli</code></td><td>En no interactivo, el <code>ask</code> auto-rechaza (comportamiento esperado)</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><p>Los dos <code>review</code> fallidos del registro no son un defecto del agente: son la prueba de que <code>nan/glm5.3</code> no respondía con la API key disponible. El agente actual usa <code>glm5.3-flash</code>.</p></div>
+    </section>
+
+    <section id="destapo">
+      <div class="section-head"><span class="section-num">03</span><h2 class="title">Lo que destapó</h2></div>
+      <p class="sub">Tres fallos de configuración que solo una prueba ejecutada podía encontrar. Todos están corregidos en los agentes actuales del paquete.</p>
+      <div class="grid cols-3">
+        <div class="card">
+          <span class="mono">Permisos · globs de edit</span>
+          <h3>Los comodines no cruzan la raíz</h3>
+          <p><code>**/*.md</code> no casaba los Markdown de la raíz del proyecto porque <code>*</code> incluye <code>/</code>. Los patrones de <code>docs</code> combinan ahora la raíz (<code>*.md</code>, <code>*.mdx</code>) con las carpetas.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Config · variante</span>
+          <h3>La almohadilla no vale en todos los sitios</h3>
+          <p>Bajo la clave legacy <code>agent</code>, <code>model</code> no aceptaba <code>#variant</code> y el agente cargaba con <code>model:null</code>. La variante va en el objeto <code>model</code>; en el frontmatter de Markdown la almohadilla sí funciona.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Proveedor · acceso</span>
+          <h3>El modelo que no respondía</h3>
+          <p><code>nan/glm5.3</code> no era accesible con la API key disponible, con o sin variante. El orquestador y la revisión usan <code>glm5.3-flash</code>, que sí respondió en todas las pruebas.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="medicion">
+      <div class="section-head"><span class="section-num">04</span><h2 class="title">La medición</h2></div>
+      <p class="sub">El rol de trabajador (<code>general</code>) con variantes <code>#high</code>: <code>deepseek-v4-flash</code> frente a <code>glm5.3-flash</code>. Tareas de Clamp, ParseSize y Chunk sobre tres proyectos con su suite propia. Una repetición por celda: la lectura es de tendencia, no de certificado.</p>
+      <figure class="fig">
+        <svg viewBox="0 0 880 300" role="img" aria-label="Gráfico de barras: tiempo medio por proyecto y modelo. deepseek-v4-flash gana en docengine y project-task-manager; empate técnico en go-dev-agent">
+          <!-- Escala: 60 s = 620 px → 10,33 px/s -->
+          <text class="fig-label" x="0" y="24">docengine (Go)</text>
+          <rect class="bar--dflash" x="150" y="14" width="197" height="16" rx="4"/>
+          <text class="bar-val" x="354" y="26">19,1 s</text>
+          <rect class="bar--glm" x="150" y="34" width="497" height="16" rx="4"/>
+          <text class="bar-val" x="654" y="46">48,1 s</text>
+          <text class="fig-label" x="0" y="84">go-dev-agent (Go)</text>
+          <rect class="bar--dflash" x="150" y="74" width="420" height="16" rx="4"/>
+          <text class="bar-val" x="577" y="86">40,7 s</text>
+          <rect class="bar--glm" x="150" y="94" width="409" height="16" rx="4"/>
+          <text class="bar-val" x="566" y="106">39,6 s</text>
+          <text class="fig-label" x="0" y="144">project-task-manager (JS)</text>
+          <rect class="bar--dflash" x="150" y="134" width="358" height="16" rx="4"/>
+          <text class="bar-val" x="515" y="146">34,7 s</text>
+          <rect class="bar--glm" x="150" y="154" width="551" height="16" rx="4"/>
+          <text class="bar-val" x="708" y="166">53,4 s</text>
+          <text class="fig-label" x="0" y="204">Media global (9 ejecuciones)</text>
+          <rect class="bar--dflash" x="150" y="194" width="325" height="16" rx="4"/>
+          <text class="bar-val" x="482" y="206">31,5 s</text>
+          <rect class="bar--glm" x="150" y="214" width="485" height="16" rx="4"/>
+          <text class="bar-val" x="642" y="226">47,0 s</text>
+          <!-- Rejilla de referencia -->
+          <line class="fig-arrow" x1="150" y1="240" x2="770" y2="240"/>
+          <text class="bar-val" x="150" y="256">0 s</text>
+          <text class="bar-val" x="460" y="256">30 s</text>
+          <text class="bar-val" x="764" y="256">60 s</text>
+          <line class="fig-arrow" x1="460" y1="8" x2="460" y2="240" stroke-dasharray="3 5" opacity=".4"/>
+          <line class="fig-arrow" x1="770" y1="8" x2="770" y2="240" stroke-dasharray="3 5" opacity=".4"/>
+        </svg>
+        <figcaption>Tiempo de pared medio por ejecución, calculado sobre el CSV de la medición. La calidad no distinguió: 9 de 9 comprobaciones dirigidas y 9 de 9 suites en verde con los dos modelos, cero regresiones y solo los archivos pedidos.</figcaption>
+      </figure>
+      <div class="legend" aria-hidden="true">
+        <span><i class="sw-dflash"></i> deepseek-v4-flash#high</span>
+        <span><i class="sw-glm"></i> glm5.3-flash#high</span>
+      </div>
+      <div class="note"><p><strong>La calidad empató; el reloj no.</strong> En las 18 ejecuciones ambas implementaciones cumplieron contrato, pruebas dirigidas y suite. La diferencia estuvo en el tiempo: <code>deepseek-v4-flash</code> fue notablemente más rápido en docengine y project-task-manager, y empató en go-dev-agent.</p></div>
+    </section>
+
+    <section id="decisiones">
+      <div class="section-head"><span class="section-num">05</span><h2 class="title">Decisiones vivas</h2></div>
+      <p class="sub">Lo que la medición dejó decidido, con la condición que reabriría cada decisión. Ninguna está cerrada por preferencia.</p>
+      <ol class="rules">
+        <li><strong><code>general</code> usa <code>deepseek-v4-flash#high</code></strong>: misma calidad que <code>glm5.3-flash</code> con un tercio menos de tiempo de pared. Si un modelo nuevo entra en el catálogo de <code>nan</code>, esta comparación es la plantilla para valorarlo.</li>
+        <li><strong>El orquestador y la revisión no se tocaron</strong>: la medición cubría solo el rol trabajador. Mover sus modelos exige su propia medición, no esta tabla.</li>
+        <li><strong>La vuelta de <code>nan/glm5.3</code> reabre la comparación</strong>: quedó fuera por acceso de la API key, no por calidad. Si vuelve a estar disponible, merece repetirse la medición antes de cambiar el reparto.</li>
+      </ol>
+    </section>
+
+    <section id="procedencia">
+      <div class="section-head"><span class="section-num">06</span><h2 class="title">Procedencia y límites</h2></div>
+      <p class="sub">Qué es este material y qué no, para que nadie le pida más de lo que tiene.</p>
+      <dl class="qa">
+        <dt>¿De dónde salen estos datos?</dt>
+        <dd>De las sesiones de OpenCode de las pruebas, ejecutadas el 6 y 7 de noviembre de 2026. Los repos de prueba eran desechables y ya no existen; las transcripciones se recuperaron de la base de sesiones y los resúmenes, de la memoria persistente. Todo está versionado en <a href="../../docs/evals/README.md"><code>docs/evals/</code></a>, y el registro formal de las pruebas vive en el tablero del proyecto tasks-ai (tk-280 y tk-281, hijas de la épica tk-276).</dd>
+        <dt>¿Es una batería que se pueda ejecutar?</dt>
+        <dd>No. Es el registro de lo que se probó, no una suite automatizada. Nadie la corre en CI. Los casos están descritos con detalle suficiente para reconstruir la prueba si algún día hace falta.</dd>
+        <dt>¿Qué peso estadístico tiene la medición?</dt>
+        <dd>Una repetición por celda y tareas micro y autocontenidas: sirve para decidir entre dos modelos parecidos, no para certificar calidad. El tiempo incluye la latencia del proveedor.</dd>
+        <dt>¿Por qué la guía principal ya no dice que la medición no se conserva?</dt>
+        <dd>Porque decía la verdad cuando se escribió y ya no la dice: el CSV y las transcripciones están en el repositorio desde que se recuperaron. La sección <a href="index.html#modelos">El reparto de modelos</a> de la guía enlaza aquí.</dd>
+      </dl>
+    </section>
+
+  </main>
+</div>
+
+<div id="docs-footer"><page-footer class="footer">
+  <span>Paquete <code>nan-opencode-delegation</code>; la guía vive en <a href="index.html">index.html</a></span>
+  <span>El material crudo vive en <a href="../../docs/evals/README.md">docs/evals/</a></span>
+</page-footer></div>
+
+<a class="to-top" id="to-top" href="#top" aria-label="Volver arriba">
+  <span class="tk-icon tk-icon--mask tk-icon--chevron-up" aria-hidden="true"></span>
+</a>
+
+<script type="application/json" id="docs-config">
+{
+  "topbar": {
+    "brand": { "href": "#top", "name": "nan-delegación", "tagline": { "es": "evidencia de evaluación" } },
+    "navStyle": "catalog",
+    "nav": [
+      { "href": "index.html", "es": "Guía", "ariaEs": "Ir a la guía del paquete", "icon": "arrow-right" }
+    ],
+    "lang": "static",
+    "langAria": "Idioma / Language"
+  },
+  "copy": false
+}
+</script>
+<script>
+(function () {
+  "use strict";
+  // El mismo reveal en cascada de la guía; sin microlighter, que esta página
+  // no lleva bloques de código resaltados.
+  if (!("IntersectionObserver" in window)) { return; }
+  var observer = new IntersectionObserver(function (entries) {
+    entries.filter(function (entry) { return entry.isIntersecting; })
+      .sort(function (a, b) {
+        return parseFloat(a.target.style.getPropertyValue("--d")) - parseFloat(b.target.style.getPropertyValue("--d"));
+      })
+      .forEach(function (entry, i) {
+        entry.target.style.setProperty("--d", i);
+        entry.target.classList.add("is-in");
+        observer.unobserve(entry.target);
+      });
+  }, { threshold: 0, rootMargin: "0px 0px -8% 0px" });
+  var tracked = [];
+  document.querySelectorAll(".flow, .grid, ul.plain").forEach(function (group) {
+    var blocks = group.querySelectorAll(":scope > .flow-step, :scope > .card, :scope > li");
+    blocks.forEach(function (block, i) {
+      block.style.setProperty("--d", i);
+      tracked.push(block);
+    });
+    group.classList.add("is-ready");
+    blocks.forEach(function (block) { observer.observe(block); });
+  });
+  document.querySelectorAll(".section-head, section > .sub, .qa, .fig, .table-wrap, .note").forEach(function (block) {
+    block.style.setProperty("--d", 0);
+    block.classList.add("is-ready");
+    tracked.push(block);
+    observer.observe(block);
+  });
+  function showUpTo() {
+    tracked.forEach(function (block) {
+      if (block.classList.contains("is-in")) { return; }
+      if (block.getBoundingClientRect().top < window.innerHeight) {
+        block.classList.add("is-in");
+        observer.unobserve(block);
+      }
+    });
+  }
+  showUpTo();
+  window.addEventListener("pageshow", showUpTo);
+  window.addEventListener("load", showUpTo);
+})();
+</script>
+</body>
+</html>

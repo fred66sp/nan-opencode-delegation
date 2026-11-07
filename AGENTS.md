@@ -10,6 +10,7 @@ enlaza.
 |---|---|
 | Qué es el paquete y cómo se instala | [`README.md`](README.md) y [`docs/web/index.html`](docs/web/index.html) |
 | Qué hace cada agente, con qué modelo y qué permisos | `agents/<nombre>.md`, frontmatter y prompt |
+| Cómo se evaluaron los agentes y qué demostró cada prueba | [`docs/evals/README.md`](docs/evals/README.md) |
 | Qué instala exactamente el instalador y qué hace con una config existente | [`install.sh`](install.sh), [`install.ps1`](install.ps1) |
 | Qué fragmento de configuración se añade y cómo se escribe la variante | [`config/opencode.jsonc`](config/opencode.jsonc), [`README.md`](README.md) |
 | Requisitos, alcance y criterios de aceptación | [`docs/PRD.md`](docs/PRD.md) |

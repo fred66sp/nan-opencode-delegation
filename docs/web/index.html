@@ -13,6 +13,7 @@
 <link rel="stylesheet" href="assets/vendor/icons/icons.css">
 <link rel="stylesheet" href="assets/css/tokens.css">
 <link rel="stylesheet" href="assets/css/chrome.css">
+<link rel="stylesheet" href="assets/css/content.css">
 <script src="assets/vendor/vue.global.prod.js"></script>
 <script src="assets/js/docs.js"></script>
 <style>
@@ -98,86 +99,6 @@
   .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: var(--shadow); }
   .btn-ghost { background: var(--bg-elev); border-color: var(--border-strong); color: var(--text); }
 
-  .layout {
-    max-width: 1180px;
-    margin: 0 auto;
-    padding: clamp(32px, 5vw, 60px) clamp(16px, 4vw, 40px) 80px;
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 48px;
-  }
-  @media (min-width: 1020px) {
-    .layout { grid-template-columns: 214px minmax(0, 1fr); gap: 56px; }
-  }
-  .toc { display: none; }
-  @media (min-width: 1020px) {
-    .toc { display: block; position: sticky; top: 84px; align-self: start; }
-    .toc h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 12px; }
-    .toc > a {
-      display: block;
-      padding: 7px 12px;
-      border-left: 2px solid var(--border);
-      color: var(--muted);
-      font-size: 15px;
-      font-weight: 550;
-    }
-    .toc > a:hover { color: var(--text); text-decoration: none; }
-    .toc > a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
-  }
-  main { min-width: 0; }
-  section { scroll-margin-top: 88px; }
-  section + section { margin-top: 64px; }
-  .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
-  .section-num {
-    display: grid; place-items: center;
-    width: 30px; height: 30px;
-    border-radius: 6px;
-    background: var(--accent-soft);
-    color: var(--accent);
-    font-size: 13px;
-    font-weight: 800;
-    font-variant-numeric: tabular-nums;
-  }
-  h2.title { margin: 0; font-size: clamp(22px, 3vw, 28px); letter-spacing: -.02em; }
-  section p, section li { text-wrap: pretty; }
-  section > p.sub { margin: 6px 0 24px; color: var(--muted); max-width: 74ch; }
-  h3 { margin: 30px 0 10px; font-size: 18px; letter-spacing: -.01em; text-wrap: balance; }
-
-  .grid { display: grid; gap: 16px; }
-  @media (min-width: 640px) { .grid.cols-2 { grid-template-columns: 1fr 1fr; } .grid.cols-3 { grid-template-columns: repeat(3, 1fr); } }
-  .card {
-    background: var(--bg-elev);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 20px;
-    box-shadow: var(--shadow);
-  }
-  .card h3 { margin: 0 0 6px; font-size: 15px; }
-  .card p { margin: 0; color: var(--muted); font-size: 15px; }
-  .card .mono { display: block; margin-top: 12px; color: var(--accent); font-family: var(--mono); font-size: 12.9px; }
-
-  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elev); box-shadow: var(--shadow); }
-  table { width: 100%; border-collapse: collapse; font-size: 15px; }
-  thead th {
-    text-align: left;
-    padding: 12px 16px;
-    background: var(--bg-soft);
-    color: var(--muted);
-    font-size: 11.5px;
-    letter-spacing: .06em;
-    text-transform: uppercase;
-    border-bottom: 1px solid var(--border);
-    white-space: nowrap;
-  }
-  tbody td { padding: 11px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
-  tbody tr:last-child td { border-bottom: 0; }
-  tbody tr:hover { background: color-mix(in srgb, var(--accent) 3%, transparent); }
-  td code, th code { font-size: 12px; }
-  tbody td:first-child { white-space: nowrap; }
-  /* La tabla de errores lleva el mensaje en esa primera columna: ahí el
-     texto tiene que poder partirse, o la tabla arrastra una barra. */
-  .table-wrap.wrap-cells td:first-child { white-space: normal; }
-  .table-wrap.wrap-cells td code { overflow-wrap: anywhere; }
 
   .status-strip {
     display: flex;
@@ -206,52 +127,7 @@
   .status-strip strong { display: block; font-size: 15px; }
   .status-strip span:not(.status-mark) { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
 
-  .flow { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  @media (min-width: 640px) { .flow { grid-template-columns: repeat(2, 1fr); } }
-  @media (min-width: 1020px) { .flow { grid-template-columns: repeat(3, 1fr); } }
-  .flow-step {
-    min-height: 142px;
-    padding: 16px;
-    border: 1px solid var(--border);
-    border-radius: var(--radius-sm);
-    background: var(--bg-elev);
-  }
-  .flow-step.is-primary { border-color: var(--accent); }
-  .flow-step code { color: var(--accent); font-weight: 700; }
-  .flow-step strong { display: block; margin-top: 10px; font-size: 15px; }
-  .flow-step p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
 
-  .rules { counter-reset: regla; list-style: none; margin: 22px 0 0; padding: 0; }
-  .rules li { position: relative; padding: 14px 0 14px 52px; border-bottom: 1px solid var(--border); }
-  .rules li:first-child { border-top: 1px solid var(--border); }
-  .rules li::before {
-    position: absolute; left: 0; top: 14px;
-    font-family: var(--mono); font-size: 12.9px; font-weight: 700; color: var(--accent);
-    counter-increment: regla; content: counter(regla, decimal-leading-zero);
-  }
-  .rules li strong { color: var(--text); }
-
-  .note {
-    display: flex;
-    gap: 12px;
-    padding: 14px 16px;
-    border-left: 1px solid var(--accent);
-    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
-    background: var(--accent-soft);
-    font-size: 15px;
-    margin: 16px 0;
-  }
-  .note strong { color: var(--text); }
-  .note p { margin: 0; }
-  .note--warn {
-    border-left-color: var(--warn);
-    background: color-mix(in srgb, var(--warn) 10%, var(--bg-elev));
-  }
-  .note--warn strong { color: var(--warn-text); }
-
-  .cmdcap { margin: 22px 0 0; color: var(--muted); font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
-
-  .code pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
   .code .c { color: var(--syn-comment); }
   .code .ok { color: var(--ok); font-weight: 700; }
   ::highlight(comment), ::highlight(quote) { color: var(--syn-comment); }
@@ -271,51 +147,8 @@
   ::highlight(tag), ::highlight(inserted) { color: var(--syn-tag); }
   ::highlight(selector) { color: var(--syn-function); }
   ::highlight(deleted) { color: var(--syn-keyword); }
-  p code, li code, td code {
-    background: var(--bg-soft);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: .08em .42em;
-    font-size: .88em;
-  }
 
-  .qa { margin: 8px 0 0; }
-  .qa dt { font-weight: 700; font-size: 16px; margin-top: 22px; }
-  .qa dt:first-child { margin-top: 0; }
-  .qa dd { margin: 6px 0 0; color: var(--muted); font-size: 15px; max-width: 74ch; }
 
-  .footer {
-    border-top: 1px solid var(--border);
-    padding: 28px clamp(16px, 4vw, 40px);
-    color: var(--muted);
-    font-size: 13px;
-    display: flex;
-    flex-wrap: wrap;
-    gap: 10px 20px;
-    align-items: center;
-    justify-content: space-between;
-    max-width: 1180px;
-    margin: 0 auto;
-  }
-  .footer code { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
-
-  /* Entrada en cascada del contenido: los bloques múltiples y los listados
-     se escalonan con --d —la posición en el lote que entra, la fija el
-     script— y el resto sube con un fade simple. Sin JavaScript nada queda
-     oculto y el estado final es el estático. */
-  @media screen and (prefers-reduced-motion: no-preference) {
-    .flow.is-ready .flow-step:not(.is-in), .grid.is-ready .card:not(.is-in),
-    .qa.is-ready:not(.is-in),
-    .section-head.is-ready:not(.is-in), section > .sub.is-ready:not(.is-in),
-    .code.is-ready:not(.is-in), .table-wrap.is-ready:not(.is-in),
-    .note.is-ready:not(.is-in) { opacity: 0; }
-    .flow .flow-step.is-in, .grid .card.is-in,
-    .qa.is-in, .section-head.is-in, section > .sub.is-in,
-    .code.is-in, .table-wrap.is-in, .note.is-in {
-      animation: rise .55s cubic-bezier(.16, 1, .3, 1) backwards;
-      animation-delay: calc(var(--d, 0) * 70ms);
-    }
-  }
 </style>
 </head>
 <body>
@@ -487,7 +320,7 @@
           </tbody>
         </table>
       </div>
-      <p>El modelo <code>nan/glm5.3</code> sin flash quedó fuera del reparto: la API key no tenía acceso cuando se montó todo. Con las dos alternativas que sí hubo, se midió el rol de trabajador —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 segundos para <code>glm5.3-flash</code> frente a 32,0 para <code>deepseek-v4-flash</code>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <code>general</code>. El banco de pruebas no se conserva en el repositorio, así que la medición no es reproducible desde aquí; si <code>nan/glm5.3</code> vuelve a estar disponible, la comparación merece repetirse antes de mover el orquestador o la revisión. <code>opencode models</code> lista hoy <code>nan/glm5.3</code>, pero no se comprobó que responda.</p>
+      <p>El modelo <code>nan/glm5.3</code> sin flash quedó fuera del reparto: la API key no tenía acceso cuando se montó todo. Con las dos alternativas que sí hubo, se midió el rol de trabajador —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,0 segundos para <code>glm5.3-flash</code> frente a 31,5 para <code>deepseek-v4-flash</code>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <code>general</code>. El registro completo de la prueba —transcripciones, CSV y resúmenes— está en <a href="evals.html">la evaluación de los agentes</a>; si <code>nan/glm5.3</code> vuelve a estar disponible, la comparación merece repetirse antes de mover el orquestador o la revisión. <code>opencode models</code> lista hoy <code>nan/glm5.3</code>, pero no se comprobó que responda.</p>
     </section>
 
     <section id="verificacion">
@@ -588,7 +421,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
         <dt>¿Afecta al agente <code>build</code>?</dt>
         <dd>No toca el agente de arranque ni los agentes ajenos de la configuración: copia los ficheros de <code>agents/</code> del paquete y funde dos overrides de modelo. Un fichero con el mismo nombre que uno tuyo en <code>~/.config/opencode/agents/</code> se reemplaza tras guardar una copia <code>.bak</code> con fecha. Dentro de <code>explore</code> y <code>general</code> la entrada se sustituye entera, así que si administrabas otras claves aparte de <code>model</code>, trasládala antes de instalar.</dd>
         <dt>¿De dónde salen los datos de la medición?</dt>
-        <dd>De una puesta a punto interna con tres proyectos reales y tres tareas por proyecto, con los dos modelos candidatos como trabajador. El paquete recoge la decisión, no el banco de pruebas: la medición no se conserva en el repositorio y no es reproducible desde aquí.</dd>
+        <dd>De una puesta a punto interna con tres proyectos reales y tres tareas por proyecto, con los dos modelos candidatos como trabajador. Las transcripciones y el CSV están conservados en <a href="evals.html">la evaluación de los agentes</a> y en <code>docs/evals/</code> del repositorio.</dd>
       </dl>
     </section>
 
@@ -611,7 +444,8 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
     "brand": { "href": "#top", "name": "nan-delegación", "tagline": { "es": "orquestación de subagentes" } },
     "navStyle": "catalog",
     "nav": [
-      { "href": "#empezar", "es": "Empezar", "ariaEs": "Ir a Empezar aquí", "icon": "arrow-right" }
+      { "href": "#empezar", "es": "Empezar", "ariaEs": "Ir a Empezar aquí", "icon": "arrow-right" },
+      { "href": "evals.html", "es": "Evaluación", "ariaEs": "Ir a la evaluación de los agentes", "icon": "check" }
     ],
     "lang": "static",
     "langAria": "Idioma / Language"

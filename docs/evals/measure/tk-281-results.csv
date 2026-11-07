@@ -1,0 +1,20 @@
+session,model,variant,project,task,wall_s,tokens_in,tokens_out,title
+ses_e4cbf9148ffe,glm5.3-flash,high,docengine-glm,?,70.0,28841,2460,Paquete measure con Clamp y pruebas
+ses_e4cbd71ccffe,glm5.3-flash,high,docengine-glm,t1,24.4,18247,660,Paquete internal/measure con Clamp
+ses_e4cbd07d9ffe,deepseek-v4-flash,high,docengine-dflash,t1,16.7,17961,962,Paquete internal/measure con Clamp
+ses_e4cbcbb33ffe,glm5.3-flash,high,gda-glm,t1,38.8,53259,690,Paquete internal/measure con Clamp
+ses_e4cbbc381ffe,deepseek-v4-flash,high,gda-dflash,t1,37.9,30311,1031,Paquete internal/measure con Clamp
+ses_e4cbad95cffe,glm5.3-flash,high,ptm-glm,t1,53.2,25440,879,clamp en measure.js con tests vitest
+ses_e4cb9f138ffe,deepseek-v4-flash,high,ptm-dflash,t1,44.4,19429,1566,Módulo measure con clamp y tests
+ses_e4cb92bc4ffe,glm5.3-flash,high,docengine-glm,t2,75.4,32964,1879,Paquete internal/measure con ParseSize
+ses_e4cb7f816ffe,deepseek-v4-flash,high,docengine-dflash,t2,21.3,15484,1092,Paquete internal/measure con ParseSize
+ses_e4cb79877ffe,glm5.3-flash,high,gda-glm,t2,41.2,25963,1478,Paquete internal/measure con.ParseSize
+ses_e4cb0d561ffe,deepseek-v4-flash,high,gda-dflash,t2,46.4,25259,1602,Paquete internal/measure para ParseSize
+ses_e4caa0124ffe,glm5.3-flash,high,ptm-glm,t2,78.4,26664,1668,parseSize en measure.js con vitest
+ses_e4ca8baa1ffe,deepseek-v4-flash,high,ptm-dflash,t2,45.2,19488,1163,parseSize unit parser with vitest tests
+ses_e4ca7f6b0ffe,glm5.3-flash,high,docengine-glm,t3,44.4,40895,1730,Paquete measure con función Chunk en Go
+ses_e4ca73f3cffe,deepseek-v4-flash,high,docengine-dflash,t3,19.2,15799,1270,Paquete internal/measure con Chunk
+ses_e4ca6e9b2ffe,glm5.3-flash,high,gda-glm,t3,38.8,26381,992,Paquete internal/measure con Chunk y pruebas
+ses_e4ca64cf1ffe,deepseek-v4-flash,high,gda-dflash,t3,37.7,24544,1508,Paquete internal/measure con Chunk
+ses_e4ca588b3ffe,glm5.3-flash,high,ptm-glm,t3,28.6,16111,829,Función chunk en measure.js con tests vitest
+ses_e4ca50233ffe,deepseek-v4-flash,high,ptm-dflash,t3,14.6,15279,833,Chunk helper `measure.js` y tests

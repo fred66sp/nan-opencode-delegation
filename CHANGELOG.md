@@ -26,6 +26,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   `serve-web.sh`, que sirve el paquete en el 8766: por `file://` las máscaras de los
   iconos y el resaltado de código no cargan.
 
+- Página de evaluación en `docs/web/evals.html` con la evidencia de las pruebas de los
+  agentes: el smoke test de los cinco agentes con su diagrama y veredictos, la medición
+  del modelo trabajador con su gráfico de barras, y las decisiones vivas que sostienen el
+  reparto de modelos. El material crudo —transcripciones y CSV— vive en `docs/evals/`.
+
 - Tablero de desarrollo propio: el paquete lleva su instalación de tasks-ai en
   `.tasks-ai/` (instrucciones, contrato de etiquetas y ajustes versionados; base y
   extensiones fuera de Git) y el proyecto carga su extensión de OpenCode desde el
