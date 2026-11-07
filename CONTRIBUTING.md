@@ -65,8 +65,9 @@ env -u XDG_CONFIG_HOME HOME=$(mktemp -d) bash install.sh   # instalación limpia
 
 Y, cuando la fusión o el camino JSONC cambien: instalación sobre una configuración con
 claves ajenas (deben conservarse y nacer copia `.bak`) y sobre una con comentarios (el
-fichero debe quedar intacto y el bloque a mano impreso). `install.ps1` solo admite
-revisión estática hasta que haya `pwsh` en una máquina de pruebas. Toda verificación no
+fichero debe quedar intacto y el bloque a mano impreso). `install.ps1` admite el mismo
+camino en una máquina Windows; desde WSL, con el `powershell.exe` del propio Windows y
+`XDG_CONFIG_HOME` temporal, cubre instalación limpia, fusión y migración. Toda verificación no
 ejecutada se declara.
 
 ## Integración
