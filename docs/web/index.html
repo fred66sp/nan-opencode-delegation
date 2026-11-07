@@ -328,16 +328,16 @@
 <section class="hero">
   <div class="hero-mesh" aria-hidden="true"></div>
   <div class="hero-inner">
-    <span class="pill"><span class="dot" aria-hidden="true"></span>Probada de punta a punta</span>
+    <span class="pill"><span class="dot" aria-hidden="true"></span>Linux probado · Windows con revisión estática</span>
     <h1>Delegación de subagentes nan <span class="grad">en OpenCode</span></h1>
-    <p class="lead">Un orquestador que planifica y delega, cuatro subagentes con permisos acotados y dos agentes integrados afinados por configuración. Todo con modelos del proveedor <code>nan</code>, instalable en Windows, Linux y macOS con una orden por sistema.</p>
+    <p class="lead">Un orquestador que planifica y delega, cuatro subagentes con permisos acotados y dos agentes integrados afinados por configuración. Todo con modelos del proveedor <code>nan</code>, con un instalador por sistema; el de Windows está pendiente de prueba en una máquina con PowerShell.</p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="#empezar">Empezar</a>
       <a class="btn btn-ghost" href="#arquitectura">Ver la arquitectura</a>
     </div>
     <div class="status-strip" role="status">
       <span class="status-mark" aria-hidden="true">OK</span>
-      <div><strong>Probada de punta a punta</strong><span>Del test de humo de la puesta a punto quedaron también las conductas, no solo los nombres: verify ejecuta y no edita, review no toca nada, docs se queda en su Markdown y ui pide permiso al cargar la skill de navegador.</span></div>
+      <div><strong>Linux probado; Windows con revisión estática</strong><span>Las conductas dependen del prompt y de los permisos: verify ejecuta y no edita; review tiene la edición denegada; docs la limita a Markdown; ui pide permiso al cargar la skill. El shell sigue abierto en review, docs y ui.</span></div>
     </div>
   </div>
 </section>
@@ -363,7 +363,7 @@
 
     <section id="que-es">
       <div class="section-head"><span class="section-num">01</span><h2 class="title">Qué es</h2></div>
-      <p class="sub">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <code>orchestrator</code>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cuatro subagentes que solo pueden hacer su parte: comprobar, revisar, documentar o recorrer la interfaz. Los planes y los cierres se quedan en el orquestador; tres de los cuatro subagentes tienen la edición denegada del todo, y el cuarto, <code>ui</code>, pide permiso persona a persona antes de tocar el navegador.</p>
+      <p class="sub">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <code>orchestrator</code>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cuatro subagentes que solo pueden hacer su parte: comprobar, revisar, documentar o recorrer la interfaz. Los planes y los cierres se quedan en el orquestador; tres de los cuatro subagentes tienen la edición restringida por permisos, y el cuarto, <code>ui</code>, pide permiso persona a persona antes de tocar el navegador.</p>
       <p>Con la delegación no cambia la forma de trabajar: <code>build</code> sigue siendo el agente de arranque y <code>orchestrator</code> se elige cuando quieres orquestar. La delegación vive por prompt: el contrato está en el texto del agente. Si el orquestador no delega, no hay mecanismo de configuración que lo obligue.</p>
       <div class="grid cols-3">
         <div class="card">
@@ -379,7 +379,7 @@
         <div class="card">
           <h3>Dos integrados afinados</h3>
           <p><code>explore</code> y <code>general</code> ya existen en OpenCode; el paquete solo fija qué modelo levanta cada uno y con qué variante.</p>
-          <span class="mono">clave agent de la configuración</span>
+          <span class="mono">clave agents de la configuración</span>
         </div>
       </div>
     </section>
@@ -391,8 +391,8 @@
       <div class="code"><pre data-language="bash"><code>bash install.sh</code></pre></div>
       <p class="cmdcap">Windows (PowerShell)</p>
       <div class="code"><pre data-language="bash"><code>powershell -ExecutionPolicy Bypass -File install.ps1</code></pre></div>
-      <p>Lo que hace, en dos frases: copia los cinco agentes a <code>~/.config/opencode/agents/</code> y deja el bloque <code>agent</code> de <code>explore</code> y <code>general</code> en la configuración global. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime el bloque para pegarlo a mano.</p>
-      <div class="note"><p><strong>A mano en dos pasos.</strong> Copia los cinco ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
+      <p>Lo que hace, en dos frases: copia los agentes de <code>agents/</code> a <code>~/.config/opencode/agents/</code> y deja el bloque <code>agents</code> de <code>explore</code> y <code>general</code> en la configuración global. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si un agente existente con el mismo nombre difiere, guarda también una copia <code>.bak</code> con fecha antes de reemplazarlo; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime el bloque para pegarlo a mano.</p>
+      <div class="note"><p><strong>A mano en dos pasos.</strong> Copia los ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
     </section>
 
     <section id="arquitectura">
@@ -426,7 +426,7 @@
 
     <section id="permisos">
       <div class="section-head"><span class="section-num">05</span><h2 class="title">Los permisos</h2></div>
-      <p class="sub">La defensa es en profundidad: el prompt marca la intención, pero son los permisos del frontmatter de cada agente los que impiden la acción. La política base de OpenCode permite todo; por eso las listas que restringen empiezan por un <code>deny</code> que cierra el campo y después abren solo lo que se necesita. La de <code>ui</code> es la excepción deliberada: no limita la edición, lo suyo es pedir permiso antes de tocar el navegador.</p>
+      <p class="sub">La defensa es en profundidad: el prompt marca la intención y los permisos del frontmatter bloquean o limitan la herramienta de edición, pero no el shell. La política base de OpenCode permite todo; por eso las listas que restringen empiezan por un <code>deny</code> que cierra el campo y después abren solo lo que se necesita. <code>review</code>, <code>docs</code> y <code>ui</code> pueden ejecutar comandos; lo que impide escribir por shell es el prompt. La de <code>ui</code> es la excepción deliberada en el navegador: no limita la edición, pide permiso antes de Playwright.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Agente</th><th>Editar</th><th>Shell</th><th>Skills y subagentes</th></tr></thead>
@@ -450,27 +450,29 @@
         </table>
       </div>
       <div class="note"><p><strong>Denegar antes de abrir.</strong> Como la política base permite todo, una lista blanca sin un <code>deny *</code> previo no tiene efecto. <code>verify</code> lo lleva: cierra edición y shell por completo y después abre los once prefijos de comprobación (<code>go test</code>, <code>go vet</code>, <code>go build</code>, <code>make</code>, <code>npm test</code>, <code>npm run</code>, <code>pnpm</code>, <code>pytest</code>, <code>cargo test</code>, <code>git status</code>, <code>git diff</code>).</p></div>
-      <div class="note"><p><strong>Los comodines no cruzan la raíz como cabría esperar.</strong> <code>**/*.md</code> no casa los Markdown de la raíz del proyecto, que es por lo que <code>docs</code> combina patrones de raíz (<code>*.md</code>, <code>*.mdx</code>, <code>docs/*</code>, <code>CHANGELOG*</code>). Lo comprobó la primera instalación con un fichero de la raíz que <code>docs</code> no alcanzaba.</p></div>
+      <div class="note"><p><strong>Los comodines no cruzan la raíz como cabría esperar.</strong> <code>**/*.md</code> no casa los Markdown de la raíz del proyecto, que es por lo que <code>docs</code> combina patrones de raíz (<code>*.md</code>, <code>*.mdx</code>, <code>docs/*</code>, <code>CHANGELOG*</code>).</p></div>
+      <div class="note"><p><strong>Edición no es shell.</strong> El permiso <code>edit</code> no cubre el shell: <code>review</code>, <code>docs</code> y <code>ui</code> pueden ejecutar comandos que escriban. En <code>review</code> la edición está denegada, en <code>docs</code> limitada a Markdown, <code>docs/</code> y <code>CHANGELOG</code>, y en <code>ui</code> abierta. Lo que impide escribir por shell es el prompt.</p></div>
       <div class="note note--warn"><p><strong>Ask bloquea.</strong> El permiso <code>ask</code> de <code>ui</code> detiene la sesión hija hasta que una persona aprueba. Lanzar <code>ui</code> en segundo plano sin estar delante deja el agente colgado del aviso.</p></div>
     </section>
 
     <section id="configuracion">
       <div class="section-head"><span class="section-num">06</span><h2 class="title">La configuración</h2></div>
-      <p class="sub">El paquete lleva en <code>config/opencode.jsonc</code> la plantilla que el instalador copia en una máquina sin configuración global. Solo contiene lo que la delegación necesita: si tu fichero ya existe, el instalador funde en él únicamente <code>agent.explore</code> y <code>agent.general</code>, conserva tus claves y agentes ajenos y te deja copia con fecha.</p>
+      <p class="sub">El paquete lleva en <code>config/opencode.jsonc</code> la plantilla que el instalador copia en una máquina sin configuración global. Solo contiene lo que la delegación necesita: si tu fichero ya existe, el instalador funde en él únicamente <code>agents.explore</code> y <code>agents.general</code>, conserva tus claves y agentes ajenos y te deja copia con fecha.</p>
       <div class="code"><pre data-language="json"><code>{
   "$schema": "https://opencode.ai/config.json",
-  "agent": {
-    "explore": { "model": "nan/glm5.3-flash", "variant": "low" },
-    "general": { "model": "nan/deepseek-v4-flash", "variant": "high" }
+  "agents": {
+    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },
+    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }
   }
 }</code></pre></div>
-      <div class="note note--warn"><p><strong>La sintaxis de la variante cambia según el sitio.</strong> En el frontmatter de un agente en Markdown el modelo lleva la variante con almohadilla: <code>nan/glm5.3-flash#high</code>. En la clave <code>agent</code> de la configuración la variante va en su propio campo, <code>variant</code>; escrita con almohadilla, el campo se queda vacío y el agente pierde la variante. Lo comprobó dos veces la puesta a punto: una en la configuración y otra en el frontmatter.</p></div>
-      <p>Si tu configuración usa la clave <code>agents</code> en plural para los overrides, conserva la tuya y añade ahí los dos pares; el paquete no discute la clave que ya funciona en tu máquina.</p>
+      <div class="note note--warn"><p><strong>La sintaxis de la variante cambia según el sitio.</strong> En el frontmatter de un agente en Markdown el modelo lleva la variante con almohadilla: <code>nan/glm5.3-flash#high</code>. En <code>agents</code> la variante va en el objeto <code>model</code> (<code>providerID</code>, <code>model</code>, <code>variant</code>) o en el string del modelo con almohadilla, <code>nan/glm5.3-flash#low</code>; no hay campo <code>variant</code> suelto, así que escrita ahí la variante no llega al modelo y el agente la pierde.</p></div>
+      <p>La clave <code>agent</code> en singular está obsoleta en OpenCode V2: el instalador escribe en <code>agents</code> y migra ahí los overrides <code>explore</code> y <code>general</code>, conservando el resto de claves.</p>
     </section>
 
     <section id="modelos">
       <div class="section-head"><span class="section-num">07</span><h2 class="title">El reparto de modelos</h2></div>
       <p class="sub">Ningún modelo se eligió a ciegas. El orquestador y la revisión llevan el modelo más capaz de los disponibles para su trabajo; el resto lleva variantes ajustadas a pasos concretos, porque un subagente acotado no necesita la variante más cara para hacer bien doce pasos.</p>
+      <p>El frontmatter de <code>agents/</code> es la fuente canónica de modelos, pasos y permisos; la tabla es un resumen.</p>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Agente</th><th>Modo</th><th>Modelo</th><th>Variante</th><th>Pasos</th><th>Por qué</th></tr></thead>
@@ -485,26 +487,16 @@
           </tbody>
         </table>
       </div>
-      <p>El modelo <code>nan/glm5.3</code> sin flash quedó fuera del reparto: la API key no tenía acceso cuando se montó todo. Con las dos alternativas que sí hubo, se midió el rol de trabajador —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 segundos para <code>glm5.3-flash</code> frente a 32,0 para <code>deepseek-v4-flash</code>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <code>general</code>. Cuando el sellado de <code>nan/glm5.3</code> se recupere, la comparación merece repetirse antes de mover el orquestador o la revisión.</p>
+      <p>El modelo <code>nan/glm5.3</code> sin flash quedó fuera del reparto: la API key no tenía acceso cuando se montó todo. Con las dos alternativas que sí hubo, se midió el rol de trabajador —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 segundos para <code>glm5.3-flash</code> frente a 32,0 para <code>deepseek-v4-flash</code>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <code>general</code>. El banco de pruebas no se conserva en el repositorio, así que la medición no es reproducible desde aquí; si <code>nan/glm5.3</code> vuelve a estar disponible, la comparación merece repetirse antes de mover el orquestador o la revisión. <code>opencode models</code> lista hoy <code>nan/glm5.3</code>, pero no se comprobó que responda.</p>
     </section>
 
     <section id="verificacion">
       <div class="section-head"><span class="section-num">08</span><h2 class="title">La verificación</h2></div>
       <p class="sub">Dos órdenes cierran la instalación: una mira si la máquina ve los modelos del proveedor, la otra si los agentes están cargados en el servicio. Configurar no exige reiniciar: OpenCode recarga los agentes al guardar los ficheros, y un cambio que no aparece suele ser camino de fichero equivocado, no de caché.</p>
-      <div class="code"><pre data-language="bash"><code><span class="c">$ opencode models | grep 'nan/'</span>
-<span class="ok">✓</span> nan/deepseek-v4-flash
-<span class="ok">✓</span> nan/glm5.3
-<span class="ok">✓</span> nan/glm5.3-flash
-<span class="ok">✓</span> nan/mimo-v2.6-flash
-<span class="ok">✓</span> nan/qwen3.8-flash
-
-<span class="c">$ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</span>
-<span class="ok">✓</span> orchestrator · nan/glm5.3-flash
-<span class="ok">✓</span> verify · nan/qwen3.8-flash
-<span class="ok">✓</span> review · nan/glm5.3-flash
-<span class="ok">✓</span> docs · nan/deepseek-v4-flash
-<span class="ok">✓</span> ui · nan/mimo-v2.6-flash</code></pre></div>
-      <p>Del test de humo de la puesta a punto quedaron también las conductas, no solo los nombres: <code>verify</code> ejecuta y no edita, <code>review</code> no toca nada, <code>docs</code> se queda en su Markdown y <code>ui</code> pide permiso al cargar la skill de navegador.</p>
+      <div class="code"><pre data-language="bash"><code>opencode models | grep 'nan/'
+opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code></pre></div>
+      <p>La primera orden lista los modelos disponibles de <code>nan/</code>. La segunda devuelve el JSON de agentes con su id, su modelo y sus permisos; los identificadores dependen de la cuenta y de lo que tenga cargado el servicio.</p>
+      <p>Las conductas dependen del prompt y de los permisos: <code>verify</code> ejecuta y no edita; <code>review</code> tiene la edición denegada; <code>docs</code> la tiene limitada a Markdown, <code>docs/</code> y <code>CHANGELOG</code>; <code>ui</code> la tiene abierta y pide permiso al cargar la skill. El shell sigue abierto en <code>review</code>, <code>docs</code> y <code>ui</code>; lo que les impide escribir por esa vía es su prompt.</p>
     </section>
 
     <section id="errores">
@@ -540,8 +532,8 @@
             </tr>
             <tr>
               <td>El agente carga pero pierde su variante</td>
-              <td>La variante se escribió con almohadilla en la clave <code>agent</code> de la configuración</td>
-              <td>Moverla al campo <code>variant</code>, como en <a href="#configuracion">La configuración</a></td>
+              <td>En <code>agents</code> falta la variante en el objeto <code>model</code> o en el string del modelo</td>
+              <td>Usar <code>{ providerID, model, variant }</code> o <code>nan/glm5.3-flash#low</code>, como en <a href="#configuracion">La configuración</a></td>
             </tr>
           </tbody>
         </table>
@@ -588,15 +580,15 @@
       <div class="section-head"><span class="section-num">11</span><h2 class="title">Preguntas cortas</h2></div>
       <dl class="qa">
         <dt>¿Puedo cambiar los modelos y las variantes?</dt>
-        <dd>Sí. Los de los cinco agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agent</code> de la configuración. Recuerda la regla de la almohadilla de la sección 06.</dd>
+        <dd>Sí. Los de los agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agents</code> de la configuración. Recuerda la regla de la almohadilla de la sección 06.</dd>
         <dt>¿Cualquier máquina con OpenCode V2 vale?</dt>
         <dd>Cualquiera con OpenCode V2 y acceso a los modelos <code>nan</code>. Windows y Linux llevan su instalador; la ruta de configuración es la de tu usuario en ambas.</dd>
         <dt>¿Se puede desinstalar?</dt>
-        <dd>Borra los cinco ficheros de <code>~/.config/opencode/agents/</code> y quita del bloque <code>agent</code> los pares <code>explore</code> y <code>general</code>. Si el instalador creó el <code>opencode.jsonc</code> en una máquina limpia, bórralo también; las copias con fecha <code>.bak</code> que dejara al fusionar son tuyas: llévatelas o bórralas con él.</dd>
+        <dd>Borra los ficheros de agente que instaló el paquete de <code>~/.config/opencode/agents/</code> y quita del bloque <code>agents</code> los pares <code>explore</code> y <code>general</code>. Si el instalador creó el <code>opencode.jsonc</code> en una máquina limpia, bórralo también; las copias con fecha <code>.bak</code> que dejara al fusionar son tuyas: llévatelas o bórralas con él.</dd>
         <dt>¿Afecta al agente <code>build</code>?</dt>
-        <dd>No toca agentes existentes ni el agente de arranque: añade ficheros y funde dos overrides de modelo. Dentro de <code>explore</code> y <code>general</code> la entrada se sustituye entera, así que si administrabas otras claves aparte de <code>model</code> y <code>variant</code>, trasládala antes de instalar.</dd>
+        <dd>No toca el agente de arranque ni los agentes ajenos de la configuración: copia los ficheros de <code>agents/</code> del paquete y funde dos overrides de modelo. Un fichero con el mismo nombre que uno tuyo en <code>~/.config/opencode/agents/</code> se reemplaza tras guardar una copia <code>.bak</code> con fecha. Dentro de <code>explore</code> y <code>general</code> la entrada se sustituye entera, así que si administrabas otras claves aparte de <code>model</code>, trasládala antes de instalar.</dd>
         <dt>¿De dónde salen los datos de la medición?</dt>
-        <dd>Del plan de puesta a punto del epic tk-276 del tablero tasks-ai: tres proyectos reales, tres tareas por proyecto, los dos modelos candidatos como trabajador. El paquete recoge la decisión, no el banco de pruebas.</dd>
+        <dd>De una puesta a punto interna con tres proyectos reales y tres tareas por proyecto, con los dos modelos candidatos como trabajador. El paquete recoge la decisión, no el banco de pruebas: la medición no se conserva en el repositorio y no es reproducible desde aquí.</dd>
       </dl>
     </section>
 
@@ -604,10 +596,8 @@
 </div>
 
 <div id="docs-footer"><page-footer class="footer">
-  <span>Paquete <code>nan-opencode-delegation</code>, sin publicar: la versión, cuando la haya, vive en <a href="../../CHANGELOG.md">CHANGELOG.md</a></span>
-  <span>Origen: las subtareas tk-277 a tk-282 del epic tk-276 del tablero tasks-ai</span>
+  <span>Paquete <code>nan-opencode-delegation</code>; la versión vive en <a href="../../CHANGELOG.md">CHANGELOG.md</a></span>
   <span>La referencia breve vive en <a href="../../README.md">README.md</a></span>
-  <span>7 de noviembre de 2026</span>
 </page-footer></div>
 
 <a class="to-top" id="to-top" href="#top" aria-label="Volver arriba">

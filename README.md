@@ -1,8 +1,8 @@
 # Delegación de subagentes nan para OpenCode
 
-Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un agente orquestador, cuatro subagentes con permisos acotados y los modelos de dos subagentes integrados del propio OpenCode (`explore` y `general`). La carpeta se copia tal cual a otra máquina y el instalador deja cada fichero en su sitio. No toca tu configuración más allá de lo que necesita: antes de escribir guarda una copia con fecha y conserva las claves y agentes ajenos, aunque el fichero quede reescrito y normalizado.
+Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un agente orquestador, cuatro subagentes con permisos acotados y los modelos de dos subagentes integrados del propio OpenCode (`explore` y `general`). La carpeta se copia tal cual a otra máquina y el instalador deja cada fichero en su sitio. No toca tu configuración más allá de lo que necesita: antes de escribir guarda una copia con fecha de la configuración y conserva las claves y agentes ajenos, aunque el fichero quede reescrito y normalizado. Los ficheros de `agents/` con el mismo nombre que uno tuyo se reemplazan tras guardar una copia `.bak` con fecha.
 
-Los cinco ficheros de `agents/` son copias literales de la configuración que ya funciona en la máquina de origen. El paquete no es donde nacen los cambios de la delegación, sino por donde viajan.
+Los ficheros de `agents/` son copias literales de la configuración que ya funciona en la máquina de origen. El paquete no es donde nacen los cambios de la delegación, sino por donde viajan.
 
 ## Documentación
 
@@ -31,7 +31,7 @@ Los cinco ficheros de `agents/` son copias literales de la configuración que ya
 - OpenCode V2 instalado y en el PATH ([https://opencode.ai](https://opencode.ai)).
 - Acceso a los modelos del proveedor `nan`: `opencode auth login` y elige el proveedor NaN para pegar su API key. Sin esto los agentes cargan pero no responden.
 - Para el agente `ui`, la skill `playwright-cli`. Es opcional: los otros cuatro agentes no la necesitan.
-- En Linux y macOS, el instalador fundiona una configuración existente con Python cuando el fichero es JSON estricto; con comentarios JSONC o sin Python deja el fichero intacto e imprime el bloque exacto para pegar a mano.
+- En Linux y macOS, el instalador fusiona una configuración existente con Python cuando el fichero es JSON estricto; con comentarios JSONC o sin Python deja el fichero intacto e imprime el bloque exacto para pegar a mano.
 
 ## Instalación
 
@@ -51,16 +51,16 @@ El instalador resuelve todo desde su propia carpeta y el destino queda en el usu
 
 ### A mano
 
-Copia los cinco ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `opencode.jsonc`, dentro del objeto raíz, este bloque:
+Copia los ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `opencode.jsonc`, dentro del objeto raíz, este bloque:
 
 ```jsonc
-"agent": {
-  "explore": { "model": "nan/glm5.3-flash", "variant": "low" },
-  "general": { "model": "nan/deepseek-v4-flash", "variant": "high" }
+"agents": {
+  "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },
+  "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }
 }
 ```
 
-Un detalle que importa: en el frontmatter de los agentes en Markdown, el modelo lleva la variante con `#` (`nan/glm5.3-flash#high`). En la clave `agent` de la configuración, la variante va en su propio campo (`variant`); con `#` el campo se queda vacío. Si tu configuración ya usa la clave `agents` en plural para los overrides, conserva la tuya y fusiona los dos pares.
+Un detalle que importa: en el frontmatter de los agentes en Markdown, el modelo lleva la variante con `#` (`nan/glm5.3-flash#high`). En `agents`, la variante va en el objeto `model` (`providerID`, `model`, `variant`) o en el string `nan/glm5.3-flash#low`; no hay campo `variant` suelto. `agent` en singular está obsoleto; el instalador escribe en `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
 
 ## Verificación
 
@@ -73,17 +73,19 @@ La primera orden confirma que la máquina ve los modelos de `nan`; la segunda, q
 
 ## El reparto de modelos
 
+El frontmatter de `agents/` es la fuente canónica de modelos, pasos y permisos; esta tabla es un resumen.
+
 | Agente | Modo | Modelo | Variante | Pasos | Permisos |
 |---|---|---|---|---|---|
 | `orchestrator` | primary | `nan/glm5.3-flash` | high | 60 | Lanza solo los subagentes que declara su frontmatter: `explore`, `general`, `verify`, `review`, `docs` y `ui` |
 | `verify` | subagent | `nan/qwen3.8-flash` | medium | 12 | Sin editar; shell con lista de prefijos |
-| `review` | subagent | `nan/glm5.3-flash` | xhigh | 12 | Sin editar |
-| `docs` | subagent | `nan/deepseek-v4-flash` | medium | 20 | Solo Markdown, `docs/` y CHANGELOG |
-| `ui` | subagent | `nan/mimo-v2.6-flash` | medium | 20 | Playwright con permiso `ask` |
+| `review` | subagent | `nan/glm5.3-flash` | xhigh | 12 | Sin editar; shell abierto |
+| `docs` | subagent | `nan/deepseek-v4-flash` | medium | 20 | Edición solo Markdown, `docs/` y `CHANGELOG`; shell abierto (el prompt le prohíbe código) |
+| `ui` | subagent | `nan/mimo-v2.6-flash` | medium | 20 | Edición permitida; Playwright con permiso `ask`; `npm run` y `pnpm` abiertos |
 | `explore` | integrado | `nan/glm5.3-flash` | low | — | Solo configuración |
 | `general` | integrado | `nan/deepseek-v4-flash` | high | — | Solo configuración |
 
-El modelo `nan/glm5.3` sin flash y las variantes del plan original quedaron fuera: la API key no tenía acceso a él cuando se montó esto. La comparación de los dos modelos como agente de trabajo —`glm5.3-flash` frente a `deepseek-v4-flash`— dio 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 s para `glm5.3-flash` frente a 32,0 s para `deepseek-v4-flash`; ese es el dato que sostiene el modelo de `general`.
+El modelo `nan/glm5.3` sin flash y las variantes del plan original quedaron fuera: la API key no tenía acceso a él cuando se montó esto. La comparación de los dos modelos como agente de trabajo —`glm5.3-flash` frente a `deepseek-v4-flash`— se hizo con tres proyectos y tres tareas por proyecto, y dio 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 s para `glm5.3-flash` frente a 32,0 s para `deepseek-v4-flash`; ese es el dato que sostiene el modelo de `general`. El banco de pruebas no se conserva en el repositorio, así que la medición no es reproducible desde aquí.
 
 ## Servidor y visor
 
@@ -99,7 +101,7 @@ El modelo `nan/glm5.3` sin flash y las variantes del plan original quedaron fuer
 
 `serve-web.sh` sirve el paquete por HTTP para revisar la guía con sus iconos y su resaltado: los navegadores bloquean por `file://` las máscaras SVG de los iconos y el módulo de resaltado, y servida la página se ve completa. Lo mismo de siempre: pid y registro en `.run/`, idempotente, y el 8766 no pisa los 8890 y 8891 de los dos tableros. Sírvete la raíz del paquete, no `docs/web`, porque el pie de la guía enlaza `../../README.md` y `../../CHANGELOG.md`.
 
-`serve.sh` arranca el servidor del tablero en segundo plano, con su registro y su pid en `.run/`. Escucha en el `127.0.0.1:8891` de `.tasks-ai/settings.json`: el 8890 queda para el tablero de tasks-ai, y así los dos servidores conviven en la misma máquina.
+`serve.sh` arranca el servidor del tablero en segundo plano, con su registro y su pid en `.run/`. Escucha en el `127.0.0.1:8891` de `.tasks-ai/settings.json`: el 8890 queda para el tablero de tasks-ai, y así los dos servidores conviven en la misma máquina. De `.tasks-ai/` solo se versionan las instrucciones, el contrato de etiquetas y los ajustes; el binario de `bin/`, la base y las extensiones no se versionan, y `tasks-ai init` completa lo que falte.
 
 El visor de escritorio vive en [`tasks-viewer/`](tasks-viewer/): la misma interfaz en una ventana nativa, con el binario oficial de tasks-ai para Windows (amd64) y un `config.json` que ya apunta al servidor del paquete. Copia la carpeta donde quieras tenerla y lanza el exe con el servidor en marcha; sin él, la ventana no tendrá nada que mostrar.
 

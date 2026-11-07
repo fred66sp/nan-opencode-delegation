@@ -17,6 +17,7 @@ enlaza.
 | Ramas, commits, verificación, integración y operaciones con autorización | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Catálogo enlazable para agentes | [`llms.txt`](llms.txt) |
 | Trabajo del repositorio: crear, mover, bloquear y cerrar tareas | [`.tasks-ai/AGENTS.md`](.tasks-ai/AGENTS.md) |
+| Etiquetas: tipos, estructura, ámbito y catálogo | [`.tasks-ai/CONTRATO_ETIQUETAS.md`](.tasks-ai/CONTRATO_ETIQUETAS.md) → «1. Las clases y su convivencia», «2. Asignación correcta a una tarea», «3. Gestión del catálogo» |
 | Servidor del tablero en segundo plano | [`serve.sh`](serve.sh) |
 | Visor de escritorio del tablero | [`tasks-viewer/`](tasks-viewer/config.json) |
 
@@ -24,8 +25,9 @@ enlaza.
 
 | Encargo | Qué leer antes | Con qué se cierra |
 |---|---|---|
-| Actualizar un artefacto de agente | [`docs/PRD.md`](docs/PRD.md) sección 3, regla de negocio de las copias | `diff -r agents <config global>/agents` sin diferencias y la verificación de [`CONTRIBUTING.md`](CONTRIBUTING.md) |
-| Cambiar los instaladores | [`docs/PRD.md`](docs/PRD.md) requisitos R1 a R6 | La batería de [`CONTRIBUTING.md`](CONTRIBUTING.md): sintaxis, instalación limpia, fusión con claves ajenas y camino JSONC |
+| Actualizar un artefacto de agente | [`docs/PRD.md`](docs/PRD.md) sección 4, regla de negocio de las copias | `diff -r agents <config global>/agents` sin diferencias y la verificación de [`CONTRIBUTING.md`](CONTRIBUTING.md) |
+| Cambiar los instaladores | [`docs/PRD.md`](docs/PRD.md) requisitos R1 a R7 | La batería de [`CONTRIBUTING.md`](CONTRIBUTING.md): sintaxis, instalación limpia, fusión con claves ajenas y camino JSONC |
+| Crear o etiquetar una tarea | [`.tasks-ai/CONTRATO_ETIQUETAS.md`](.tasks-ai/CONTRATO_ETIQUETAS.md) sección 2 | La tarea nace con su tipo y su estructural (`task` o `epic`); el catálogo vivo, en `tasks-ai tags` |
 | Cambiar la guía o la prosa | [`docs/web/index.html`](docs/web/index.html) y [`README.md`](README.md) completos | Los criterios de aceptación del PRD, sección 5, aplicados a la documentación: nada que la prosa diga puede contradecir a los artefactos |
 | Ver la guía web correctamente | [`serve-web.sh`](serve-web.sh) | `./serve-web.sh start` y la guía en `http://127.0.0.1:8766/docs/web/index.html`; por `file://` pierde iconos y resaltado |
 | Cambiar requisitos o alcance | [`docs/PRD.md`](docs/PRD.md) completo | El PRD actualizado antes del commit y el CHANGELOG si hay valor de usuario |

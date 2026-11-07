@@ -5,8 +5,8 @@
 El paquete resuelve un problema de repetición: la delegación de subagentes con modelos del
 proveedor `nan` ya funciona en una máquina concreta y viva en su `~/.config/opencode`
 global, donde no se versiona ni se traslada. Reproducirla en otra máquina exige recordar
-cinco frontmatters, un bloque de configuración y dos lecciones de permisos que solo viven
-en la cabeza de quien lo montó.
+los frontmatters de los agentes, un bloque de configuración y dos lecciones de permisos que
+solo viven en la cabeza de quien lo montó.
 
 El producto es una carpeta autocontenida, versionada en Git, que contiene los artefactos
 canónicos, los instaladores para las dos familias de sistema y la documentación que
@@ -29,7 +29,7 @@ ser una introducción a la orquestación en general.
 
 ### Objetivos
 
-- Transportar la delegación tal cual: los cinco ficheros de agente son copias literales
+- Transportar la delegación tal cual: los ficheros de agente son copias literales
   con su frontmatter de modelo, pasos y permisos.
 - Un instalador por familia de sistema: `install.sh` para Linux, macOS y WSL, e
   `install.ps1` para Windows, con el mismo comportamiento observable.
@@ -51,24 +51,33 @@ ser una introducción a la orquestación en general.
 
 ### Funcionales
 
-- R1. El instalador copia los cinco agentes a `~/.config/opencode/agents/`, honrando
+- R1. El instalador copia los agentes de `agents/` a `~/.config/opencode/agents/`, honrando
   `XDG_CONFIG_HOME` si está definido.
 - R2. Si la configuración global no existe, el instalador crea una desde su plantilla con
-  el bloque `agent` de `explore` y `general`.
-- R3. Si ya existe, la fusión toca solo `agent.explore` y `agent.general`, conserva las
-  claves y agentes ajenos y deja copia con fecha y hora antes de escribir.
-- R4. Si el fichero de configuración no es JSON estricto (comentarios JSONC) o no hay
-  `python3` en Linux, el instalador aborta la escritura con el fichero intacto, la copia
-  previa hecha y el bloque exacto para pegar a mano.
+  el bloque `agents` de `explore` y `general`.
+- R3. Si ya existe, la fusión toca solo `agents.explore` y `agents.general`, conserva las
+  claves y los agentes ajenos de la configuración y deja copia con fecha y hora antes de
+  escribir.
+- R4. Si el fichero de configuración no es JSON estricto (comentarios JSONC), no hay
+  `python3` en Linux o la clave `agents` no es un objeto, el instalador aborta la escritura
+  con el fichero intacto, la copia previa hecha y el bloque exacto para pegar a mano.
 - R5. Reejecutar el instalador no duplica agentes ni corrompe la configuración.
 - R6. Los dos instaladores son idempotentes y no piden interacción.
+- R7. Antes de reemplazar un agente existente con el mismo nombre, el instalador guarda una
+  copia `.bak.<fecha>`; si el contenido es idéntico, no crea copia.
 
 ### Reglas de negocio
 
 - Los artefactos de `agents/` son copias byte a byte de la configuración que funciona; el
   paquete no es el lugar de donde nacen los cambios, sino por donde viajan.
-- La variante de modelo usa `#variant` solo en el frontmatter Markdown; en la clave
-  `agent` de la configuración va en campo `variant` propio.
+- La variante de modelo usa `#variant` en el frontmatter Markdown y en la forma abreviada
+  de `agents`; en `agents` también puede ir en el objeto `model` (`providerID`, `model`,
+  `variant`), y no existe un campo `variant` suelto.
+- El permiso de edición no cubre el shell: `review`, `docs` y `ui` pueden ejecutar comandos.
+  En `review` la edición está denegada y en `docs` limitada a Markdown, `docs/` y
+  `CHANGELOG`; lo que impide escribir archivos o código por shell vive en el prompt.
+- La clave `agent` en singular está obsoleta en OpenCode V2: el instalador escribe en
+  `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
 - La prosa documental vive en castellano; los identificadores, rutas y comandos no se traducen.
 - La guía solo usa el verde donde algo se ha comprobado; los datos de medición nombran su
   método y su alcance.
@@ -91,12 +100,18 @@ ser una introducción a la orquestación en general.
 
 ## 5. Criterios de aceptación
 
-- Con `HOME` limpio, `bash install.sh` crea los cinco agentes y una configuración nueva
+- Con `HOME` limpio, `bash install.sh` crea los agentes y una configuración nueva
   desde la plantilla; salida por pantalla nombra ambos destinos.
 - Con una configuración JSON preexistente con claves ajenas (`share`, `mcp`), la fusión
   conserva esas claves y crea la copia `.bak` con fecha.
 - Con una configuración JSONC con comentarios, el instalador termina con código 0, imprime
   el bloque manual y el fichero queda byte a byte igual a su copia previa.
+- Con una configuración que use la clave obsoleta `agent` solo para `explore` y `general`,
+  el instalador los mueve a `agents` y retira `agent`; si `agent` tiene otras claves, las
+  conserva y avisa.
+- Con un `orchestrator.md` propio de contenido distinto en la configuración global, el
+  instalador lo reemplaza y deja `orchestrator.md.bak.<fecha>`; una segunda ejecución sin
+  cambios no crea otra copia.
 - `diff -r` entre `agents/` del paquete y la configuración global de la máquina de origen
   no reporta diferencias.
 - La plantilla `config/opencode.jsonc` carga como JSON estricto.
