@@ -1,10 +1,10 @@
-# nan-opencode-delgation
+# nan-opencode-delegation
 
 > Paquete instalable con la orquestación de modelos del proveedor `nan` en OpenCode V2: un agente primario que planifica y delega, cuatro subagentes con permisos acotados y los overrides de modelo de los agentes integrados `explore` y `general`. Cada fuente canónica vive en su fichero; este fichero solo enlaza y no duplica descripciones.
 
 ## Documentación
 
-- [Guía completa de la orquestación](index.html)
+- [Guía completa de la orquestación](docs/web/index.html) — ábrela servida con ./serve-web.sh
 - [README del paquete](README.md)
 - [PRD del paquete](docs/PRD.md)
 - [Política Git y contribución](CONTRIBUTING.md)
