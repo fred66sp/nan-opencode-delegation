@@ -44,7 +44,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Corregido
 
-- `install.ps1` no retire la clave obsoleta `agent` cuando quedaba vacía tras la
+- La guía deja de presentar el instalador de Windows como pendiente de prueba: se ha
+  ejecutado y verificado con el PowerShell de Windows, también desde WSL, y la guía y
+  CONTRIBUTING lo declaran a la par que el de Linux.
+
+- `install.ps1` no retiraba la clave obsoleta `agent` cuando quedaba vacía tras la
   migración: en Windows PowerShell 5.1, `PSObject.Properties.Count` resuelve a `$null`
   sobre un objeto vacío y el borrado saltaba al aviso. Ahora se cuenta envolviendo la
   colección en `@()`.
