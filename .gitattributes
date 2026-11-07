@@ -1,0 +1,3 @@
+# Todo texto viaja en LF desde el propio repositorio, sin depender de la
+# configuración de la máquina que clona.
+* text=auto eol=lf

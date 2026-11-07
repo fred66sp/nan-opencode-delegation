@@ -1,0 +1,31 @@
+# nan-opencode-delgation — ignore rules
+#
+# Cuatro capas, en este orden: ruido de SO y editor, artefactos temporales,
+# estado local de herramientas de IA y secretos. Los entregables (agents/,
+# config/, docs/, index.html) se quedan versionados porque son el producto.
+
+# --- Ruido de SO --------------------------------------------------------------
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+
+# --- Editor e IDE -------------------------------------------------------------
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# --- Estado local de herramientas de IA ---------------------------------------
+.atl/
+.codegraph/
+.engram/
+.impeccable/
+.pi/
+.skills/
+
+# --- Secretos y ficheros con claves -------------------------------------------
+*.pem
+*.key
+.env
+.env.*
