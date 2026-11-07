@@ -1,13 +1,11 @@
 {
   "$schema": "https://opencode.ai/config.json",
-  "agent": {
+  "agents": {
     "explore": {
-      "model": "nan/glm5.3-flash",
-      "variant": "low"
+      "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }
     },
     "general": {
-      "model": "nan/deepseek-v4-flash",
-      "variant": "high"
+      "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }
     }
   }
 }
