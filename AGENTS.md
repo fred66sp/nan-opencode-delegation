@@ -8,7 +8,7 @@ enlaza.
 
 | Qué se busca | Dónde vive |
 |---|---|
-| Qué es el paquete y cómo se instala | [`README.md`](README.md) y [`index.html`](index.html) |
+| Qué es el paquete y cómo se instala | [`README.md`](README.md) y [`docs/web/index.html`](docs/web/index.html) |
 | Qué hace cada agente, con qué modelo y qué permisos | `agents/<nombre>.md`, frontmatter y prompt |
 | Qué instala exactamente el instalador y qué hace con una config existente | [`install.sh`](install.sh), [`install.ps1`](install.ps1) |
 | Qué fragmento de configuración se añade y cómo se escribe la variante | [`config/opencode.jsonc`](config/opencode.jsonc), [`README.md`](README.md) |
@@ -26,7 +26,8 @@ enlaza.
 |---|---|---|
 | Actualizar un artefacto de agente | [`docs/PRD.md`](docs/PRD.md) sección 3, regla de negocio de las copias | `diff -r agents <config global>/agents` sin diferencias y la verificación de [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Cambiar los instaladores | [`docs/PRD.md`](docs/PRD.md) requisitos R1 a R6 | La batería de [`CONTRIBUTING.md`](CONTRIBUTING.md): sintaxis, instalación limpia, fusión con claves ajenas y camino JSONC |
-| Cambiar la guía o la prosa | [`index.html`](index.html) y [`README.md`](README.md) completos | Los criterios de aceptación del PRD, sección 5, aplicados a la documentación: nada que la prosa diga puede contradecir a los artefactos |
+| Cambiar la guía o la prosa | [`docs/web/index.html`](docs/web/index.html) y [`README.md`](README.md) completos | Los criterios de aceptación del PRD, sección 5, aplicados a la documentación: nada que la prosa diga puede contradecir a los artefactos |
+| Ver la guía web correctamente | [`serve-web.sh`](serve-web.sh) | `./serve-web.sh start` y la guía en `http://127.0.0.1:8766/docs/web/index.html`; por `file://` pierde iconos y resaltado |
 | Cambiar requisitos o alcance | [`docs/PRD.md`](docs/PRD.md) completo | El PRD actualizado antes del commit y el CHANGELOG si hay valor de usuario |
 
 ## Autoridad

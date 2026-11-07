@@ -19,10 +19,12 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   ajenas y, si el fichero lleva comentarios JSONC, dejan el fichero intacto e imprimen el
   bloque para pegarlo a mano.
 
-- Guía completa de la orquestación en `index.html`: arquitectura, contrato de delegación,
-  permisos con sus lecciones, instalación en ambas familias de sistema, verificación,
-  errores y límites conocidos. Se abre en `file://` sin red ni dependencias; tema claro
-  y oscuro con cero JavaScript.
+- Guía completa de la orquestación en `docs/web`, sobre el sistema compartido de
+  documentación: topbar Vue, índice lateral con scroll-spy, bloques de código con
+  resaltado y botón de copiar, tema claro y oscuro con conmutador persistente y reveal
+  en cascada. Todos los assets son locales: se abre sin red. Para verla completa va con
+  `serve-web.sh`, que sirve el paquete en el 8766: por `file://` las máscaras de los
+  iconos y el resaltado de código no cargan.
 
 - Tablero de desarrollo propio: el paquete lleva su instalación de tasks-ai en
   `.tasks-ai/` (instrucciones, contrato de etiquetas y ajustes versionados; base y

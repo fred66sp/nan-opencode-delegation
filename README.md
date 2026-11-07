@@ -8,7 +8,7 @@ Los cinco ficheros de `agents/` son copias literales de la configuración que ya
 
 | Qué se busca | Dónde vive |
 |---|---|
-| La guía completa de la orquestación | [`index.html`](index.html) |
+| La guía completa de la orquestación | [`docs/web/index.html`](docs/web/index.html) — ábrela con `./serve-web.sh` |
 | Requisitos, alcance y criterios de aceptación | [`docs/PRD.md`](docs/PRD.md) |
 | Ramas, commits, verificación e integración | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Qué cambió en cada versión | [`CHANGELOG.md`](CHANGELOG.md) |
@@ -88,10 +88,16 @@ El modelo `nan/glm5.3` sin flash y las variantes del plan original quedaron fuer
 ## Servidor y visor
 
 ```sh
+./serve-web.sh start # deja la guía web en http://127.0.0.1:8766
+./serve-web.sh status
+./serve-web.sh stop
+
 ./serve.sh start    # deja el tablero en http://127.0.0.1:8891
 ./serve.sh status
 ./serve.sh stop
 ```
+
+`serve-web.sh` sirve el paquete por HTTP para revisar la guía con sus iconos y su resaltado: los navegadores bloquean por `file://` las máscaras SVG de los iconos y el módulo de resaltado, y servida la página se ve completa. Lo mismo de siempre: pid y registro en `.run/`, idempotente, y el 8766 no pisa los 8890 y 8891 de los dos tableros. Sírvete la raíz del paquete, no `docs/web`, porque el pie de la guía enlaza `../../README.md` y `../../CHANGELOG.md`.
 
 `serve.sh` arranca el servidor del tablero en segundo plano, con su registro y su pid en `.run/`. Escucha en el `127.0.0.1:8891` de `.tasks-ai/settings.json`: el 8890 queda para el tablero de tasks-ai, y así los dos servidores conviven en la misma máquina.
 

@@ -75,8 +75,17 @@ ser una introducción a la orquestación en general.
 
 ### No funcionales
 
-- La guía es un único fichero HTML autónomo: sin red, sin JavaScript, sin descargas de
-  tipografías; tema claro y oscuro por preferencia del sistema.
+- La guía vive en `docs/web`: un `index.html` más assets locales (tokens y chrome CSS,
+  `docs.js`, desarrollo compartido con la guía de tasks-ai, vendor de iconos, Vue,
+  MicroLighter y tipografías por sistema) que viaja con el paquete. Sin red: nada carga
+  de un CDN. Tema claro y oscuro por preferencia del sistema, con conmutador persistente.
+- La guía se revisa servida: `serve-web.sh` la deja en `http://127.0.0.1:8766` desde la
+  raíz del paquete. Abierta por `file://` el navegador bloquea las máscaras de los
+  iconos y el módulo de resaltado: la página se lee, pero pierde iconos y color de
+  código. Es la razón de `serve-web.sh`.
+- Los repos copian los assets compartidos de su origen, con el mismo convenio que
+  `agents/`: el origen canónico es la guía de tasks-ai; las divergencias son la identidad
+  de color, la marca y la marca de `docs.js`.
 - Comandos y fragmentos de la guía se copian pegando; nada depende de una ruta de la
   máquina de origen.
 

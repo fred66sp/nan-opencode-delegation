@@ -1,4 +1,4 @@
-# nan-opencode-delgation — ignore rules
+# nan-opencode-delegation — ignore rules
 #
 # Cuatro capas, en este orden: ruido de SO y editor, artefactos temporales,
 # estado local de herramientas de IA y secretos. Los entregables (agents/,

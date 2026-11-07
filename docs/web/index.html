@@ -1,0 +1,685 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Guía de la orquestación de modelos nan en OpenCode V2: arquitectura, contrato de delegación, permisos, instalación en Windows y Linux, verificación, errores y límites.">
+<meta name="color-scheme" content="light dark">
+<link rel="icon" type="image/svg+xml" href="assets/img/favicons/favicon.svg">
+<title>Delegación de subagentes nan en OpenCode</title>
+<!-- La guía usa el sistema compartido de documentación de tasks-ai: iconos,
+     tokens y mobilia comunes, cargados antes del estilo propio para que las
+     reglas de esta página ganen por cascada. -->
+<link rel="stylesheet" href="assets/vendor/icons/icons.css">
+<link rel="stylesheet" href="assets/css/tokens.css">
+<link rel="stylesheet" href="assets/css/chrome.css">
+<script src="assets/vendor/vue.global.prod.js"></script>
+<script src="assets/js/docs.js"></script>
+<style>
+
+  /* La identidad de color vive una sola vez en assets/css/tokens.css. Aquí
+     queda la paleta de MicroLighter, que es propia del código, y las piezas
+     de contenido que la guía no comparte con otras superficies. */
+  :root {
+    /* El código tiene fondo oscuro en los dos temas, así que la paleta de
+       MicroLighter es una sola: los nombres de los resaltados son los que
+       registra la librería al analizar cada bloque. */
+    --syn-comment: #8b949e;
+    --syn-keyword: #ff7b72;
+    --syn-string: #a5d6ff;
+    --syn-constant: #79c0ff;
+    --syn-function: #d2a8ff;
+    --syn-variable: #ffa657;
+    --syn-property: #79c0ff;
+    --syn-tag: #7ee787;
+  }
+  html { scroll-padding-top: 88px; }
+
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .catalog-btn { text-decoration: none; }
+  .catalog-btn:hover { color: var(--accent); border-color: var(--accent); text-decoration: none; }
+
+  .hero {
+    position: relative;
+    overflow: hidden;
+    padding: clamp(48px, 9vw, 104px) clamp(16px, 4vw, 40px) clamp(40px, 6vw, 72px);
+    border-bottom: 1px solid var(--border);
+  }
+  /* El contenido queda por encima de la retícula compartida. */
+  .hero-inner { position: relative; z-index: 1; max-width: 1080px; margin: 0 auto; }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    border: 1px solid var(--border-strong);
+    border-radius: 999px;
+    background: var(--bg-elev);
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .01em;
+  }
+  .pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 0 3px color-mix(in srgb, var(--ok) 22%, transparent); }
+  .hero h1 {
+    margin: 22px 0 0;
+    font-size: clamp(34px, 6vw, 62px);
+    line-height: 1.04;
+    letter-spacing: -.035em;
+    font-weight: 800;
+  }
+  /* El contenido entra escalonado; los halos comparten la portada. */
+  .hero-inner > * { animation: rise .6s ease-out both; }
+  .hero-inner > *:nth-child(2) { animation-delay: .08s; }
+  .hero-inner > *:nth-child(3) { animation-delay: .16s; }
+  .hero-inner > *:nth-child(4) { animation-delay: .24s; }
+  .hero-inner > *:nth-child(5) { animation-delay: .32s; }
+  .hero p.lead {
+    margin: 20px 0 0;
+    max-width: 660px;
+    font-size: clamp(16px, 2.2vw, 18px);
+    color: var(--muted);
+  }
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border-radius: var(--radius-sm);
+    font-weight: 650;
+    font-size: 14.5px;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform .12s, box-shadow .2s, border-color .15s;
+  }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn .tk-icon { width: 15px; height: 15px; flex-basis: 15px; }
+  .btn-primary { background: linear-gradient(135deg, var(--accent), var(--accent-2)); color: #fff; box-shadow: var(--shadow); }
+  .btn-ghost { background: var(--bg-elev); border-color: var(--border-strong); color: var(--text); }
+
+  .layout {
+    max-width: 1180px;
+    margin: 0 auto;
+    padding: clamp(32px, 5vw, 60px) clamp(16px, 4vw, 40px) 80px;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 48px;
+  }
+  @media (min-width: 1020px) {
+    .layout { grid-template-columns: 214px minmax(0, 1fr); gap: 56px; }
+  }
+  .toc { display: none; }
+  @media (min-width: 1020px) {
+    .toc { display: block; position: sticky; top: 84px; align-self: start; }
+    .toc h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .1em; color: var(--muted); margin: 0 0 12px; }
+    .toc > a {
+      display: block;
+      padding: 7px 12px;
+      border-left: 2px solid var(--border);
+      color: var(--muted);
+      font-size: 15px;
+      font-weight: 550;
+    }
+    .toc > a:hover { color: var(--text); text-decoration: none; }
+    .toc > a.active { color: var(--accent); border-left-color: var(--accent); background: var(--accent-soft); border-radius: 0 6px 6px 0; }
+  }
+  main { min-width: 0; }
+  section { scroll-margin-top: 88px; }
+  section + section { margin-top: 64px; }
+  .section-head { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+  .section-num {
+    display: grid; place-items: center;
+    width: 30px; height: 30px;
+    border-radius: 6px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    font-size: 13px;
+    font-weight: 800;
+    font-variant-numeric: tabular-nums;
+  }
+  h2.title { margin: 0; font-size: clamp(22px, 3vw, 28px); letter-spacing: -.02em; }
+  section p, section li { text-wrap: pretty; }
+  section > p.sub { margin: 6px 0 24px; color: var(--muted); max-width: 74ch; }
+  h3 { margin: 30px 0 10px; font-size: 18px; letter-spacing: -.01em; text-wrap: balance; }
+
+  .grid { display: grid; gap: 16px; }
+  @media (min-width: 640px) { .grid.cols-2 { grid-template-columns: 1fr 1fr; } .grid.cols-3 { grid-template-columns: repeat(3, 1fr); } }
+  .card {
+    background: var(--bg-elev);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 20px;
+    box-shadow: var(--shadow);
+  }
+  .card h3 { margin: 0 0 6px; font-size: 15px; }
+  .card p { margin: 0; color: var(--muted); font-size: 15px; }
+  .card .mono { display: block; margin-top: 12px; color: var(--accent); font-family: var(--mono); font-size: 12.9px; }
+
+  .table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: var(--radius); background: var(--bg-elev); box-shadow: var(--shadow); }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; }
+  thead th {
+    text-align: left;
+    padding: 12px 16px;
+    background: var(--bg-soft);
+    color: var(--muted);
+    font-size: 11.5px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-bottom: 1px solid var(--border);
+    white-space: nowrap;
+  }
+  tbody td { padding: 11px 16px; border-bottom: 1px solid var(--border); vertical-align: top; }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent) 3%, transparent); }
+  td code, th code { font-size: 12px; }
+  tbody td:first-child { white-space: nowrap; }
+  /* La tabla de errores lleva el mensaje en esa primera columna: ahí el
+     texto tiene que poder partirse, o la tabla arrastra una barra. */
+  .table-wrap.wrap-cells td:first-child { white-space: normal; }
+  .table-wrap.wrap-cells td code { overflow-wrap: anywhere; }
+
+  .status-strip {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    max-width: 720px;
+    margin-top: 28px;
+    padding: 14px 16px;
+    border: 1px solid color-mix(in srgb, var(--ok) 42%, transparent);
+    border-radius: var(--radius-sm);
+    background: color-mix(in srgb, var(--ok) 8%, var(--bg-elev));
+  }
+  .status-mark {
+    flex: 0 0 auto;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    border-radius: 6px;
+    background: color-mix(in srgb, var(--ok) 18%, transparent);
+    color: var(--ok-text);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: .04em;
+  }
+  .status-strip strong { display: block; font-size: 15px; }
+  .status-strip span:not(.status-mark) { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
+
+  .flow { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  @media (min-width: 640px) { .flow { grid-template-columns: repeat(2, 1fr); } }
+  @media (min-width: 1020px) { .flow { grid-template-columns: repeat(3, 1fr); } }
+  .flow-step {
+    min-height: 142px;
+    padding: 16px;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    background: var(--bg-elev);
+  }
+  .flow-step.is-primary { border-color: var(--accent); }
+  .flow-step code { color: var(--accent); font-weight: 700; }
+  .flow-step strong { display: block; margin-top: 10px; font-size: 15px; }
+  .flow-step p { margin: 5px 0 0; color: var(--muted); font-size: 13px; }
+
+  .rules { counter-reset: regla; list-style: none; margin: 22px 0 0; padding: 0; }
+  .rules li { position: relative; padding: 14px 0 14px 52px; border-bottom: 1px solid var(--border); }
+  .rules li:first-child { border-top: 1px solid var(--border); }
+  .rules li::before {
+    position: absolute; left: 0; top: 14px;
+    font-family: var(--mono); font-size: 12.9px; font-weight: 700; color: var(--accent);
+    counter-increment: regla; content: counter(regla, decimal-leading-zero);
+  }
+  .rules li strong { color: var(--text); }
+
+  .note {
+    display: flex;
+    gap: 12px;
+    padding: 14px 16px;
+    border-left: 1px solid var(--accent);
+    border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+    background: var(--accent-soft);
+    font-size: 15px;
+    margin: 16px 0;
+  }
+  .note strong { color: var(--text); }
+  .note p { margin: 0; }
+  .note--warn {
+    border-left-color: var(--warn);
+    background: color-mix(in srgb, var(--warn) 10%, var(--bg-elev));
+  }
+  .note--warn strong { color: var(--warn-text); }
+
+  .cmdcap { margin: 22px 0 0; color: var(--muted); font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; }
+
+  .code pre code { background: none; padding: 0; color: inherit; font-size: inherit; }
+  .code .c { color: var(--syn-comment); }
+  .code .ok { color: var(--ok); font-weight: 700; }
+  ::highlight(comment), ::highlight(quote) { color: var(--syn-comment); }
+  ::highlight(keyword), ::highlight(storage), ::highlight(at-rule),
+  ::highlight(doctype), ::highlight(important), ::highlight(section) { color: var(--syn-keyword); }
+  ::highlight(string), ::highlight(regexp), ::highlight(attribute-value),
+  ::highlight(link), ::highlight(raw) { color: var(--syn-string); }
+  ::highlight(numeric), ::highlight(boolean), ::highlight(constant),
+  ::highlight(symbol), ::highlight(character-entity), ::highlight(anchor),
+  ::highlight(entity) { color: var(--syn-constant); }
+  ::highlight(function), ::highlight(decorator), ::highlight(animation) { color: var(--syn-function); }
+  ::highlight(type), ::highlight(support) { color: var(--syn-function); }
+  ::highlight(variable), ::highlight(interpolation) { color: var(--syn-variable); }
+  /* Chromium no resuelve var() en ::highlight(key); el color va literal. El
+     código es oscuro en los dos temas, así que no necesita variante. */
+  ::highlight(property), ::highlight(key), ::highlight(attribute-name) { color: #79c0ff; }
+  ::highlight(tag), ::highlight(inserted) { color: var(--syn-tag); }
+  ::highlight(selector) { color: var(--syn-function); }
+  ::highlight(deleted) { color: var(--syn-keyword); }
+  p code, li code, td code {
+    background: var(--bg-soft);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: .08em .42em;
+    font-size: .88em;
+  }
+
+  .qa { margin: 8px 0 0; }
+  .qa dt { font-weight: 700; font-size: 16px; margin-top: 22px; }
+  .qa dt:first-child { margin-top: 0; }
+  .qa dd { margin: 6px 0 0; color: var(--muted); font-size: 15px; max-width: 74ch; }
+
+  .footer {
+    border-top: 1px solid var(--border);
+    padding: 28px clamp(16px, 4vw, 40px);
+    color: var(--muted);
+    font-size: 13px;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 20px;
+    align-items: center;
+    justify-content: space-between;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  .footer code { background: var(--bg-soft); border: 1px solid var(--border); border-radius: 6px; padding: 1px 6px; }
+
+  /* Entrada en cascada del contenido: los bloques múltiples y los listados
+     se escalonan con --d —la posición en el lote que entra, la fija el
+     script— y el resto sube con un fade simple. Sin JavaScript nada queda
+     oculto y el estado final es el estático. */
+  @media screen and (prefers-reduced-motion: no-preference) {
+    .flow.is-ready .flow-step:not(.is-in), .grid.is-ready .card:not(.is-in),
+    .qa.is-ready:not(.is-in),
+    .section-head.is-ready:not(.is-in), section > .sub.is-ready:not(.is-in),
+    .code.is-ready:not(.is-in), .table-wrap.is-ready:not(.is-in),
+    .note.is-ready:not(.is-in) { opacity: 0; }
+    .flow .flow-step.is-in, .grid .card.is-in,
+    .qa.is-in, .section-head.is-in, section > .sub.is-in,
+    .code.is-in, .table-wrap.is-in, .note.is-in {
+      animation: rise .55s cubic-bezier(.16, 1, .3, 1) backwards;
+      animation-delay: calc(var(--d, 0) * 70ms);
+    }
+  }
+</style>
+</head>
+<body>
+
+<div id="top" class="page-top" aria-hidden="true"></div>
+<a class="skip" href="#main">Saltar al contenido</a>
+
+<header class="topbar" id="docs-topbar"></header>
+
+<section class="hero">
+  <div class="hero-mesh" aria-hidden="true"></div>
+  <div class="hero-inner">
+    <span class="pill"><span class="dot" aria-hidden="true"></span>Probada de punta a punta</span>
+    <h1>Delegación de subagentes nan <span class="grad">en OpenCode</span></h1>
+    <p class="lead">Un orquestador que planifica y delega, cuatro subagentes con permisos acotados y dos agentes integrados afinados por configuración. Todo con modelos del proveedor <code>nan</code>, instalable en Windows, Linux y macOS con una orden por sistema.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#empezar">Empezar</a>
+      <a class="btn btn-ghost" href="#arquitectura">Ver la arquitectura</a>
+    </div>
+    <div class="status-strip" role="status">
+      <span class="status-mark" aria-hidden="true">OK</span>
+      <div><strong>Probada de punta a punta</strong><span>Del test de humo de la puesta a punto quedaron también las conductas, no solo los nombres: verify ejecuta y no edita, review no toca nada, docs se queda en su Markdown y ui pide permiso al cargar la skill de navegador.</span></div>
+    </div>
+  </div>
+</section>
+
+<div class="layout">
+  <nav class="toc" aria-label="Índice de la página"
+      data-spy data-spy-target="main section" data-spy-margin="-20% 0px -70% 0px">
+    <h2>En esta página</h2>
+    <a href="#que-es">01 · Qué es</a>
+    <a href="#empezar">02 · Empezar aquí</a>
+    <a href="#arquitectura">03 · La arquitectura</a>
+    <a href="#contrato">04 · El contrato de delegación</a>
+    <a href="#permisos">05 · Los permisos</a>
+    <a href="#configuracion">06 · La configuración</a>
+    <a href="#modelos">07 · El reparto de modelos</a>
+    <a href="#verificacion">08 · La verificación</a>
+    <a href="#errores">09 · Errores y qué significan</a>
+    <a href="#limites">10 · Lo que no hace</a>
+    <a href="#preguntas">11 · Preguntas cortas</a>
+  </nav>
+
+  <main id="main">
+
+    <section id="que-es">
+      <div class="section-head"><span class="section-num">01</span><h2 class="title">Qué es</h2></div>
+      <p class="sub">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <code>orchestrator</code>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cuatro subagentes que solo pueden hacer su parte: comprobar, revisar, documentar o recorrer la interfaz. Los planes y los cierres se quedan en el orquestador; tres de los cuatro subagentes tienen la edición denegada del todo, y el cuarto, <code>ui</code>, pide permiso persona a persona antes de tocar el navegador.</p>
+      <p>Con la delegación no cambia la forma de trabajar: <code>build</code> sigue siendo el agente de arranque y <code>orchestrator</code> se elige cuando quieres orquestar. La delegación vive por prompt: el contrato está en el texto del agente. Si el orquestador no delega, no hay mecanismo de configuración que lo obligue.</p>
+      <div class="grid cols-3">
+        <div class="card">
+          <h3>Orquestador primario</h3>
+          <p>Clasifica la petición, implementa lo pequeño, delega lo que toca más de tres ficheros o cruza capas, y es el único que cierra el trabajo.</p>
+          <span class="mono">orchestrator · nan/glm5.3-flash#high</span>
+        </div>
+        <div class="card">
+          <h3>Cuatro subagentes acotados</h3>
+          <p><code>verify</code> ejecuta las comprobaciones, <code>review</code> juzga sin tocar nada, <code>docs</code> escribe solo Markdown y <code>ui</code> recorre el navegador pidiendo permiso antes de Playwright.</p>
+          <span class="mono">verify, review y docs sin edición · ui con ask</span>
+        </div>
+        <div class="card">
+          <h3>Dos integrados afinados</h3>
+          <p><code>explore</code> y <code>general</code> ya existen en OpenCode; el paquete solo fija qué modelo levanta cada uno y con qué variante.</p>
+          <span class="mono">clave agent de la configuración</span>
+        </div>
+      </div>
+    </section>
+
+    <section id="empezar">
+      <div class="section-head"><span class="section-num">02</span><h2 class="title">Empezar aquí</h2></div>
+      <p class="sub">Tres condiciones y una orden. OpenCode V2 en el PATH; acceso a los modelos <code>nan</code> con <code>opencode auth login</code>; y, solo para el agente <code>ui</code>, la skill <code>playwright-cli</code>. Después, el instalador de tu sistema sobre la carpeta del paquete, copiada tal cual desde donde la tengas.</p>
+      <p class="cmdcap">Linux, macOS o WSL</p>
+      <div class="code"><pre data-language="bash"><code>bash install.sh</code></pre></div>
+      <p class="cmdcap">Windows (PowerShell)</p>
+      <div class="code"><pre data-language="bash"><code>powershell -ExecutionPolicy Bypass -File install.ps1</code></pre></div>
+      <p>Lo que hace, en dos frases: copia los cinco agentes a <code>~/.config/opencode/agents/</code> y deja el bloque <code>agent</code> de <code>explore</code> y <code>general</code> en la configuración global. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime el bloque para pegarlo a mano.</p>
+      <div class="note"><p><strong>A mano en dos pasos.</strong> Copia los cinco ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
+    </section>
+
+    <section id="arquitectura">
+      <div class="section-head"><span class="section-num">03</span><h2 class="title">La arquitectura</h2></div>
+      <p class="sub">El padre decide cuándo delegar con la herramienta <code>subagent</code> y revisa lo que devuelve antes de integrarlo: un subagente lanzado no es evidencia. Un subagente no puede lanzar otro; el anidamiento llega a un nivel, y el orquestador es quien junta los resultados.</p>
+      <div class="flow">
+        <div class="flow-step is-primary"><code>orchestrator</code><strong>nan/glm5.3-flash · high · 60 pasos · primario</strong><p>Clasifica la petición, delega lo grande, verifica siempre, revisa si cambia el comportamiento, y cierra.</p></div>
+        <div class="flow-step"><code>verify</code><strong>qwen3.8-flash#medium · 12</strong><p>Corre las pruebas y devuelve evidencia. No edita.</p></div>
+        <div class="flow-step"><code>review</code><strong>glm5.3-flash#xhigh · 12</strong><p>Hallazgos con fichero y línea. No edita.</p></div>
+        <div class="flow-step"><code>docs</code><strong>deepseek-v4-flash#medium · 20</strong><p>Markdown, docs/ y CHANGELOG. Nada de código.</p></div>
+        <div class="flow-step"><code>ui</code><strong>mimo-v2.6-flash#medium · 20</strong><p>Navegador con permiso ask para Playwright.</p></div>
+        <div class="flow-step"><code>general</code><strong>deepseek-v4-flash · variant high · config</strong><p>Trabajos de muchos ficheros que el orquestador le delega.</p></div>
+        <div class="flow-step"><code>explore</code><strong>glm5.3-flash · variant low · config</strong><p>Búsqueda y contexto rápido. No edita por diseño.</p></div>
+        <div class="flow-step"><code>build</code><strong>arranque por defecto, sin cambios</strong><p>Sigue siendo el agente con el que se abre OpenCode.</p></div>
+      </div>
+      <div class="note"><p>La conexión entre orquestador y subagentes es la herramienta <code>subagent</code> decidida por el padre: no hay planificador que reparta trabajo solo, ni límite de concurrencia configurable.</p></div>
+    </section>
+
+    <section id="contrato">
+      <div class="section-head"><span class="section-num">04</span><h2 class="title">El contrato de delegación</h2></div>
+      <p class="sub">Estas seis reglas son el prompt del orquestador, como están en <code>agents/orchestrator.md</code>. Vale leerlas antes de confiar en el reparto.</p>
+      <ol class="rules">
+        <li><strong>Clasifica la petición</strong>: pregunta, revisión, plan o implementación.</li>
+        <li><strong>Implementa tú si toca tres ficheros o menos y una sola capa</strong>. Delega a <code>general</code> si toca más archivos o cruza capas.</li>
+        <li><strong>Después de implementar, lanza <code>verify</code> siempre</strong>. Lanza <code>review</code> solo si cambia comportamiento o contrato.</li>
+        <li><strong>Todo encargo a un subagente lleva objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación</strong>. Si el proyecto tiene sistema de seguimiento, pásale la referencia; el subagente no lo modifica.</li>
+        <li><strong>Un subagente lanzado no es evidencia</strong>: revisa su salida antes de integrarla. El orquestador es el único que cierra.</li>
+        <li><strong>Usa el trabajo en segundo plano solo para trabajo independiente</strong> y espera el aviso antes de integrar.</li>
+      </ol>
+    </section>
+
+    <section id="permisos">
+      <div class="section-head"><span class="section-num">05</span><h2 class="title">Los permisos</h2></div>
+      <p class="sub">La defensa es en profundidad: el prompt marca la intención, pero son los permisos del frontmatter de cada agente los que impiden la acción. La política base de OpenCode permite todo; por eso las listas que restringen empiezan por un <code>deny</code> que cierra el campo y después abren solo lo que se necesita. La de <code>ui</code> es la excepción deliberada: no limita la edición, lo suyo es pedir permiso antes de tocar el navegador.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Agente</th><th>Editar</th><th>Shell</th><th>Skills y subagentes</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>orchestrator</code></td><td>Sí</td><td>Sí</td><td>Solo puede lanzar los subagentes que declara su lista</td>
+            </tr>
+            <tr>
+              <td><code>verify</code></td><td>Nada</td><td><code>*</code> denegado; prefijos de comprobación abiertos</td><td>Sin restricción</td>
+            </tr>
+            <tr>
+              <td><code>review</code></td><td>Nada</td><td>Sí</td><td>Sin restricción</td>
+            </tr>
+            <tr>
+              <td><code>docs</code></td><td>Solo <code>*.md</code>, <code>*.mdx</code>, <code>docs/*</code> y <code>CHANGELOG*</code></td><td>Sí</td><td>Sin restricción</td>
+            </tr>
+            <tr>
+              <td><code>ui</code></td><td>Sí</td><td><code>npx playwright</code> y <code>playwright</code> piden permiso; <code>npm run</code> y <code>pnpm</code> abiertos</td><td><code>playwright-cli</code> pide permiso</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="note"><p><strong>Denegar antes de abrir.</strong> Como la política base permite todo, una lista blanca sin un <code>deny *</code> previo no tiene efecto. <code>verify</code> lo lleva: cierra edición y shell por completo y después abre los once prefijos de comprobación (<code>go test</code>, <code>go vet</code>, <code>go build</code>, <code>make</code>, <code>npm test</code>, <code>npm run</code>, <code>pnpm</code>, <code>pytest</code>, <code>cargo test</code>, <code>git status</code>, <code>git diff</code>).</p></div>
+      <div class="note"><p><strong>Los comodines no cruzan la raíz como cabría esperar.</strong> <code>**/*.md</code> no casa los Markdown de la raíz del proyecto, que es por lo que <code>docs</code> combina patrones de raíz (<code>*.md</code>, <code>*.mdx</code>, <code>docs/*</code>, <code>CHANGELOG*</code>). Lo comprobó la primera instalación con un fichero de la raíz que <code>docs</code> no alcanzaba.</p></div>
+      <div class="note note--warn"><p><strong>Ask bloquea.</strong> El permiso <code>ask</code> de <code>ui</code> detiene la sesión hija hasta que una persona aprueba. Lanzar <code>ui</code> en segundo plano sin estar delante deja el agente colgado del aviso.</p></div>
+    </section>
+
+    <section id="configuracion">
+      <div class="section-head"><span class="section-num">06</span><h2 class="title">La configuración</h2></div>
+      <p class="sub">El paquete lleva en <code>config/opencode.jsonc</code> la plantilla que el instalador copia en una máquina sin configuración global. Solo contiene lo que la delegación necesita: si tu fichero ya existe, el instalador funde en él únicamente <code>agent.explore</code> y <code>agent.general</code>, conserva tus claves y agentes ajenos y te deja copia con fecha.</p>
+      <div class="code"><pre data-language="json"><code>{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "explore": { "model": "nan/glm5.3-flash", "variant": "low" },
+    "general": { "model": "nan/deepseek-v4-flash", "variant": "high" }
+  }
+}</code></pre></div>
+      <div class="note note--warn"><p><strong>La sintaxis de la variante cambia según el sitio.</strong> En el frontmatter de un agente en Markdown el modelo lleva la variante con almohadilla: <code>nan/glm5.3-flash#high</code>. En la clave <code>agent</code> de la configuración la variante va en su propio campo, <code>variant</code>; escrita con almohadilla, el campo se queda vacío y el agente pierde la variante. Lo comprobó dos veces la puesta a punto: una en la configuración y otra en el frontmatter.</p></div>
+      <p>Si tu configuración usa la clave <code>agents</code> en plural para los overrides, conserva la tuya y añade ahí los dos pares; el paquete no discute la clave que ya funciona en tu máquina.</p>
+    </section>
+
+    <section id="modelos">
+      <div class="section-head"><span class="section-num">07</span><h2 class="title">El reparto de modelos</h2></div>
+      <p class="sub">Ningún modelo se eligió a ciegas. El orquestador y la revisión llevan el modelo más capaz de los disponibles para su trabajo; el resto lleva variantes ajustadas a pasos concretos, porque un subagente acotado no necesita la variante más cara para hacer bien doce pasos.</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Agente</th><th>Modo</th><th>Modelo</th><th>Variante</th><th>Pasos</th><th>Por qué</th></tr></thead>
+          <tbody>
+            <tr><td><code>orchestrator</code></td><td>primary</td><td><code>nan/glm5.3-flash</code></td><td>high</td><td>60</td><td>Planifica y cierra: el que más decide</td></tr>
+            <tr><td><code>verify</code></td><td>subagent</td><td><code>nan/qwen3.8-flash</code></td><td>medium</td><td>12</td><td>Corre comandos y lee salidas</td></tr>
+            <tr><td><code>review</code></td><td>subagent</td><td><code>nan/glm5.3-flash</code></td><td>xhigh</td><td>12</td><td>La revisión gasta más razón por paso</td></tr>
+            <tr><td><code>docs</code></td><td>subagent</td><td><code>nan/deepseek-v4-flash</code></td><td>medium</td><td>20</td><td>Prosa en su perímetro propio</td></tr>
+            <tr><td><code>ui</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>medium</td><td>20</td><td>Recorre y relata lo que ve</td></tr>
+            <tr><td><code>explore</code></td><td>integrado</td><td><code>nan/glm5.3-flash</code></td><td>low</td><td>—</td><td>Contexto rápido, bajo coste</td></tr>
+            <tr><td><code>general</code></td><td>integrado</td><td><code>nan/deepseek-v4-flash</code></td><td>high</td><td>—</td><td>El trabajador de los grandes encargos</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>El modelo <code>nan/glm5.3</code> sin flash quedó fuera del reparto: la API key no tenía acceso cuando se montó todo. Con las dos alternativas que sí hubo, se midió el rol de trabajador —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 segundos para <code>glm5.3-flash</code> frente a 32,0 para <code>deepseek-v4-flash</code>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <code>general</code>. Cuando el sellado de <code>nan/glm5.3</code> se recupere, la comparación merece repetirse antes de mover el orquestador o la revisión.</p>
+    </section>
+
+    <section id="verificacion">
+      <div class="section-head"><span class="section-num">08</span><h2 class="title">La verificación</h2></div>
+      <p class="sub">Dos órdenes cierran la instalación: una mira si la máquina ve los modelos del proveedor, la otra si los agentes están cargados en el servicio. Configurar no exige reiniciar: OpenCode recarga los agentes al guardar los ficheros, y un cambio que no aparece suele ser camino de fichero equivocado, no de caché.</p>
+      <div class="code"><pre data-language="bash"><code><span class="c">$ opencode models | grep 'nan/'</span>
+<span class="ok">✓</span> nan/deepseek-v4-flash
+<span class="ok">✓</span> nan/glm5.3
+<span class="ok">✓</span> nan/glm5.3-flash
+<span class="ok">✓</span> nan/mimo-v2.6-flash
+<span class="ok">✓</span> nan/qwen3.8-flash
+
+<span class="c">$ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</span>
+<span class="ok">✓</span> orchestrator · nan/glm5.3-flash
+<span class="ok">✓</span> verify · nan/qwen3.8-flash
+<span class="ok">✓</span> review · nan/glm5.3-flash
+<span class="ok">✓</span> docs · nan/deepseek-v4-flash
+<span class="ok">✓</span> ui · nan/mimo-v2.6-flash</code></pre></div>
+      <p>Del test de humo de la puesta a punto quedaron también las conductas, no solo los nombres: <code>verify</code> ejecuta y no edita, <code>review</code> no toca nada, <code>docs</code> se queda en su Markdown y <code>ui</code> pide permiso al cargar la skill de navegador.</p>
+    </section>
+
+    <section id="errores">
+      <div class="section-head"><span class="section-num">09</span><h2 class="title">Errores y qué significan</h2></div>
+      <div class="table-wrap wrap-cells">
+        <table>
+          <thead><tr><th>Síntoma</th><th>Suele ser</th><th>Qué mirar</th></tr></thead>
+          <tbody>
+            <tr>
+              <td><code>opencode models</code> no muestra nada de <code>nan/</code></td>
+              <td>El proveedor no está autenticado en esta máquina</td>
+              <td><code>opencode auth login</code>, elige NaN y pega la API key</td>
+            </tr>
+            <tr>
+              <td>Un agente no aparece en <code>opencode api get /api/agent</code></td>
+              <td>El fichero no llegó a <code>~/.config/opencode/agents/</code> o el frontmatter quedó mal al copiarlo</td>
+              <td>Comparar el fichero con <code>agents/</code> del paquete y vigilar los guiones del frontmatter</td>
+            </tr>
+            <tr>
+              <td><code>verify</code> rechaza un comando que parece razonable</td>
+              <td>El comando no empieza por ninguno de los prefijos permitidos, o es compuesto (<code>cd x &amp;&amp; make test</code>)</td>
+              <td>Lanzarlo con el prefijo puro o pedir al orquestador que lo ejecute él</td>
+            </tr>
+            <tr>
+              <td><code>ui</code> queda sin responder</td>
+              <td>El permiso <code>ask</code> espera una aprobación que nadie ve porque la sesión va en segundo plano</td>
+              <td>Aprobar la petición en primera línea o no lanzar <code>ui</code> en segundo plano</td>
+            </tr>
+            <tr>
+              <td>El instalador imprime el bloque para pegar a mano</td>
+              <td>Tu configuración lleva comentarios JSONC o la máquina no tiene python3: el fusionado no reescribe</td>
+              <td>Pegar el bloque dentro del objeto raíz; la copia con fecha ya está hecha</td>
+            </tr>
+            <tr>
+              <td>El agente carga pero pierde su variante</td>
+              <td>La variante se escribió con almohadilla en la clave <code>agent</code> de la configuración</td>
+              <td>Moverla al campo <code>variant</code>, como en <a href="#configuracion">La configuración</a></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="limites">
+      <div class="section-head"><span class="section-num">10</span><h2 class="title">Lo que no hace</h2></div>
+      <div class="grid cols-3">
+        <div class="card">
+          <span class="mono">Delegación por prompt</span>
+          <h3>No obliga a delegar</h3>
+          <p>El contrato vive en el texto del orquestador. Si el modelo decide no delegar, no hay mecanismo de configuración que lo fuerce.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Anidamiento</span>
+          <h3>Un subagente no lanza otro</h3>
+          <p>La profundidad llega a un nivel. El orquestador junta los resultados de los subagentes; no hay cadenas de delegación.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Concurrencia</span>
+          <h3>No hay límite configurable</h3>
+          <p>El padre decide cuántas delegaciones lanza en paralelo y qué espera. El paquete no añade semáforos ni colas.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Extensiones</span>
+          <h3>Las tools traen su propio permiso</h3>
+          <p>Las herramientas de extensiones aplican el permiso que ellas mismas declaran; la prohibición de escribir en sistemas externos del proyecto vive en el prompt del orquestador, no en esta configuración.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Navegador</span>
+          <h3>No trae la skill de navegador</h3>
+          <p>La verificación de interfaz depende de que la máquina tenga <code>playwright-cli</code>. Sin ella, <code>ui</code> no tiene con qué recorrer.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Acceso al proveedor</span>
+          <h3>No gestiona la API key</h3>
+          <p>El paquete menciona el acceso en la comprobación, pero la autenticación con <code>opencode auth login</code> es tuya, por máquina.</p>
+        </div>
+      </div>
+    </section>
+
+    <section id="preguntas">
+      <div class="section-head"><span class="section-num">11</span><h2 class="title">Preguntas cortas</h2></div>
+      <dl class="qa">
+        <dt>¿Puedo cambiar los modelos y las variantes?</dt>
+        <dd>Sí. Los de los cinco agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agent</code> de la configuración. Recuerda la regla de la almohadilla de la sección 06.</dd>
+        <dt>¿Cualquier máquina con OpenCode V2 vale?</dt>
+        <dd>Cualquiera con OpenCode V2 y acceso a los modelos <code>nan</code>. Windows y Linux llevan su instalador; la ruta de configuración es la de tu usuario en ambas.</dd>
+        <dt>¿Se puede desinstalar?</dt>
+        <dd>Borra los cinco ficheros de <code>~/.config/opencode/agents/</code> y quita del bloque <code>agent</code> los pares <code>explore</code> y <code>general</code>. Si el instalador creó el <code>opencode.jsonc</code> en una máquina limpia, bórralo también; las copias con fecha <code>.bak</code> que dejara al fusionar son tuyas: llévatelas o bórralas con él.</dd>
+        <dt>¿Afecta al agente <code>build</code>?</dt>
+        <dd>No toca agentes existentes ni el agente de arranque: añade ficheros y funde dos overrides de modelo. Dentro de <code>explore</code> y <code>general</code> la entrada se sustituye entera, así que si administrabas otras claves aparte de <code>model</code> y <code>variant</code>, trasládala antes de instalar.</dd>
+        <dt>¿De dónde salen los datos de la medición?</dt>
+        <dd>Del plan de puesta a punto del epic tk-276 del tablero tasks-ai: tres proyectos reales, tres tareas por proyecto, los dos modelos candidatos como trabajador. El paquete recoge la decisión, no el banco de pruebas.</dd>
+      </dl>
+    </section>
+
+  </main>
+</div>
+
+<div id="docs-footer"><page-footer class="footer">
+  <span>Paquete <code>nan-opencode-delegation</code>, sin publicar: la versión, cuando la haya, vive en <a href="../../CHANGELOG.md">CHANGELOG.md</a></span>
+  <span>Origen: las subtareas tk-277 a tk-282 del epic tk-276 del tablero tasks-ai</span>
+  <span>La referencia breve vive en <a href="../../README.md">README.md</a></span>
+  <span>7 de noviembre de 2026</span>
+</page-footer></div>
+
+<a class="to-top" id="to-top" href="#top" aria-label="Volver arriba">
+  <span class="tk-icon tk-icon--mask tk-icon--chevron-up" aria-hidden="true"></span>
+</a>
+
+<script type="module" src="assets/vendor/microlighter/microlighter.min.js"></script>
+<script type="application/json" id="docs-config">
+{
+  "topbar": {
+    "brand": { "href": "#top", "name": "nan-delegación", "tagline": { "es": "orquestación de subagentes" } },
+    "navStyle": "catalog",
+    "nav": [
+      { "href": "#empezar", "es": "Empezar", "ariaEs": "Ir a Empezar aquí", "icon": "arrow-right" }
+    ],
+    "lang": "static",
+    "langAria": "Idioma / Language"
+  },
+  "copy": true
+}
+</script>
+<script>
+(function () {
+  "use strict";
+  // Entrada en cascada del contenido: cada bloque se revela al entrar en
+  // pantalla y los que llegan juntos se renumeran en --d para escalonarse;
+  // sin observer, todo visible.
+  if (!("IntersectionObserver" in window)) { return; }
+  var observer = new IntersectionObserver(function (entries) {
+    entries.filter(function (entry) { return entry.isIntersecting; })
+      .sort(function (a, b) {
+        return parseFloat(a.target.style.getPropertyValue("--d")) - parseFloat(b.target.style.getPropertyValue("--d"));
+      })
+      .forEach(function (entry, i) {
+        entry.target.style.setProperty("--d", i);
+        entry.target.classList.add("is-in");
+        observer.unobserve(entry.target);
+      });
+  }, { threshold: 0, rootMargin: "0px 0px -8% 0px" });
+  var tracked = [];
+  // Bloques múltiples y listados: la cascada escala entre ellos.
+  document.querySelectorAll(".flow, .grid, ul.plain").forEach(function (group) {
+    var blocks = group.querySelectorAll(":scope > .flow-step, :scope > .card, :scope > li");
+    blocks.forEach(function (block, i) {
+      block.style.setProperty("--d", i);
+      tracked.push(block);
+    });
+    group.classList.add("is-ready");
+    blocks.forEach(function (block) { observer.observe(block); });
+  });
+  // Bloques sueltos: el mismo reveal, sin rejilla que coordinar.
+  document.querySelectorAll(".section-head, section > .sub, .qa, .code, .table-wrap, .note").forEach(function (block) {
+    block.style.setProperty("--d", 0);
+    block.classList.add("is-ready");
+    tracked.push(block);
+    observer.observe(block);
+  });
+  // Recargar o volver a la página con la posición restaurada deja bloques por
+  // encima del viewport: el observer solo ve lo que entra y quedarían ocultos.
+  function showUpTo() {
+    tracked.forEach(function (block) {
+      if (block.classList.contains("is-in")) { return; }
+      if (block.getBoundingClientRect().top < window.innerHeight) {
+        block.classList.add("is-in");
+        observer.unobserve(block);
+      }
+    });
+  }
+  showUpTo();
+  window.addEventListener("pageshow", showUpTo);
+  window.addEventListener("load", showUpTo);
+})();
+</script>
+</body>
+</html>
