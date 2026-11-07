@@ -23,3 +23,8 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   permisos con sus lecciones, instalación en ambas familias de sistema, verificación,
   errores y límites conocidos. Se abre en `file://` sin red ni dependencias; tema claro
   y oscuro con cero JavaScript.
+
+- Tablero de desarrollo propio: el paquete lleva su instalación de tasks-ai en
+  `.tasks-ai/` (instrucciones, contrato de etiquetas y ajustes versionados; base y
+  extensiones fuera de Git) y el proyecto carga su extensión de OpenCode desde el
+  `opencode.jsonc` raíz.

@@ -16,6 +16,7 @@ enlaza.
 | Qué cambió en cada versión | [`CHANGELOG.md`](CHANGELOG.md) |
 | Ramas, commits, verificación, integración y operaciones con autorización | [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Catálogo enlazable para agentes | [`llms.txt`](llms.txt) |
+| Trabajo del repositorio: crear, mover, bloquear y cerrar tareas | [`.tasks-ai/AGENTS.md`](.tasks-ai/AGENTS.md) |
 
 ## Encargo → qué leer antes → con qué se cierra
 
@@ -23,7 +24,7 @@ enlaza.
 |---|---|---|
 | Actualizar un artefacto de agente | [`docs/PRD.md`](docs/PRD.md) sección 3, regla de negocio de las copias | `diff -r agents <config global>/agents` sin diferencias y la verificación de [`CONTRIBUTING.md`](CONTRIBUTING.md) |
 | Cambiar los instaladores | [`docs/PRD.md`](docs/PRD.md) requisitos R1 a R6 | La batería de [`CONTRIBUTING.md`](CONTRIBUTING.md): sintaxis, instalación limpia, fusión con claves ajenas y camino JSONC |
-| Cambiar la guía o la prosa | [`index.html`](index.html) y [`README.md`](README.md) completos | Los criterios 1 a 7 de la revisión: nada que la documentación diga puede contradecir a los artefactos |
+| Cambiar la guía o la prosa | [`index.html`](index.html) y [`README.md`](README.md) completos | Los criterios de aceptación del PRD, sección 5, aplicados a la documentación: nada que la prosa diga puede contradecir a los artefactos |
 | Cambiar requisitos o alcance | [`docs/PRD.md`](docs/PRD.md) completo | El PRD actualizado antes del commit y el CHANGELOG si hay valor de usuario |
 
 ## Autoridad
