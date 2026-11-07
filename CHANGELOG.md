@@ -28,3 +28,8 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   `.tasks-ai/` (instrucciones, contrato de etiquetas y ajustes versionados; base y
   extensiones fuera de Git) y el proyecto carga su extensión de OpenCode desde el
   `opencode.jsonc` raíz.
+
+- `serve.sh` para dejar el servidor del tablero en segundo plano (start, status y stop,
+  con registro y pid en `.run/`) y visor de escritorio en `tasks-viewer/` con el binario
+  oficial de tasks-ai para Windows. El tablero del paquete escucha en el 8891 para convivir
+  con el de tasks-ai, que mantiene el 8890.

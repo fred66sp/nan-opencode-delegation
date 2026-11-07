@@ -4,7 +4,7 @@
   "db": "tasks.db",
   "http": {
     "host": "127.0.0.1",
-    "port": 8890
+    "port": 8891
   },
   "log": {
     "level": "info"
