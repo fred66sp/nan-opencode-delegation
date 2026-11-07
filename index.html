@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Delegación de subagentes nan en OpenCode</title>
+<meta name="description" content="Guía de la orquestación de modelos nan en OpenCode V2: arquitectura, contrato de delegación, permisos, instalación en Windows y Linux, verificación, errores y límites.">
+<style>
+  :root {
+    --paper: #f8fafc;
+    --surface: #ffffff;
+    --surface-sunken: #f1f5f9;
+    --ink: #0f172a;
+    --ink-muted: #5f6b80;
+    --line: #e2e8f0;
+    --line-strong: #cbd5e1;
+    --terminal: #0a0f1c;
+    --terminal-surface: #111827;
+    --terminal-line: #1f2937;
+    --terminal-ink: #e5e7eb;
+    --accent: #0f766e;
+    --accent-2: #2563eb;
+    --ok: #10b981;
+    --ok-text: #047857;
+    --warn: #f59e0b;
+    --warn-text: #b45309;
+    --error: #b91c1c;
+    --error-text: #b91c1c;
+    --halo: color-mix(in srgb, var(--accent) 22%, transparent);
+    --halo-2: color-mix(in srgb, var(--accent-2) 18%, transparent);
+    --shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 8px 24px rgba(15, 23, 42, .05);
+    --font: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: "JetBrains Mono", ui-monospace, "SF Mono", "Fira Code", Menlo, Consolas, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper: #0a0f1c;
+      --surface: #111827;
+      --surface-sunken: #1f2937;
+      --ink: #e5e7eb;
+      --ink-muted: #94a3b8;
+      --line: #334155;
+      --line-strong: #475569;
+      --accent: #2dd4bf;
+      --accent-2: #60a5fa;
+      --ok: #34d399;
+      --ok-text: #34d399;
+      --warn: #fbbf24;
+      --warn-text: #fbbf24;
+      --error: #f87171;
+      --error-text: #f87171;
+      --shadow: none;
+    }
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body { font-family: var(--font); font-size: 16px; line-height: 1.65; color: var(--ink); background: var(--paper); }
+  a { color: var(--accent); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code, pre, .mono { font-family: var(--mono); font-size: 12.9px; line-height: 1.72; }
+  code { background: var(--surface-sunken); border: 1px solid var(--line); border-radius: 6px; padding: 1px 6px; white-space: nowrap; }
+  .wrap { max-width: 980px; margin: 0 auto; padding: 0 clamp(16px, 4vw, 40px); }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 10;
+    background: color-mix(in srgb, var(--paper) 88%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid var(--line);
+  }
+  .topbar .wrap { display: flex; align-items: center; gap: 12px; height: 52px; }
+  .brand { font-weight: 700; font-size: 15px; letter-spacing: -.01em; }
+  .brand .dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--ok); margin-right: 8px; vertical-align: 1px; }
+  .topnav { margin-left: auto; display: flex; gap: 4px; overflow-x: auto; }
+  .topnav a { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; color: var(--ink-muted); padding: 6px 10px; border-radius: 999px; white-space: nowrap; }
+  .topnav a:hover { color: var(--ink); background: var(--surface-sunken); text-decoration: none; }
+
+  .hero { position: relative; padding: clamp(48px, 8vw, 96px) 0 clamp(32px, 5vw, 56px); overflow: hidden; }
+  .hero::before, .hero::after { content: ""; position: absolute; border-radius: 50%; filter: blur(64px); pointer-events: none; }
+  .hero::before { width: 420px; height: 420px; background: var(--halo); top: -160px; right: -80px; }
+  .hero::after { width: 320px; height: 320px; background: var(--halo-2); top: 40px; right: 280px; }
+  .hero .wrap { position: relative; }
+  .label { font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  h1, h2 { text-wrap: balance; }
+  h1 { font-size: clamp(34px, 6vw, 62px); font-weight: 800; line-height: 1.04; letter-spacing: -.035em; max-width: 18ch; }
+  .lede { max-width: 62ch; margin-top: 18px; font-size: 18px; line-height: 1.6; color: var(--ink-muted); }
+  .pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 26px; }
+  .pill { background: var(--surface); border: 1px solid var(--line-strong); border-radius: 999px; padding: 5px 12px; font-size: 12.5px; color: var(--ink-muted); }
+  .pill .ok-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; background: var(--ok); margin-right: 6px; vertical-align: 1px; }
+
+  .toc { margin-top: 34px; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px 24px; box-shadow: var(--shadow); }
+  .toc h2 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 10px; }
+  .toc ol { list-style: none; columns: 2; column-gap: 32px; }
+  @media (max-width: 640px) { .toc ol { columns: 1; } }
+  .toc li { padding: 4px 0; break-inside: avoid; }
+  .toc a { color: var(--ink); font-size: 15px; }
+  .toc a:hover { color: var(--accent); text-decoration: none; }
+  .toc .n { font-family: var(--mono); font-size: 12.5px; font-weight: 700; color: var(--accent); margin-right: 10px; }
+
+  section { padding: clamp(32px, 5vw, 56px) 0; border-top: 1px solid var(--line); }
+  .section-head { display: flex; align-items: baseline; gap: 14px; margin-bottom: 14px; }
+  .section-num { font-family: var(--mono); font-size: 13px; font-weight: 700; color: var(--accent); }
+  h2.title { font-size: clamp(22px, 3vw, 28px); font-weight: 700; letter-spacing: -.02em; }
+  .prose { max-width: 68ch; }
+  .prose p + p { margin-top: 12px; }
+  .prose ul, .prose ol { margin: 12px 0 0 22px; }
+  .prose li + li { margin-top: 6px; }
+
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 20px; box-shadow: var(--shadow); }
+  .card h3 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; margin-bottom: 8px; }
+  .card p { font-size: 14.5px; color: var(--ink-muted); line-height: 1.6; }
+  .card .mono { display: block; font-size: 12.9px; color: var(--accent); margin-top: 10px; }
+
+  .rules { list-style: none; margin-top: 8px; }
+  .rules li { position: relative; padding: 14px 0 14px 52px; border-bottom: 1px solid var(--line); }
+  .rules li:first-child { border-top: 1px solid var(--line); }
+  .rules li::before {
+    position: absolute; left: 0; top: 14px;
+    font-family: var(--mono); font-size: 12.9px; font-weight: 700; color: var(--accent);
+    counter-increment: regla; content: counter(regla, decimal-leading-zero);
+  }
+  .rules { counter-reset: regla; }
+  .rules li strong { font-weight: 700; }
+
+  .diagram { margin-top: 28px; }
+  .node { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px 16px; box-shadow: var(--shadow); }
+  .node-primary { border-color: var(--accent); }
+  .node .name { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+  .node .mmodel { font-family: var(--mono); font-size: 11.5px; color: var(--ink-muted); display: block; margin-top: 3px; }
+  .node .role { font-size: 13px; color: var(--ink-muted); margin-top: 6px; line-height: 1.5; }
+  .db-conn { width: 1px; height: 26px; background: var(--line-strong); margin: 0 auto; }
+  .row5 { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+  .row2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+  @media (max-width: 720px) { .row5 { grid-template-columns: repeat(2, 1fr); } .row2 { grid-template-columns: 1fr; } }
+  .gridnote { font-size: 13px; color: var(--ink-muted); margin-top: 12px; }
+
+  .table-scroll { overflow-x: auto; margin-top: 20px; }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: 16px; overflow: hidden; }
+  th { background: var(--surface-sunken); text-align: left; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); padding: 10px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 11px 14px; border-bottom: 1px solid var(--line); font-size: 14px; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td.mono, .cell-mono { white-space: nowrap; }
+
+  .callout { background: var(--surface); border: 1px solid var(--line); border-left: 3px solid var(--warn); border-radius: 10px; padding: 14px 16px; margin-top: 16px; font-size: 14.5px; color: var(--ink-muted); max-width: 68ch; }
+  .callout b { color: var(--warn-text); font-weight: 700; }
+
+  .cmdcap { margin-top: 20px; font-size: 11.5px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--ink-muted); }
+  pre { background: var(--terminal); color: var(--terminal-ink); border: 1px solid var(--terminal-line); border-radius: 16px; padding: 16px 18px; margin-top: 8px; overflow-x: auto; }
+  pre .c { color: #6b7280; }
+  pre .ok { color: var(--ok); font-weight: 700; }
+  .verify-panel { background: var(--terminal); border: 1px solid var(--terminal-line); border-radius: 20px; padding: clamp(24px, 3.6vw, 38px); margin-top: 24px; }
+  .verify-panel pre { background: transparent; border: none; margin: 0; padding: 0; }
+  .verify-panel + .prose { margin-top: 20px; }
+
+  .limits { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 14px; margin-top: 24px; }
+  .limit { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 18px; }
+  .limit .tag { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--warn-text); margin-bottom: 8px; }
+  .limit h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; }
+  .limit p { font-size: 14px; color: var(--ink-muted); line-height: 1.6; }
+
+  .qa { margin-top: 8px; }
+  .qa dt { font-weight: 700; font-size: 16px; margin-top: 18px; }
+  .qa dt:first-child { margin-top: 0; }
+  .qa dd { margin: 6px 0 0 0; color: var(--ink-muted); font-size: 15px; max-width: 68ch; }
+
+  footer { border-top: 1px solid var(--line); padding: 32px 0 48px; }
+  footer .wrap { display: flex; flex-wrap: wrap; gap: 6px 24px; align-items: baseline; color: var(--ink-muted); font-size: 13.5px; }
+
+  @media (prefers-reduced-motion: reduce) {
+    html { scroll-behavior: auto; }
+    * { transition: none !important; animation: none !important; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap">
+    <span class="brand"><span class="dot"></span>nan-delegación</span>
+    <nav class="topnav">
+      <a href="#que-es">01</a><a href="#empezar">02</a><a href="#arquitectura">03</a><a href="#contrato">04</a><a href="#permisos">05</a><a href="#configuracion">06</a><a href="#modelos">07</a><a href="#verificacion">08</a><a href="#errores">09</a><a href="#limites">10</a><a href="#preguntas">11</a>
+    </nav>
+  </div>
+</div>
+
+<header class="hero">
+  <div class="wrap">
+    <div class="label">Guía</div>
+    <h1>Delegación de subagentes nan en OpenCode</h1>
+    <p class="lede">Un orquestador que planifica y delega, cuatro subagentes con permisos acotados y dos agentes integrados afinados por configuración. Todo con modelos del proveedor <span class="mono">nan</span>, instalable en Windows, Linux y macOS con una orden por sistema.</p>
+    <div class="pills">
+      <span class="pill"><span class="ok-dot"></span>Probada de punta a punta</span>
+      <span class="pill">OpenCode V2</span>
+      <span class="pill">5 ficheros de agente · 2 integrados</span>
+      <span class="pill">versión 0.1.0</span>
+    </div>
+    <div class="toc">
+      <h2>En esta página</h2>
+      <ol>
+        <li><a href="#que-es"><span class="n">01</span>Qué es</a></li>
+        <li><a href="#empezar"><span class="n">02</span>Empezar aquí</a></li>
+        <li><a href="#arquitectura"><span class="n">03</span>La arquitectura</a></li>
+        <li><a href="#contrato"><span class="n">04</span>El contrato de delegación</a></li>
+        <li><a href="#permisos"><span class="n">05</span>Los permisos</a></li>
+        <li><a href="#configuracion"><span class="n">06</span>La configuración</a></li>
+        <li><a href="#modelos"><span class="n">07</span>El reparto de modelos</a></li>
+        <li><a href="#verificacion"><span class="n">08</span>La verificación</a></li>
+        <li><a href="#errores"><span class="n">09</span>Errores y qué significan</a></li>
+        <li><a href="#limites"><span class="n">10</span>Lo que no hace</a></li>
+        <li><a href="#preguntas"><span class="n">11</span>Preguntas cortas</a></li>
+      </ol>
+    </div>
+  </div>
+</header>
+
+<section id="que-es">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">01</span><h2 class="title">Qué es</h2></div>
+    <p class="prose">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <span class="mono">orchestrator</span>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cuatro subagentes que solo pueden hacer su parte: comprobar, revisar, documentar o recorrer la interfaz. Los planes y los cierres se quedan en el orquestador; los subagentes no editan fuera de su perímetro porque sus permisos lo impiden, no porque se les pida con educación.</p>
+    <p class="prose">Con la delegación no cambia la forma de trabajar: <span class="mono">build</span> sigue siendo el agente de arranque y <span class="mono">orchestrator</span> se elige cuando quieres orquestar. La delegación vive por prompt: el contrato está en el texto del agente. Si el orquestador no delega, no hay mecanismo de configuración que lo obligue.</p>
+    <div class="cards">
+      <div class="card">
+        <h3>Orquestador primario</h3>
+        <p>Clasifica la petición, implementa lo pequeño, delega lo que toca más de tres ficheros o cruza capas, y es el único que cierra el trabajo.</p>
+        <span class="mono">orchestrator · nan/glm5.3-flash#high</span>
+      </div>
+      <div class="card">
+        <h3>Cuatro subagentes acotados</h3>
+        <p><span class="mono">verify</span> ejecuta las comprobaciones, <span class="mono">review</span> juzga sin tocar nada, <span class="mono">docs</span> escribe solo Markdown y <span class="mono">ui</span> recorre el navegador pidiendo permiso antes de Playwright.</p>
+        <span class="mono">edición denegada por defecto</span>
+      </div>
+      <div class="card">
+        <h3>Dos integrados afinados</h3>
+        <p><span class="mono">explore</span> y <span class="mono">general</span> ya existen en OpenCode; el paquete solo fija qué modelo levanta cada uno y con qué variante.</p>
+        <span class="mono">clave agent de la configuración</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="empezar">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">02</span><h2 class="title">Empezar aquí</h2></div>
+    <p class="prose">Tres condiciones y una orden. OpenCode V2 en el PATH; acceso a los modelos <span class="mono">nan</span> con <code>opencode auth login</code>; y, solo para el agente <span class="mono">ui</span>, la skill <code>playwright-cli</code>. Después, el instalador de tu sistema sobre la carpeta del paquete, copiada tal cual desde donde la tengas.</p>
+    <div class="cmdcap">Linux, macOS o WSL</div>
+    <pre>bash install.sh</pre>
+    <div class="cmdcap">Windows (PowerShell)</div>
+    <pre>powershell -ExecutionPolicy Bypass -File install.ps1</pre>
+    <p class="prose" style="margin-top:16px">Lo que hace, en dos frases: copia los cinco agentes a <span class="mono">~/.config/opencode/agents/</span> y deja el bloque <span class="mono">agent</span> de <span class="mono">explore</span> y <span class="mono">general</span> en la configuración global. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime el bloque para pegarlo a mano.</p>
+    <div class="callout"><b>A mano en dos pasos.</b> Copia los cinco ficheros de <span class="mono">agents/</span> a <span class="mono">~/.config/opencode/agents/</span> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</div>
+  </div>
+</section>
+
+<section id="arquitectura">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">03</span><h2 class="title">La arquitectura</h2></div>
+    <p class="prose">El padre decide cuándo delegar con la herramienta <span class="mono">subagent</span> y revisa lo que devuelve antes de integrarlo: un subagente lanzado no es evidencia. Un subagente no puede lanzar otro; el anidamiento llega a un nivel, y el orquestador es quien junta los resultados.</p>
+    <div class="diagram">
+      <div class="node node-primary">
+        <span class="name">orchestrator</span>
+        <span class="mmodel">nan/glm5.3-flash · high · 60 pasos · primario</span>
+        <span class="role">Clasifica la petición, delega lo grande, verifica siempre, revisa si cambia el comportamiento, y cierra.</span>
+      </div>
+      <div class="db-conn"></div>
+      <div class="row5">
+        <div class="node">
+          <span class="name">verify</span>
+          <span class="mmodel">qwen3.8-flash#medium · 12</span>
+          <span class="role">Corre las pruebas y devuelve evidencia. No edita.</span>
+        </div>
+        <div class="node">
+          <span class="name">review</span>
+          <span class="mmodel">glm5.3-flash#xhigh · 12</span>
+          <span class="role">Hallazgos con fichero y línea. No edita.</span>
+        </div>
+        <div class="node">
+          <span class="name">docs</span>
+          <span class="mmodel">deepseek-v4-flash#medium · 20</span>
+          <span class="role">Markdown, docs/ y CHANGELOG. Nada de código.</span>
+        </div>
+        <div class="node">
+          <span class="name">ui</span>
+          <span class="mmodel">mimo-v2.6-flash#medium · 20</span>
+          <span class="role">Navegador con permiso ask para Playwright.</span>
+        </div>
+        <div class="node">
+          <span class="name">general</span>
+          <span class="mmodel">deepseek-v4-flash · variant high · config</span>
+          <span class="role">Trabajos de muchos ficheros que el orquestador le delega.</span>
+        </div>
+      </div>
+      <div class="row2">
+        <div class="node">
+          <span class="name">explore</span>
+          <span class="mmodel">glm5.3-flash · variant low · config</span>
+          <span class="role">Búsqueda y contexto rápido. No edita por diseño.</span>
+        </div>
+        <div class="node">
+          <span class="name">build</span>
+          <span class="mmodel">arranque por defecto, sin cambios</span>
+          <span class="role">Sigue siendo el agente con el que se abre OpenCode.</span>
+        </div>
+      </div>
+      <p class="gridnote">La conexión entre orquestador y subagentes es la herramienta <span class="mono">subagent</span> decidida por el padre: no hay planificador que reparta trabajo solo, ni límite de concurrencia configurable.</p>
+    </div>
+  </div>
+</section>
+
+<section id="contrato">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">04</span><h2 class="title">El contrato de delegación</h2></div>
+    <p class="prose">Estas seis reglas son el prompt del orquestador, como están en <span class="mono">agents/orchestrator.md</span>. Vale leerlas antes de confiar en el reparto.</p>
+    <ol class="rules">
+      <li><strong>Clasifica la petición</strong>: pregunta, revisión, plan o implementación.</li>
+      <li><strong>Implementa tú si toca tres ficheros o menos y una sola capa</strong>. Delega a <span class="mono">general</span> si toca más archivos o cruza capas.</li>
+      <li><strong>Después de implementar, lanza <span class="mono">verify</span> siempre</strong>. Lanza <span class="mono">review</span> solo si cambia comportamiento o contrato.</li>
+      <li><strong>Todo encargo a un subagente lleva objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación</strong>. Si el proyecto tiene sistema de seguimiento, pásale la referencia; el subagente no lo modifica.</li>
+      <li><strong>Un subagente lanzado no es evidencia</strong>: revisa su salida antes de integrarla. El orquestador es el único que cierra.</li>
+      <li><strong>Usa el trabajo en segundo plano solo para trabajo independiente</strong> y espera el aviso antes de integrar.</li>
+    </ol>
+  </div>
+</section>
+
+<section id="permisos">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">05</span><h2 class="title">Los permisos</h2></div>
+    <p class="prose">La defensa es en profundidad: el prompt marca la intención, pero son los permisos del frontmatter de cada agente los que impiden la acción. La política base de OpenCode permite todo; por eso cada lista empieza por un <span class="mono">deny</span> que cierra el campo y después abre solo lo que toca.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Agente</th><th>Editar</th><th>Shell</th><th>Skills</th></tr></thead>
+        <tbody>
+          <tr>
+            <td class="mono">orchestrator</td><td>Sí</td><td>Sí</td><td>Solo puede lanzar los subagentes que declara su lista</td>
+          </tr>
+          <tr>
+            <td class="mono">verify</td><td>Nada</td><td><span class="mono">*</span> denegado; prefijos de comprobación abiertos</td><td>Sin restricción</td>
+          </tr>
+          <tr>
+            <td class="mono">review</td><td>Nada</td><td>Sí</td><td>Sin restricción</td>
+          </tr>
+          <tr>
+            <td class="mono">docs</td><td>Solo <span class="mono">*.md</span>, <span class="mono">*.mdx</span>, <span class="mono">docs/*</span> y <span class="mono">CHANGELOG*</span></td><td>Sí</td><td>Sin restricción</td>
+          </tr>
+          <tr>
+            <td class="mono">ui</td><td>Sí</td><td><span class="mono">npx playwright</span> y <span class="mono">playwright</span> piden permiso; <span class="mono">npm run</span> y <span class="mono">pnpm</span> abiertos</td><td><span class="mono">playwright-cli</span> pide permiso</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="callout"><b>Denegar antes de abrir.</b> Como la política base permite todo, una lista blanca sin un <span class="mono">deny *</span> previo no tiene efecto. <span class="mono">verify</span> lo lleva: cierra edición y shell por completo y después abre los once prefijos de comprobación (<span class="mono">go test</span>, <span class="mono">go vet</span>, <span class="mono">go build</span>, <span class="mono">make</span>, <span class="mono">npm test</span>, <span class="mono">npm run</span>, <span class="mono">pnpm</span>, <span class="mono">pytest</span>, <span class="mono">cargo test</span>, <span class="mono">git status</span>, <span class="mono">git diff</span>).</div>
+    <div class="callout"><b>Los comodines no cruzan la raíz como cabría esperar.</b> <span class="mono">**/*.md</span> no casa los Markdown de la raíz del proyecto, que es por lo que <span class="mono">docs</span> combina patrones de raíz (<span class="mono">*.md</span>, <span class="mono">*.mdx</span>, <span class="mono">docs/*</span>, <span class="mono">CHANGELOG*</span>). Lo comprobó la primera instalación con un fichero de la raíz que <span class="mono">docs</span> no alcanzaba.</div>
+    <div class="callout"><b>Ask bloquea.</b> El permiso <span class="mono">ask</span> de <span class="mono">ui</span> detiene la sesión hija hasta que una persona aprueba. Lanzar <span class="mono">ui</span> en segundo plano sin estar delante deja el agente colgado del aviso.</div>
+  </div>
+</section>
+
+<section id="configuracion">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">06</span><h2 class="title">La configuración</h2></div>
+    <p class="prose">El paquete lleva en <span class="mono">config/opencode.jsonc</span> la plantilla que el instalador copia en una máquina sin configuración global. Solo contiene lo que la delegación necesita: si tu fichero ya existe, el instalador funde en él únicamente <span class="mono">agent.explore</span> y <span class="mono">agent.general</span>, conserva tus claves y agentes ajenos y te deja copia con fecha.</p>
+    <pre>{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "explore": { "model": "nan/glm5.3-flash", "variant": "low" },
+    "general": { "model": "nan/deepseek-v4-flash", "variant": "high" }
+  }
+}</pre>
+    <div class="callout"><b>La sintaxis de la variante cambia según el sitio.</b> En el frontmatter de un agente en Markdown el modelo lleva la variante con almohadilla: <span class="mono">nan/glm5.3-flash#high</span>. En la clave <span class="mono">agent</span> de la configuración la variante va en su propio campo, <span class="mono">variant</span>; escrita con almohadilla, el campo se queda vacío y el agente pierde la variante. Lo comprobó dos veces la puesta a punto: una en la configuración y otra en el frontmatter.</div>
+    <p class="prose" style="margin-top:16px">Si tu configuración usa la clave <span class="mono">agents</span> en plural para los overrides, conserva la tuya y añade ahí los dos pares; el paquete no discute la clave que ya funciona en tu máquina.</p>
+  </div>
+</section>
+
+<section id="modelos">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">07</span><h2 class="title">El reparto de modelos</h2></div>
+    <p class="prose">Ningún modelo se eligió a ciegas. El orquestador y la revisión llevan el modelo más capaz de los disponibles para su trabajo; el resto lleva variantes ajustadas a pasos concretos, porque un subagente acotado no necesita la variante más cara para hacer bien doce pasos.</p>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Agente</th><th>Modo</th><th>Modelo</th><th>Variante</th><th>Pasos</th><th>Por qué</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">orchestrator</td><td>primary</td><td class="cell-mono">nan/glm5.3-flash</td><td>high</td><td>60</td><td>Planifica y cierra: el que más decide</td></tr>
+          <tr><td class="mono">verify</td><td>subagent</td><td class="cell-mono">nan/qwen3.8-flash</td><td>medium</td><td>12</td><td>Corre comandos y lee salidas</td></tr>
+          <tr><td class="mono">review</td><td>subagent</td><td class="cell-mono">nan/glm5.3-flash</td><td>xhigh</td><td>12</td><td>La revisión gasta más razón por paso</td></tr>
+          <tr><td class="mono">docs</td><td>subagent</td><td class="cell-mono">nan/deepseek-v4-flash</td><td>medium</td><td>20</td><td>Prosa en su perímetro propio</td></tr>
+          <tr><td class="mono">ui</td><td>subagent</td><td class="cell-mono">nan/mimo-v2.6-flash</td><td>medium</td><td>20</td><td>Recorre y relata lo que ve</td></tr>
+          <tr><td class="mono">explore</td><td>integrado</td><td class="cell-mono">nan/glm5.3-flash</td><td>low</td><td>—</td><td>Contexto rápido, bajo coste</td></tr>
+          <tr><td class="mono">general</td><td>integrado</td><td class="cell-mono">nan/deepseek-v4-flash</td><td>high</td><td>—</td><td>El trabajador de los grandes encargos</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="prose" style="margin-top:16px">El modelo <span class="mono">nan/glm5.3</span> sin flash quedó fuera del reparto: la API key no tenía acceso cuando se montó todo. Con las dos alternativas que sí hubo, se midió el rol de trabajador —tres proyectos distintos, tres tareas cada uno, los dos modelos— y el resultado fue 9 de 9 comprobaciones en verde con los dos y cero regresiones, con medias de 47,6 segundos para <span class="mono">glm5.3-flash</span> frente a 32,0 para <span class="mono">deepseek-v4-flash</span>. Ese dato, y no una preferencia, es lo que sostiene el modelo de <span class="mono">general</span>. Cuando el sellado de <span class="mono">nan/glm5.3</span> se recupere, la comparación merece repetirse antes de mover el orquestador o la revisión.</p>
+  </div>
+</section>
+
+<section id="verificacion">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">08</span><h2 class="title">La verificación</h2></div>
+    <p class="prose">Dos órdenes cierran la instalación: una mira si la máquina ve los modelos del proveedor, la otra si los agentes están cargados en el servicio. Configurar no exige reiniciar: OpenCode recarga los agentes al guardar los ficheros, y un cambio que no aparece suele ser camino de fichero equivocado, no de caché.</p>
+    <div class="verify-panel">
+      <pre><span class="c">$ opencode models | grep 'nan/'</span>
+<span class="ok">✓</span> nan/deepseek-v4-flash
+<span class="ok">✓</span> nan/glm5.3
+<span class="ok">✓</span> nan/glm5.3-flash
+<span class="ok">✓</span> nan/mimo-v2.6-flash
+<span class="ok">✓</span> nan/qwen3.8-flash
+
+<span class="c">$ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</span>
+<span class="ok">✓</span> orchestrator · nan/glm5.3-flash
+<span class="ok">✓</span> verify · nan/qwen3.8-flash
+<span class="ok">✓</span> review · nan/glm5.3-flash
+<span class="ok">✓</span> docs · nan/deepseek-v4-flash
+<span class="ok">✓</span> ui · nan/mimo-v2.6-flash</pre>
+    </div>
+    <p class="prose">Del test de humo de la puesta a punto quedaron también las conductas, no solo los nombres: <span class="mono">verify</span> ejecuta y no edita, <span class="mono">review</span> no toca nada, <span class="mono">docs</span> se queda en su Markdown y <span class="mono">ui</span> pide permiso al cargar la skill de navegador.</p>
+  </div>
+</section>
+
+<section id="errores">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">09</span><h2 class="title">Errores y qué significan</h2></div>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th>Síntoma</th><th>Suele ser</th><th>Qué mirar</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="mono">opencode models</span> no muestra nada de <span class="mono">nan/</span></td>
+            <td>El proveedor no está autenticado en esta máquina</td>
+            <td><code>opencode auth login</code>, elige NaN y pega la API key</td>
+          </tr>
+          <tr>
+            <td>Un agente no aparece en <code>opencode api get /api/agent</code></td>
+            <td>El fichero no llegó a <span class="mono">~/.config/opencode/agents/</span> o el frontmatter quedó mal al copiarlo</td>
+            <td>Comparar el fichero con <span class="mono">agents/</span> del paquete y vigilar los guiones del frontmatter</td>
+          </tr>
+          <tr>
+            <td><span class="mono">verify</span> rechaza un comando que parece razonable</td>
+            <td>El comando no empieza por ninguno de los prefijos permitidos, o es compuesto (<span class="mono">cd x && make test</span>)</td>
+            <td>Lanzarlo con el prefijo puro o pedir al orquestador que lo ejecute él</td>
+          </tr>
+          <tr>
+            <td><span class="mono">ui</span> queda sin responder</td>
+            <td>El permiso <span class="mono">ask</span> espera una aprobación que nadie ve porque la sesión va en segundo plano</td>
+            <td>Aprobar la petición en primera línea o no lanzar <span class="mono">ui</span> en segundo plano</td>
+          </tr>
+          <tr>
+            <td>El instalador imprime el bloque para pegar a mano</td>
+            <td>Tu configuración lleva comentarios JSONC, que el fusionado no reescribe</td>
+            <td>Pegar el bloque dentro del objeto raíz; la copia con fecha ya está hecha</td>
+          </tr>
+          <tr>
+            <td>El agente carga pero pierde su variante</td>
+            <td>La variante se escribió con almohadilla en la clave <span class="mono">agent</span> de la configuración</td>
+            <td>Moverla al campo <span class="mono">variant</span>, como en <a href="#configuracion">La configuración</a></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="limites">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">10</span><h2 class="title">Lo que no hace</h2></div>
+    <div class="limits">
+      <div class="limit">
+        <span class="tag">Delegación por prompt</span>
+        <h3>No obliga a delegar</h3>
+        <p>El contrato vive en el texto del orquestador. Si el modelo decide no delegar, no hay mecanismo de configuración que lo fuerce.</p>
+      </div>
+      <div class="limit">
+        <span class="tag">Anidamiento</span>
+        <h3>Un subagente no lanza otro</h3>
+        <p>La profundidad llega a un nivel. El orquestador junta los resultados de los subagentes; no hay cadenas de delegación.</p>
+      </div>
+      <div class="limit">
+        <span class="tag">Concurrencia</span>
+        <h3>No hay límite configurable</h3>
+        <p>El padre decide cuántas delegaciones lanza en paralelo y qué espera. El paquete no añade semáforos ni colas.</p>
+      </div>
+      <div class="limit">
+        <span class="tag">Extensiones</span>
+        <h3>Las tools traen su propio permiso</h3>
+        <p>Las herramientas de extensiones aplican el permiso que ellas mismas declaran; la prohibición de escribir en sistemas externos del proyecto vive en el prompt del orquestador, no en esta configuración.</p>
+      </div>
+      <div class="limit">
+        <span class="tag">Navegador</span>
+        <h3>No trae la skill de navegador</h3>
+        <p>La verificación de interfaz depende de que la máquina tenga <code>playwright-cli</code>. Sin ella, <span class="mono">ui</span> no tiene con qué recorrer.</p>
+      </div>
+      <div class="limit">
+        <span class="tag">Acceso al proveedor</span>
+        <h3>No gestiona la API key</h3>
+        <p>El paquete menciona el acceso en la comprobación, pero la autenticación con <code>opencode auth login</code> es tuya, por máquina.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="preguntas">
+  <div class="wrap">
+    <div class="section-head"><span class="section-num">11</span><h2 class="title">Preguntas cortas</h2></div>
+    <dl class="qa">
+      <dt>¿Puedo cambiar los modelos y las variantes?</dt>
+      <dd>Sí. Los de los cinco agentes están en el frontmatter de su fichero; los de <span class="mono">explore</span> y <span class="mono">general</span>, en el bloque <span class="mono">agent</span> de la configuración. Recuerda la regla de la almohadilla de la sección 06.</dd>
+      <dt>¿Cualquier máquina con OpenCode V2 vale?</dt>
+      <dd>Cualquiera con OpenCode V2 y acceso a los modelos <span class="mono">nan</span>. Windows y Linux llevan su instalador; la ruta de configuración es la de tu usuario en ambas.</dd>
+      <dt>¿Se puede desinstalar?</dt>
+      <dd>Borra los cinco ficheros de <span class="mono">~/.config/opencode/agents/</span> y quita del bloque <span class="mono">agent</span> los pares <span class="mono">explore</span> y <span class="mono">general</span>. No queda nada más que instalarlo haya creado.</dd>
+      <dt>¿Afecta al agente <span class="mono">build</span>?</dt>
+      <dd>No. El paquete no toca agentes existentes ni el agente de arranque; solo añade ficheros y dos overrides de modelo.</dd>
+      <dt>¿De dónde salen los datos de la medición?</dt>
+      <dd>Del plan de puesta a punto del epic tk-276 del tablero tasks-ai: tres proyectos reales, tres tareas por proyecto, los dos modelos candidatos como trabajador. El paquete recoge la decisión, no el banco de pruebas.</dd>
+    </dl>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap">
+    <span>Paquete <span class="mono">nan-opencode-delgation</span>, versión 0.1.0</span>
+    <span>Origen: las subtareas tk-277 a tk-281 del epic tk-276 del tablero tasks-ai</span>
+    <span>La referencia breve vive en <a href="README.md">README.md</a></span>
+    <span>7 de noviembre de 2026</span>
+  </div>
+</footer>
+
+</body>
+</html>
