@@ -26,6 +26,10 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   `serve-web.sh`, que sirve el paquete en el 8766: por `file://` las máscaras de los
   iconos y el resaltado de código no cargan.
 
+- Diagramas SVG en la guía: la sección 12 (Diagrama de arquitectura) dibuja el orquestador
+  con los seis agentes que toca y la sección 13 (Diagrama de flujo) recorre el contrato de
+  delegación, de la clasificación al cierre. Ambas heredan tema claro y oscuro.
+
 - Página de evaluación en `docs/web/evals.html` con la evidencia de las pruebas de los
   agentes: el smoke test de los cinco agentes con su diagrama y veredictos, la medición
   del modelo trabajador con su gráfico de barras, y las decisiones vivas que sostienen el
