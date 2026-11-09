@@ -53,7 +53,7 @@ se hace cuando toca, no al final:
 
 | Momento | Operación |
 |---|---|
-| Abrir el trabajo | `tasks-ai create --title "..."`; la tarea nace `open` |
+| Abrir el trabajo | `tasks-ai create --title "..."`; la tarea nace `open`. Un encargo sustancial nace con objetivo, alcance y criterios de aceptación en su descripción; un cambio pequeño, con un título claro |
 | Abrir el trabajo de una épica | `tasks-ai update <ref> --status in_progress` en la épica cuando empieza su primera hija; su cierre espera a que cierren todas |
 | Empezar el trabajo | `tasks-ai update <ref> --status in_progress` |
 | Surgir un avance, una decisión o un bloqueo | `tasks-ai comment <ref> --body "..."` en ese momento |
