@@ -188,15 +188,16 @@
     <a href="#empezar">02 · Empezar aquí</a>
     <a href="#arquitectura">03 · La arquitectura</a>
     <a href="#contrato">04 · El contrato de delegación</a>
-    <a href="#permisos">05 · Los permisos</a>
-    <a href="#configuracion">06 · La configuración</a>
-    <a href="#modelos">07 · El reparto de modelos</a>
-    <a href="#verificacion">08 · La verificación</a>
-    <a href="#errores">09 · Errores y qué significan</a>
-    <a href="#limites">10 · Lo que no hace</a>
-    <a href="#preguntas">11 · Preguntas cortas</a>
-    <a href="#diagrama-arquitectura">12 · Diagrama de arquitectura</a>
-    <a href="#diagrama-flujo">13 · Diagrama de flujo</a>
+    <a href="#metodologia">05 · La metodología ODD</a>
+    <a href="#permisos">06 · Los permisos</a>
+    <a href="#configuracion">07 · La configuración</a>
+    <a href="#modelos">08 · El reparto de modelos</a>
+    <a href="#verificacion">09 · La verificación</a>
+    <a href="#errores">10 · Errores y qué significan</a>
+    <a href="#limites">11 · Lo que no hace</a>
+    <a href="#preguntas">12 · Preguntas cortas</a>
+    <a href="#diagrama-arquitectura">13 · Diagrama de arquitectura</a>
+    <a href="#diagrama-flujo">14 · Diagrama de flujo</a>
   </nav>
 
   <main id="main">
@@ -253,19 +254,58 @@
 
     <section id="contrato">
       <div class="section-head"><span class="section-num">04</span><h2 class="title">El contrato de delegación</h2></div>
-      <p class="sub">Estas seis reglas son el prompt del orquestador, como están en <code>agents/orchestrator.md</code>. Vale leerlas antes de confiar en el reparto.</p>
+      <p class="sub">Estas siete reglas resumen el prompt del orquestador, que vive en <code>agents/orchestrator.md</code>. Vale leerlas antes de confiar en el reparto. Las reglas 2 y 4 desarrollan la metodología ODD de la <a href="#metodologia">sección siguiente</a>.</p>
       <ol class="rules">
         <li><strong>Clasifica la petición</strong>: pregunta, revisión, plan o implementación.</li>
+        <li><strong>El camino cotidiano es orgánico</strong>: describir el resultado, explorar el sistema real, aclarar solo las decisiones que pertenecen al humano, implementar lo autorizado, verificar proporcionalmente y conservar evidencia. Formalizar más —un plan, una especificación formal— es elección explícita de la persona, nunca una transición automática por tamaño o riesgo. Distingue hecho (comprobado en el repo o con una herramienta), inferencia (razonada pero sin verificar: se contrasta con herramientas antes de actuar sobre ella) y decisión (elección de diseño: es del humano).</li>
         <li><strong>Delega por defecto la implementación a <code>general</code>, sea cual sea su tamaño</strong>. Implementa tú solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor. Usa <code>explore</code> cuando una exploración independiente prepare mejor el encargo y <code>docs</code> para las actualizaciones documentales. No delegues preguntas sencillas ni lo que resuelvas sin tocar archivos; evita delegaciones redundantes.</li>
-        <li><strong>Después de implementar, lanza <code>verify</code> siempre</strong>. Lanza <code>review</code> solo si cambia comportamiento o contrato.</li>
-        <li><strong>Todo encargo a un subagente lleva objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación</strong>. Si el proyecto tiene sistema de seguimiento, pásale la referencia; el subagente no lo modifica.</li>
+        <li><strong>Verifica de forma proporcional al cambio</strong>: trivial → comprobación localizada; funcional → tests afectados y prueba funcional; transversal → suite relevante e integración; crítico → <code>verify</code> y, si cambia comportamiento o contrato, <code>review</code> independiente. <code>verify</code> es el mínimo tras cualquier cambio no trivial; en un crítico, <code>review</code> es obligatoria.</li>
+        <li><strong>Todo encargo a un subagente lleva objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación</strong>. Si el proyecto tiene sistema de seguimiento, pásale la referencia; el subagente no modifica el tablero ni inventa sus estados. Un encargo sustancial nace con objetivo, alcance y criterios de aceptación en la descripción de su tarea; los comentarios son la bitácora, en el momento en que surge cada avance; al dejar el trabajo queda un siguiente paso identificable. Un cambio pequeño no necesita más que un título claro.</li>
         <li><strong>Un subagente lanzado no es evidencia</strong>: revisa su salida antes de integrarla. El orquestador es el único que cierra.</li>
         <li><strong>Usa el trabajo en segundo plano solo para trabajo independiente</strong> y espera el aviso antes de integrar.</li>
       </ol>
     </section>
 
+    <section id="metodologia">
+      <div class="section-head"><span class="section-num">05</span><h2 class="title">La metodología ODD</h2></div>
+      <p class="sub">El orquestador no impone un trámite fijo: su camino cotidiano es orgánico —describir el resultado, explorar el sistema real, aclarar solo las decisiones que pertenecen a la persona, implementar lo autorizado, verificar proporcionalmente y conservar evidencia—. Es el flujo que el CHANGELOG llama ODD, <em>Organic Driven Development</em>, y que vive en las reglas 2 y 4 del contrato. Formalizar más —un plan, una especificación formal— es siempre elección explícita de la persona: el orquestador puede advertir que un cambio tiene implicaciones arquitectónicas y proponer formalizarlo, pero nunca cambia de proceso silenciosamente.</p>
+      <p>El lenguaje del flujo distingue tres cosas, y cada una se trata distinto:</p>
+      <div class="grid cols-3">
+        <div class="card">
+          <span class="mono">Hecho</span>
+          <h3>Comprobado</h3>
+          <p>Afirmación comprobada en el repositorio o con una herramienta. Los hechos se resuelven investigando: no se preguntan ni se suponen.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Inferencia</span>
+          <h3>Razonada sin verificar</h3>
+          <p>Conclusión razonada que ninguna herramienta ha confirmado. Antes de actuar sobre ella se contrasta con herramientas; si se eleva a la persona, se declara como lo que es.</p>
+        </div>
+        <div class="card">
+          <span class="mono">Decisión</span>
+          <h3>De la persona</h3>
+          <p>Elección de diseño. El orquestador presenta opciones y consecuencias, pero la autoridad de decidir no se concede ni se ejerce por su cuenta.</p>
+        </div>
+      </div>
+      <p>La verificación crece con el tamaño del cambio, no con la costumbre:</p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Cambio</th><th>Verificación que toca</th></tr></thead>
+          <tbody>
+            <tr><td>Trivial</td><td>Comprobación localizada</td></tr>
+            <tr><td>Funcional</td><td>Tests afectados y prueba funcional</td></tr>
+            <tr><td>Transversal</td><td>Suite relevante e integración</td></tr>
+            <tr><td>Crítico</td><td><code>verify</code> y, si cambia comportamiento o contrato, <code>review</code> independiente</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Tras cualquier cambio no trivial, <code>verify</code> es el mínimo; en un cambio crítico, <code>review</code> es obligatoria.</p>
+      <div class="note"><p><strong>Evidencia, no ceremonia.</strong> Menos documentación no es menos responsabilidad: el encargo sustancial nace con objetivo, alcance y criterios de aceptación en la descripción de su tarea, los comentarios del tablero son la bitácora al ritmo en que surge cada avance, y al dejar el trabajo queda un siguiente paso identificable. Un cambio pequeño no necesita más que un título claro.</p></div>
+      <div class="note"><p>El tablero lleva la etiqueta estructural <code>ODD</code> para el trabajo que nace de esta metodología; sus reglas viven en <code>.tasks-ai/CONTRATO_ETIQUETAS.md</code>.</p></div>
+    </section>
+
     <section id="permisos">
-      <div class="section-head"><span class="section-num">05</span><h2 class="title">Los permisos</h2></div>
+      <div class="section-head"><span class="section-num">06</span><h2 class="title">Los permisos</h2></div>
       <p class="sub">La defensa es en profundidad: el prompt marca la intención y los permisos del frontmatter bloquean o limitan la herramienta de edición, pero no el shell. La política base de OpenCode permite todo; por eso las listas que restringen empiezan por un <code>deny</code> que cierra el campo y después abren solo lo que se necesita. <code>review</code>, <code>docs</code> y <code>ui</code> pueden ejecutar comandos; lo que impide escribir por shell es el prompt. La de <code>ui</code> es la excepción deliberada en el navegador: no limita la edición, pide permiso antes de Playwright.</p>
       <div class="table-wrap">
         <table>
@@ -296,7 +336,7 @@
     </section>
 
     <section id="configuracion">
-      <div class="section-head"><span class="section-num">06</span><h2 class="title">La configuración</h2></div>
+      <div class="section-head"><span class="section-num">07</span><h2 class="title">La configuración</h2></div>
       <p class="sub">El paquete lleva en <code>config/opencode.jsonc</code> la plantilla que el instalador copia en una máquina sin configuración global. Solo contiene lo que la delegación necesita: si tu fichero ya existe, el instalador funde en él únicamente <code>agents.explore</code> y <code>agents.general</code>, conserva tus claves y agentes ajenos y te deja copia con fecha.</p>
       <div class="code"><pre data-language="json"><code>{
   "$schema": "https://opencode.ai/config.json",
@@ -310,7 +350,7 @@
     </section>
 
     <section id="modelos">
-      <div class="section-head"><span class="section-num">07</span><h2 class="title">El reparto de modelos</h2></div>
+      <div class="section-head"><span class="section-num">08</span><h2 class="title">El reparto de modelos</h2></div>
       <p class="sub">Ningún modelo se eligió a ciegas. El orquestador y la revisión llevan el modelo más capaz de los disponibles para su trabajo; el resto lleva variantes ajustadas a pasos concretos, porque un subagente acotado no necesita la variante más cara para hacer bien doce pasos.</p>
       <p>El frontmatter de <code>agents/</code> es la fuente canónica de modelos, pasos y permisos; la tabla es un resumen.</p>
       <div class="table-wrap">
@@ -331,7 +371,7 @@
     </section>
 
     <section id="verificacion">
-      <div class="section-head"><span class="section-num">08</span><h2 class="title">La verificación</h2></div>
+      <div class="section-head"><span class="section-num">09</span><h2 class="title">La verificación</h2></div>
       <p class="sub">Dos órdenes cierran la instalación: una mira si la máquina ve los modelos del proveedor, la otra si los agentes están cargados en el servicio. Configurar no exige reiniciar: OpenCode recarga los agentes al guardar los ficheros, y un cambio que no aparece suele ser camino de fichero equivocado, no de caché.</p>
       <div class="code"><pre data-language="bash"><code>opencode models | grep 'nan/'
 opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code></pre></div>
@@ -340,7 +380,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
     </section>
 
     <section id="errores">
-      <div class="section-head"><span class="section-num">09</span><h2 class="title">Errores y qué significan</h2></div>
+      <div class="section-head"><span class="section-num">10</span><h2 class="title">Errores y qué significan</h2></div>
       <div class="table-wrap wrap-cells">
         <table>
           <thead><tr><th>Síntoma</th><th>Suele ser</th><th>Qué mirar</th></tr></thead>
@@ -381,7 +421,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
     </section>
 
     <section id="limites">
-      <div class="section-head"><span class="section-num">10</span><h2 class="title">Lo que no hace</h2></div>
+      <div class="section-head"><span class="section-num">11</span><h2 class="title">Lo que no hace</h2></div>
       <div class="grid cols-3">
         <div class="card">
           <span class="mono">Delegación por prompt</span>
@@ -417,10 +457,10 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
     </section>
 
     <section id="preguntas">
-      <div class="section-head"><span class="section-num">11</span><h2 class="title">Preguntas cortas</h2></div>
+      <div class="section-head"><span class="section-num">12</span><h2 class="title">Preguntas cortas</h2></div>
       <dl class="qa">
         <dt>¿Puedo cambiar los modelos y las variantes?</dt>
-        <dd>Sí. Los de los agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agents</code> de la configuración. Recuerda la regla de la almohadilla de la sección 06.</dd>
+        <dd>Sí. Los de los agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agents</code> de la configuración. Recuerda la regla de la almohadilla de la sección 07.</dd>
         <dt>¿Cualquier máquina con OpenCode V2 vale?</dt>
         <dd>Cualquiera con OpenCode V2 y acceso a los modelos <code>nan</code>. Windows y Linux llevan su instalador; la ruta de configuración es la de tu usuario en ambas.</dd>
         <dt>¿Se puede desinstalar?</dt>
@@ -433,7 +473,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
     </section>
 
     <section id="diagrama-arquitectura">
-      <div class="section-head"><span class="section-num">12</span><h2 class="title">Diagrama de arquitectura</h2></div>
+      <div class="section-head"><span class="section-num">13</span><h2 class="title">Diagrama de arquitectura</h2></div>
       <p class="sub">La arquitectura de la sección 03, dibujada: el orquestador en el centro y los seis agentes que toca — cuatro subagentes por la herramienta <code>subagent</code> y dos integrados que el paquete fija en la configuración.</p>
       <figure class="diagram">
         <svg viewBox="0 0 880 680" role="img" aria-label="Diagrama de arquitectura: el orquestador, en el centro, conecta con verify, review, docs y ui por la herramienta subagent, y con explore y general por la configuración.">
@@ -552,7 +592,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
     </section>
 
     <section id="diagrama-flujo">
-      <div class="section-head"><span class="section-num">13</span><h2 class="title">Diagrama de flujo</h2></div>
+      <div class="section-head"><span class="section-num">14</span><h2 class="title">Diagrama de flujo</h2></div>
       <p class="sub">El contrato de la sección 04, del primer vistazo al cierre: cinco pasos que el orquestador recorre en cada encargo antes de dar nada por hecho.</p>
       <figure class="diagram">
         <svg viewBox="0 0 880 640" role="img" aria-label="Diagrama de flujo del contrato del orquestador: clasificar la petición, delegar, verificar, revisar la salida y cerrar con informe.">
@@ -572,7 +612,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
           <text x="195" y="300" text-anchor="middle" font-size="24" font-weight="700" fill="var(--text)">CONTRATO</text>
           <text x="195" y="322" text-anchor="middle" font-size="13" fill="var(--muted)">de delegación</text>
           <rect x="143" y="338" width="104" height="25" rx="12.5" fill="url(#gArc13)"/>
-          <text x="195" y="355" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff" letter-spacing="1">6 REGLAS</text>
+          <text x="195" y="355" text-anchor="middle" font-size="11.5" font-weight="700" fill="#fff" letter-spacing="1">7 REGLAS</text>
           <text x="195" y="390" text-anchor="middle" font-size="10.5" fill="var(--muted)">agents/orchestrator.md</text>
           <g fill="none" stroke="var(--border-strong)" stroke-width="1.6">
             <polyline points="282,231 352,80 424,80"/>
