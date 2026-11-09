@@ -8,6 +8,16 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Flujo de trabajo ODD (Organic Driven Development) en el orquestador: el camino cotidiano
+  es orgánico —explorar antes de modificar, decisiones humanas solo donde pertenecen,
+  verificación proporcional al cambio y evidencia recuperable— y formalizar más (plan,
+  especificación) es siempre elección explícita de la persona, nunca una transición
+  automática por tamaño o riesgo. Incluye el lenguaje hecho/inferencia/decisión, la
+  escalera de verificación (trivial, funcional, transversal, crítico) y la convención de
+  que una tarea sustancial nace con objetivo, alcance y criterios de aceptación.
+
+### Añadido
+
 - Paquete instalable con la delegación de subagentes `nan` para OpenCode V2: los agentes
   de configuración global (`orchestrator` primario; `verify`, `review`, `docs` y
   `ui` subagentes con permisos acotados), los overrides de modelo de los agentes
