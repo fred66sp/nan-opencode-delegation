@@ -57,7 +57,7 @@ se hace cuando toca, no al final:
 | Abrir el trabajo de una épica | `tasks-ai update <ref> --status in_progress` en la épica cuando empieza su primera hija; su cierre espera a que cierren todas |
 | Empezar el trabajo | `tasks-ai update <ref> --status in_progress` |
 | Surgir un avance, una decisión o un bloqueo | `tasks-ai comment <ref> --body "..."` en ese momento |
-| Dejar el trabajo a medias | `tasks-ai update <ref> --status open` |
+| Dejar el trabajo a medias | `tasks-ai update <ref> --status open`, y un comentario que señale el siguiente paso |
 | Terminar | informe a la persona y `tasks-ai close <ref> --reason done`, con su revisión o su pedido expreso |
 | Dejar de necesitarla sin hacerla | `tasks-ai close <ref> --reason duplicate`, `absorbed`, `stale` o `superseded` |
 
