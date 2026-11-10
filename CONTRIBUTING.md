@@ -45,6 +45,12 @@ Crear una rama local no integra ni publica nada.
 git log --format='%h %s' --grep='Refs: tk-1'
 ```
 
+- Todo cambio de código lleva en el cuerpo una línea de riesgo, `Risk: item N (motivo)` o
+  `Risk: none`. Los ítems: 1 datos o efectos irreversibles; 2 seguridad; 3 contratos que
+  otros consumen; 4 concurrencia; 5 entrega o entorno; 6 nada que detecte una regresión en
+  lo que cambia. Un riesgo alto añade una verificación independiente: otro agente lee el
+  criterio de la tarea y lo prueba contra el resultado real.
+
 - Ningún commit con cabos sueltos: lo que se descubre al prepararlo se arregla o se
   pregunta antes, no en un commit de corrección inmediata.
 - Sin firmas de IA ni líneas `Co-Authored-By` salvo petición expresa.

@@ -12,7 +12,7 @@ if (-not (Get-Command opencode -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# 1. Los agentes: verificacion, revision, documentacion, interfaz y orquestador.
+# 1. Los agentes: verificacion, revision, documentacion, interfaz, tablero y orquestador.
 $agentsDir = Join-Path $configRoot 'agents'
 New-Item -ItemType Directory -Force -Path $agentsDir | Out-Null
 $stamp = Get-Date -Format yyyyMMddHHmmss
@@ -27,7 +27,7 @@ Get-ChildItem (Join-Path $here 'agents\*.md') | ForEach-Object {
 Write-Host "Agentes copiados en $agentsDir :"
 Get-ChildItem $agentsDir -Filter *.md | ForEach-Object { Write-Host "  $($_.Name)" }
 
-# 2. Modelos de los agentes integrados explore y general.
+# 2. Modelos de explore y general, y la regla global que deniega tasks_*.
 $dest = @('opencode.jsonc', 'opencode.json') |
     ForEach-Object { Join-Path $configRoot $_ } |
     Where-Object { Test-Path $_ } |
@@ -80,6 +80,25 @@ else {
             if ($agents.PSObject.Properties[$pair.Name]) { $agents.($pair.Name) = $entry }
             else { $agents | Add-Member -NotePropertyName $pair.Name -NotePropertyValue $entry }
         }
+        $rule = [pscustomobject]@{ action = 'tasks_*'; resource = '*'; effect = 'deny' }
+        $permsProp = $data.PSObject.Properties['permissions']
+        if (-not $permsProp -or $null -eq $permsProp.Value) {
+            if ($permsProp) { $data.PSObject.Properties.Remove('permissions') }
+            $data | Add-Member -NotePropertyName permissions -NotePropertyValue @($rule)
+        }
+        elseif ($permsProp.Value -is [array]) {
+            $hasRule = @($permsProp.Value | Where-Object { $_.action -eq 'tasks_*' -and $_.effect -eq 'deny' }).Count -gt 0
+            if (-not $hasRule) { $data.permissions = @($permsProp.Value) + @($rule) }
+        }
+        elseif (($permsProp.Value -is [pscustomobject]) -and ($permsProp.Value.action -eq 'tasks_*') -and ($permsProp.Value.effect -eq 'deny')) {
+            # ConvertFrom-Json desenrolla el array de un solo elemento: la regla ya esta.
+        }
+        elseif ($permsProp.Value -is [pscustomobject]) {
+            $data.permissions = @($permsProp.Value) + @($rule)
+        }
+        else {
+            Write-Host "Aviso: la clave 'permissions' no es una lista; no se anade la regla de tasks_*."
+        }
         $utf8 = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($dest, (ConvertTo-Json $data -Depth 100), $utf8)
         Write-Host "Configuracion actualizada: $dest (copia previa en $backup)"
@@ -92,6 +111,9 @@ else {
         Write-Host '    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },'
         Write-Host '    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }'
         Write-Host '  },'
+        Write-Host '  "permissions": ['
+        Write-Host '    { "action": "tasks_*", "resource": "*", "effect": "deny" }'
+        Write-Host '  ],'
     }
 }
 
@@ -101,4 +123,4 @@ Write-Host '  opencode auth login        # elige el proveedor NaN y pega su API 
 Write-Host ''
 Write-Host 'Comprobacion:'
 Write-Host "  opencode models | Select-String 'nan/'"
-Write-Host "  opencode api get /api/agent | Select-String 'orchestrator|verify|review|docs|ui'"
+Write-Host "  opencode api get /api/agent | Select-String 'orchestrator|verify|review|docs|ui|tasks-agent'"

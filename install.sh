@@ -11,7 +11,7 @@ if ! command -v opencode >/dev/null 2>&1; then
   exit 1
 fi
 
-# 1. Los agentes: verificación, revisión, documentación, interfaz y orquestador.
+# 1. Los agentes: verificación, revisión, documentación, interfaz, tablero y orquestador.
 agents_dir="$config_root/agents"
 mkdir -p "$agents_dir"
 stamp="$(date +%Y%m%d%H%M%S)"
@@ -26,7 +26,7 @@ done
 echo "Agentes copiados en $agents_dir:"
 ls -1 "$agents_dir"/*.md
 
-# 2. Modelos de los agentes integrados explore y general.
+# 2. Modelos de explore y general, y la regla global que deniega tasks_*.
 dest=""
 for cand in "$config_root/opencode.jsonc" "$config_root/opencode.json"; do
   if [ -f "$cand" ]; then dest="$cand"; break; fi
@@ -63,6 +63,17 @@ elif old is not None:
 
 agents["explore"] = {"model": {"providerID": "nan", "model": "glm5.3-flash", "variant": "low"}}
 agents["general"] = {"model": {"providerID": "nan", "model": "deepseek-v4-flash", "variant": "high"}}
+
+rule = {"action": "tasks_*", "resource": "*", "effect": "deny"}
+perms = data.get("permissions")
+if perms is None:
+    data["permissions"] = [rule]
+elif isinstance(perms, list):
+    if not any(isinstance(r, dict) and r.get("action") == "tasks_*" and r.get("effect") == "deny" for r in perms):
+        perms.append(rule)
+else:
+    print("Aviso: la clave 'permissions' no es una lista; no se añade la regla de tasks_*.")
+
 with open(p, "w", encoding="utf-8") as f:
     json.dump(data, f, ensure_ascii=False, indent=2)
     f.write("\n")
@@ -78,6 +89,9 @@ PY
     "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },
     "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }
   },
+  "permissions": [
+    { "action": "tasks_*", "resource": "*", "effect": "deny" }
+  ],
 EOF
   fi
 fi
@@ -88,4 +102,4 @@ echo "  opencode auth login        # elige el proveedor NaN y pega su API key"
 echo ""
 echo "Comprobación:"
 echo "  opencode models | grep 'nan/'"
-echo "  opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'"
+echo "  opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-agent'"

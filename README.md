@@ -1,8 +1,10 @@
 # Delegación de subagentes nan para OpenCode
 
-Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un agente orquestador, cuatro subagentes con permisos acotados y los modelos de dos subagentes integrados del propio OpenCode (`explore` y `general`). La carpeta se copia tal cual a otra máquina y el instalador deja cada fichero en su sitio. No toca tu configuración más allá de lo que necesita: antes de escribir guarda una copia con fecha de la configuración y conserva las claves y agentes ajenos, aunque el fichero quede reescrito y normalizado. Los ficheros de `agents/` con el mismo nombre que uno tuyo se reemplazan tras guardar una copia `.bak` con fecha.
+Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un agente orquestador, cinco subagentes con permisos acotados —uno de ellos, `tasks-agent`, opera el tablero del proyecto— y los modelos de dos subagentes integrados del propio OpenCode (`explore` y `general`). La carpeta se copia tal cual a otra máquina y el instalador deja cada fichero en su sitio. No toca tu configuración más allá de lo que necesita: antes de escribir guarda una copia con fecha de la configuración y conserva las claves y agentes ajenos, aunque el fichero quede reescrito y normalizado. Los ficheros de `agents/` con el mismo nombre que uno tuyo se reemplazan tras guardar una copia `.bak` con fecha.
 
 Los ficheros de `agents/` son copias literales de la configuración que ya funciona en la máquina de origen. El paquete no es donde nacen los cambios de la delegación, sino por donde viajan.
+
+El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamaño del trabajo, registra el trabajo grande en el tablero —a través de `tasks-agent`— antes de escribir, y cierra cada cambio de código con una línea de riesgo; el riesgo alto pasa por verificación independiente.
 
 ## Documentación
 
@@ -24,13 +26,14 @@ Los ficheros de `agents/` son copias literales de la configuración que ya funci
 | `agents/review.md` | `~/.config/opencode/agents/review.md` | Revisa un cambio contra su criterio sin modificarlo |
 | `agents/docs.md` | `~/.config/opencode/agents/docs.md` | Documentación y CHANGELOG dentro de su perímetro |
 | `agents/ui.md` | `~/.config/opencode/agents/ui.md` | Verificación de interfaz con navegador; pide permiso para Playwright |
-| `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general` |
+| `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Operador del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
+| `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general` y la regla que deniega `tasks_*` |
 
 ## Requisitos
 
 - OpenCode V2 instalado y en el PATH ([https://opencode.ai](https://opencode.ai)).
 - Acceso a los modelos del proveedor `nan`: `opencode auth login` y elige el proveedor NaN para pegar su API key. Sin esto los agentes cargan pero no responden.
-- Para el agente `ui`, la skill `playwright-cli`. Es opcional: los otros cuatro agentes no la necesitan.
+- Para el agente `ui`, la skill `playwright-cli`. Es opcional: los otros cinco agentes no la necesitan.
 - En Linux y macOS, el instalador fusiona una configuración existente con Python cuando el fichero es JSON estricto; con comentarios JSONC o sin Python deja el fichero intacto e imprime el bloque exacto para pegar a mano.
 
 ## Instalación
@@ -51,22 +54,27 @@ El instalador resuelve todo desde su propia carpeta y el destino queda en el usu
 
 ### A mano
 
-Copia los ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `opencode.jsonc`, dentro del objeto raíz, este bloque:
+Copia los ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `opencode.jsonc`, dentro del objeto raíz, estos bloques:
 
 ```jsonc
 "agents": {
   "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },
   "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }
-}
+},
+"permissions": [
+  { "action": "tasks_*", "resource": "*", "effect": "deny" }
+]
 ```
 
 Un detalle que importa: en el frontmatter de los agentes en Markdown, el modelo lleva la variante con `#` (`nan/glm5.3-flash#high`). En `agents`, la variante va en el objeto `model` (`providerID`, `model`, `variant`) o en el string `nan/glm5.3-flash#low`; no hay campo `variant` suelto. `agent` en singular está obsoleto; el instalador escribe en `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
+
+La regla `permissions` deniega `tasks_*` a todos los agentes; solo `tasks-agent` las reabre en su frontmatter, y por eso es la única puerta del tablero. Corre en una sesión hija con contexto limpio: cada invocación recibe la intención, no el historial de la conversación.
 
 ## Verificación
 
 ```sh
 opencode models | grep 'nan/'
-opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'
+opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-agent'
 ```
 
 La primera orden confirma que la máquina ve los modelos de `nan`; la segunda, que los agentes están cargados. OpenCode recarga la configuración al guardarla: no hace falta reiniciar.
@@ -77,11 +85,12 @@ El frontmatter de `agents/` es la fuente canónica de modelos, pasos y permisos;
 
 | Agente | Modo | Modelo | Variante | Pasos | Permisos |
 |---|---|---|---|---|---|
-| `orchestrator` | primary | `nan/glm5.3-flash` | high | 60 | Lanza solo los subagentes que declara su frontmatter: `explore`, `general`, `verify`, `review`, `docs` y `ui` |
+| `orchestrator` | primary | `nan/glm5.3-flash` | high | 60 | Lanza solo los subagentes que declara su frontmatter: `explore`, `general`, `verify`, `review`, `docs`, `ui` y `tasks-agent` |
 | `verify` | subagent | `nan/qwen3.8-flash` | medium | 12 | Sin editar; shell con lista de prefijos |
 | `review` | subagent | `nan/glm5.3-flash` | xhigh | 12 | Sin editar; shell abierto |
 | `docs` | subagent | `nan/deepseek-v4-flash` | medium | 20 | Edición solo Markdown, `docs/` y `CHANGELOG`; shell abierto (el prompt le prohíbe código) |
 | `ui` | subagent | `nan/mimo-v2.6-flash` | medium | 20 | Edición permitida; Playwright con permiso `ask`; `npm run` y `pnpm` abiertos |
+| `tasks-agent` | subagent | `nan/mimo-v2.6-flash` | medium | 16 | Solo `tasks_*`: el resto de herramientas, denegado |
 | `explore` | integrado | `nan/glm5.3-flash` | low | — | Solo configuración |
 | `general` | integrado | `nan/deepseek-v4-flash` | high | — | Solo configuración |
 
