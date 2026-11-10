@@ -30,7 +30,8 @@ ser una introducción a la orquestación en general.
 ### Objetivos
 
 - Transportar la delegación tal cual: los ficheros de agente son copias literales
-  con su frontmatter de modelo, pasos y permisos.
+  con su frontmatter de modelo, pasos y permisos, incluido `tasks-agent`, el operador
+  del tablero que concentra las herramientas `tasks_*`.
 - Un instalador por familia de sistema: `install.sh` para Linux, macOS y WSL, e
   `install.ps1` para Windows, con el mismo comportamiento observable.
 - Documentación viva completa: guía HTML, README, PRD, CONTRIBUTING, CHANGELOG, AGENTS y
@@ -54,17 +55,22 @@ ser una introducción a la orquestación en general.
 - R1. El instalador copia los agentes de `agents/` a `~/.config/opencode/agents/`, honrando
   `XDG_CONFIG_HOME` si está definido.
 - R2. Si la configuración global no existe, el instalador crea una desde su plantilla con
-  el bloque `agents` de `explore` y `general`.
-- R3. Si ya existe, la fusión toca solo `agents.explore` y `agents.general`, conserva las
-  claves y los agentes ajenos de la configuración y deja copia con fecha y hora antes de
-  escribir.
+  el bloque `agents` de `explore` y `general` y la regla de `permissions` que deniega
+  `tasks_*`.
+- R3. Si ya existe, la fusión toca solo `agents.explore`, `agents.general` y la regla
+  global de `permissions`, conserva las claves y los agentes ajenos de la configuración y
+  deja copia con fecha y hora antes de escribir.
 - R4. Si el fichero de configuración no es JSON estricto (comentarios JSONC), no hay
   `python3` en Linux o la clave `agents` no es un objeto, el instalador aborta la escritura
-  con el fichero intacto, la copia previa hecha y el bloque exacto para pegar a mano.
+  con el fichero intacto, la copia previa hecha y los bloques exactos para pegar a mano.
 - R5. Reejecutar el instalador no duplica agentes ni corrompe la configuración.
 - R6. Los dos instaladores son idempotentes y no piden interacción.
 - R7. Antes de reemplazar un agente existente con el mismo nombre, el instalador guarda una
   copia `.bak.<fecha>`; si el contenido es idéntico, no crea copia.
+- R8. Los instaladores dejan en la configuración global una regla que deniega `tasks_*` a
+  todos los agentes; solo `tasks-agent` las reabre en su frontmatter. La regla se añade una
+  vez y reejecutar no la duplica; si `permissions` existe y no es una lista, avisan y no la
+  tocan.
 
 ### Reglas de negocio
 
@@ -78,6 +84,10 @@ ser una introducción a la orquestación en general.
   `CHANGELOG`; lo que impide escribir archivos o código por shell vive en el prompt.
 - La clave `agent` en singular está obsoleta en OpenCode V2: el instalador escribe en
   `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
+- Los instaladores funden solo `agents.explore`, `agents.general` y la regla global de
+  `permissions`; el resto de claves y agentes ajenos se conservan.
+- El tablero tiene una sola puerta: la configuración global deniega `tasks_*` a todos los
+  agentes y `tasks-agent` las reabre en su frontmatter; los demás delegan en él.
 - La prosa documental vive en castellano; los identificadores, rutas y comandos no se traducen.
 - La guía solo usa el verde donde algo se ha comprobado; los datos de medición nombran su
   método y su alcance.
@@ -106,6 +116,9 @@ ser una introducción a la orquestación en general.
   conserva esas claves y crea la copia `.bak` con fecha.
 - Con una configuración JSONC con comentarios, el instalador termina con código 0, imprime
   el bloque manual y el fichero queda byte a byte igual a su copia previa.
+- La fusión añade la regla de `permissions` una sola vez: reejecutar el instalador no la
+  duplica ni repite avisos; en el camino JSONC el bloque impreso incluye `agents` y
+  `permissions`.
 - Con una configuración que use la clave obsoleta `agent` solo para `explore` y `general`,
   el instalador los mueve a `agents` y retira `agent`; si `agent` tiene otras claves, las
   conserva y avisa.

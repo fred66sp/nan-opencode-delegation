@@ -1,6 +1,6 @@
 # nan-opencode-delegation
 
-> Paquete instalable con la orquestación de modelos del proveedor `nan` en OpenCode V2: un agente primario que planifica y delega, cuatro subagentes con permisos acotados y los overrides de modelo de los agentes integrados `explore` y `general`. Cada fuente canónica vive en su fichero; este fichero solo enlaza y no duplica descripciones.
+> Paquete instalable con la orquestación de modelos del proveedor `nan` en OpenCode V2: un agente primario que planifica y delega, cinco subagentes con permisos acotados —uno de ellos, `tasks-agent`, opera el tablero— y los overrides de modelo de los agentes integrados `explore` y `general`. Cada fuente canónica vive en su fichero; este fichero solo enlaza y no duplica descripciones.
 
 ## Documentación
 
@@ -18,6 +18,7 @@
 - [`agents/review.md`](agents/review.md)
 - [`agents/docs.md`](agents/docs.md)
 - [`agents/ui.md`](agents/ui.md)
+- [`agents/tasks-agent.md`](agents/tasks-agent.md)
 
 ## Instalación
 
@@ -27,7 +28,7 @@
 
 ## Desarrollo del paquete
 
-El desarrollo se sigue en su propio tablero tasks-ai, instalado en [`.tasks-ai/`](.tasks-ai/AGENTS.md); su estado (base y extensiones) no se versiona, sus instrucciones y contrato de etiquetas sí.
+El desarrollo se sigue en su propio tablero tasks-ai, instalado en [`.tasks-ai/`](.tasks-ai/AGENTS.md); su estado (base y extensiones) no se versiona, sus instrucciones y contrato de etiquetas sí. Las herramientas `tasks_*` tienen una sola puerta, el subagente `tasks-agent`: la configuración global las deniega al resto de agentes y él las reabre en su frontmatter.
 
 ## Servidor y visor
 

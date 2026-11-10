@@ -8,6 +8,15 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Subagente `tasks-agent`: operador exclusivo del tablero tasks-ai. Recibe la intención de
+  otro agente y la ejecuta con las herramientas `tasks_*`; no planifica ni toca nada fuera
+  del tablero. Sus permisos deniegan todo y reabren solo `tasks_*`, corre en una sesión
+  hija con contexto limpio y el orquestador le delega siempre las operaciones del tablero.
+
+- Regla global de `permissions` que deniega `tasks_*` a todos los agentes; solo
+  `tasks-agent` las reabre en su frontmatter. Los instaladores la añaden una sola vez y, en
+  el camino JSONC, imprimen el bloque a mano junto al de `agents`.
+
 - Flujo de trabajo ODD (Organic Driven Development) en el orquestador: el camino cotidiano
   es orgánico —explorar antes de modificar, decisiones humanas solo donde pertenecen,
   verificación proporcional al cambio y evidencia recuperable— y formalizar más (plan,
@@ -15,6 +24,13 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   automática por tamaño o riesgo. Incluye el lenguaje hecho/inferencia/decisión, la
   escalera de verificación (trivial, funcional, transversal, crítico) y la convención de
   que una tarea sustancial nace con objetivo, alcance y criterios de aceptación.
+
+- Protocolo ODD desarrollado y línea de riesgo: la guía explica cómo se decide, se registra
+  y se cierra el trabajo —tamaño, tablero, commits, riesgo y reparto— y el contrato del
+  orquestador incorpora el test de la sesión interrumpida, el registro del trabajo grande
+  en el tablero a través de `tasks-agent` antes de escribir y la línea `Risk: item N
+  (motivo)` o `Risk: none`, con verificación independiente para el riesgo alto.
+  `CONTRIBUTING` alinea la línea de riesgo en los commits.
 
 ### Añadido
 
