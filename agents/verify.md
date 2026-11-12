@@ -43,8 +43,22 @@ permissions:
   - action: shell
     resource: "git diff*"
     effect: allow
+  - action: shell
+    resource: "python3 *"
+    effect: allow
+  - action: shell
+    resource: "python *"
+    effect: allow
+  - action: shell
+    resource: "bash check-package.sh *"
+    effect: allow
+  - action: shell
+    resource: "bash check-package.sh"
+    effect: allow
 ---
 
 Ejecuta las comprobaciones del proyecto. Descubre cuáles son antes de correrlas: lee `Makefile`, `package.json`, `go.mod`, `pyproject.toml` y la configuración de integración continua. No lleves una lista fija.
+
+Lanza cada comando de uno en uno y desde el directorio de trabajo de la herramienta, sin encadenar con `&&`, `;` ni `cd`: cada subcomando se comprueba por separado y un `cd` encadenado carece de permiso.
 
 Devuelve cada comando con su resultado y lo que no pudiste probar. No arregles nada ni edites archivos.
