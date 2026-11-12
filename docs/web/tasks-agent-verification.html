@@ -486,7 +486,7 @@
         <dt>¿La latencia es una comparación entre modelos?</dt>
         <dd>No. Son dos lecturas por modelo, n=2, con <code>opencode run</code>. Sirve para fijar el orden de magnitud; no alcanza para declarar un modelo más rápido con generalidad. La comparación que decide es la del arnés, y también declara su sesgo: 2+1 runs por modelo y una carga de gemma4 que solo cubrió un caso.</dd>
         <dt>¿La batería es una suite automatizada?</dt>
-        <dd>No. Los diez casos de arriba son una batería manual. El arnés de la segunda medición sí se ejecuta, pero no se versiona: el paquete no distribuye código fuera de sus instaladores y de la puerta de verificación <code>check-package.sh</code>. Lo que viaja es el método y los resultados, en <a href="../evals/README.md">docs/evals/README.md</a>.</dd>
+        <dd>No. Los diez casos de arriba son una batería manual. El arnés de la segunda medición sí se ejecuta, pero no se versiona: el paquete no distribuye código fuera de sus instaladores, de la puerta de verificación <code>check-package.sh</code> y de la herramienta del flujo <code>agents/orchestrator-runner.py</code>. Lo que viaja es el método y los resultados, en <a href="../evals/README.md">docs/evals/README.md</a>.</dd>
         <dt>¿El sandbox es el sistema completo?</dt>
         <dd>No. Replica el plugin y el CLI sobre un tablero propio creado con <code>tasks-ai init</code>. No replica el orquestador completo ni sus sesiones hijas.</dd>
         <dt>¿Qué cubren entonces las pruebas en vivo?</dt>

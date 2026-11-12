@@ -19,6 +19,7 @@
 - [`agents/docs.md`](agents/docs.md)
 - [`agents/ui.md`](agents/ui.md)
 - [`agents/tasks-agent.md`](agents/tasks-agent.md)
+- [`agents/orchestrator-runner.py`](agents/orchestrator-runner.py) — guía determinista del flujo del orquestador: fase actual, lista operativa y `next`
 
 ## Instalación
 

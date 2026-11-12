@@ -12,11 +12,12 @@ if (-not (Get-Command opencode -ErrorAction SilentlyContinue)) {
     exit 1
 }
 
-# 1. Los agentes: verificacion, revision, documentacion, interfaz, tablero y orquestador.
+# 1. Los agentes —verificacion, revision, documentacion, interfaz, tablero y orquestador—
+# y la herramienta del flujo, en el mismo directorio.
 $agentsDir = Join-Path $configRoot 'agents'
 New-Item -ItemType Directory -Force -Path $agentsDir | Out-Null
 $stamp = Get-Date -Format yyyyMMddHHmmss
-Get-ChildItem (Join-Path $here 'agents\*.md') | ForEach-Object {
+Get-ChildItem (Join-Path $here 'agents\*') -File | ForEach-Object {
     $target = Join-Path $agentsDir $_.Name
     if ((Test-Path $target) -and ((Get-FileHash $_.FullName).Hash -ne (Get-FileHash $target).Hash)) {
         Copy-Item $target ($target + '.bak.' + $stamp)
@@ -25,7 +26,7 @@ Get-ChildItem (Join-Path $here 'agents\*.md') | ForEach-Object {
     Copy-Item -Force $_.FullName $agentsDir
 }
 Write-Host "Agentes copiados en $agentsDir :"
-Get-ChildItem $agentsDir -Filter *.md | ForEach-Object { Write-Host "  $($_.Name)" }
+Get-ChildItem $agentsDir -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
 
 # 2. Modelos de explore y general, y la regla global que deniega tasks_*.
 $dest = @('opencode.jsonc', 'opencode.json') |

@@ -40,14 +40,15 @@ else
   echo "    el fichero no carga como JSON estricto"
 fi
 
-# c. Instalación limpia: agentes y configuración en un HOME vacío.
-step "instalación limpia en un HOME temporal"
+# c. Instalación limpia: agentes, herramienta del flujo y configuración en un HOME vacío.
+step "instalación limpia en un HOME temporal (agentes, herramienta y configuración)"
 home_c="$tmp/home-clean"
 mkdir -p "$home_c"
 if env -u XDG_CONFIG_HOME HOME="$home_c" bash install.sh >"$tmp/clean.log" 2>&1; then
   cfg_c="$home_c/.config/opencode/opencode.jsonc"
   [ -f "$cfg_c" ] || cfg_c="$home_c/.config/opencode/opencode.json"
-  if [ -d "$home_c/.config/opencode/agents" ] && [ -f "$cfg_c" ]; then
+  if [ -d "$home_c/.config/opencode/agents" ] && [ -f "$cfg_c" ] &&
+    [ -x "$home_c/.config/opencode/agents/orchestrator-runner.py" ]; then
     ok
   else
     ko
