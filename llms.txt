@@ -25,6 +25,7 @@
 - [`install.sh`](install.sh) — Linux, macOS y WSL
 - [`install.ps1`](install.ps1) — Windows (PowerShell)
 - [`config/opencode.jsonc`](config/opencode.jsonc) — plantilla de configuración
+- [`check-package.sh`](check-package.sh) — batería de verificación del paquete de una vez
 
 ## Desarrollo del paquete
 

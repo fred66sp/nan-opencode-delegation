@@ -6,7 +6,8 @@ delegación antes de empaquetarlos. El material se generó los días 6 y 7 de no
 (copia hecha por la persona de `opencode.db`) y de los resúmenes de sesión de Engram.
 No es una batería ejecutable: es el registro de lo que se probó y lo que falló. La
 excepción es el arnés de `tasks-agent` de la última sección: se ejecuta, pero no se
-versiona porque el paquete no distribuye código fuera de los dos instaladores.
+versiona porque el paquete no distribuye código fuera de los dos instaladores y del script
+de verificación `check-package.sh`.
 
 ## Qué hay
 
