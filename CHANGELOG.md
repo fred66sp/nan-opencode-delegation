@@ -15,7 +15,10 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   Los instaladores la depositan junto a los agentes
   (`~/.config/opencode/agents/`), ejecutable en Unix, con la misma idempotencia y copia
   `.bak.<fecha>` que los agentes; su estado vive en el `.run/` del proyecto en el que se
-  trabaja, no junto al script. El PRD ajusta su alcance: sigue sin código que compilar, con
+  trabaja, no junto al script. Para que el agente no toque el registro a mano, el paquete
+  lleva un `.llmignore` con la regla, aplicable con el plugin `opencode-ignore-file`
+  instalado globalmente (acción manual de máquina; los instaladores no lo tocan).
+  El PRD ajusta su alcance: sigue sin código que compilar, con
   los dos instaladores, la puerta de verificación y esta herramienta.
 
 - Subagente `tasks-agent`: operador exclusivo del tablero tasks-ai. Recibe la intención de
