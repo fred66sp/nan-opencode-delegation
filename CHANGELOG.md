@@ -10,7 +10,9 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 - Herramienta del flujo `agents/orchestrator-runner.py`: guía determinista del orquestador
   que muestra la fase actual con su lista operativa y sus advertencias, y solo avanza con
-  `next`. Sin dependencias y sin reloj. Los instaladores la depositan junto a los agentes
+  `next` — que exige la evidencia de la fase completada: sin ella, pide la que toca y no
+  avanza; con ella, la registra en el historial del estado. Sin dependencias y sin reloj.
+  Los instaladores la depositan junto a los agentes
   (`~/.config/opencode/agents/`), ejecutable en Unix, con la misma idempotencia y copia
   `.bak.<fecha>` que los agentes; su estado vive en el `.run/` del proyecto en el que se
   trabaja, no junto al script. El PRD ajusta su alcance: sigue sin código que compilar, con

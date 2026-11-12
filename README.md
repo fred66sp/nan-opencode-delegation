@@ -27,7 +27,7 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 | `agents/docs.md` | `~/.config/opencode/agents/docs.md` | Documentación y CHANGELOG dentro de su perímetro |
 | `agents/ui.md` | `~/.config/opencode/agents/ui.md` | Verificación de interfaz con navegador; pide permiso para Playwright |
 | `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Operador del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
-| `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` para avanzar |
+| `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` con la evidencia de la fase para avanzar |
 | `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general` y la regla que deniega `tasks_*` |
 
 ## Requisitos

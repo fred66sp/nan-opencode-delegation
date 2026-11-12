@@ -131,6 +131,9 @@ ser una introducción a la orquestación en general.
 - Invocada desde el directorio de un proyecto arbitrario, la herramienta crea su estado en
   el `.run/orchestrator-runner.json` de ese proyecto y guía el flujo; nunca escribe estado
   junto al script instalado.
+- `next` sin evidencia no avanza: pide la evidencia esperada para la fase actual y se
+  queda donde está; con evidencia (`next "texto"`), la registra en el historial del
+  estado y avanza. Un registro viejo con solo la fase sigue aceptándose.
 - Con una configuración JSON preexistente con claves ajenas (`share`, `mcp`), la fusión
   conserva esas claves y crea la copia `.bak` con fecha.
 - Con una configuración JSONC con comentarios, el instalador termina con código 0, imprime

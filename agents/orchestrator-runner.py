@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-"""Guía determinista del flujo del orquestador: la fase actual, su lista operativa y sus
-advertencias. Sin dependencias y sin reloj: la misma entrada produce la misma salida.
+"""Guía determinista del flujo del orquestador: la fase actual, su lista operativa, sus
+advertencias y la evidencia que hace falta para dejarla. Sin dependencias y sin reloj: la
+misma entrada produce la misma salida.
 """
 
 import json
@@ -16,6 +17,7 @@ PHASES = [
     {
         "name": "Inicio de sesión",
         "when": "al empezar cualquier sesión, antes de lanzar subagentes o tocar archivos",
+        "evidence": "qué se leyó (memoria de la sesión, tablero y `AGENTS.md` del proyecto)",
         "steps": [
             "Recuperar el contexto con `mem_context`; `mem_search` si la petición toca algo ya trabajado.",
             "Leer el `AGENTS.md` del proyecto y su mapa de fuentes antes de decidir nada.",
@@ -30,6 +32,7 @@ PHASES = [
     {
         "name": "Clasificar el encargo",
         "when": "en cuanto llega la petición, antes de cualquier escritura",
+        "evidence": "la clasificación del encargo y, si es planificación, el acuerdo explícito de la persona",
         "steps": [
             "Clasificar la petición: pregunta, revisión, plan o implementación.",
             "Pregunta, revisión o plan son solo lectura: no se escribe sin una petición explícita de implementar.",
@@ -44,6 +47,7 @@ PHASES = [
     {
         "name": "Tamaño y tablero",
         "when": "tras clasificar como implementación y antes de la primera escritura",
+        "evidence": "la referencia de la tarea (`tk-n`) o «pequeño sin tarea, con autorización de la persona»",
         "steps": [
             "Aplicar el test de la sesión interrumpida: si la sesión se parara ahora, ¿alguien podría terminar el trabajo con la petición original y `git diff`?",
             "Respuesta sí: trabajo pequeño. No se crea tarea nueva, salvo que la persona la quiera.",
@@ -58,6 +62,7 @@ PHASES = [
     {
         "name": "Explorar",
         "when": "antes de proponer o editar, en proporción a la petición",
+        "evidence": "las fuentes exploradas: código, requisitos y lo que el cambio debe alcanzar",
         "steps": [
             "Leer el código y los requisitos que la petición toca.",
             "En repositorios con `.codegraph/`, `codegraph explore \"...\"` antes de buscar a mano.",
@@ -71,6 +76,7 @@ PHASES = [
     {
         "name": "Decidir",
         "when": "cuando aparece una duda de diseño o de producto",
+        "evidence": "la decisión tomada o «sin decisiones del humano»",
         "steps": [
             "Resolver los hechos investigando: repo, herramientas, documentación del paquete.",
             "Elevar solo las decisiones que son del humano: producto, alcance, formato, permisos, pérdida de datos.",
@@ -85,6 +91,7 @@ PHASES = [
     {
         "name": "Delegar",
         "when": "antes de lanzar un subagente",
+        "evidence": "los subagentes lanzados y la tarea de cada uno",
         "steps": [
             "Todo encargo lleva cuatro cosas: objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación; si hay tablero, la referencia de la tarea.",
             "Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación, `verify` y `review` para verificación independiente, `tasks-agent` para el tablero.",
@@ -99,6 +106,7 @@ PHASES = [
     {
         "name": "Verificar",
         "when": "tras cualquier cambio y antes del commit o del cierre",
+        "evidence": "el escalón de verificación aplicado y su resultado",
         "steps": [
             "Elegir el escalón: trivial → comprobación localizada; funcional → tests afectados y prueba funcional; transversal → suite relevante e integración; crítico → `verify` y, si cambia comportamiento o contrato, `review`.",
             "`verify` es el mínimo tras cualquier cambio no trivial.",
@@ -114,6 +122,7 @@ PHASES = [
     {
         "name": "Riesgo",
         "when": "en todo cambio de código, antes de preparar el commit",
+        "evidence": "la línea `Risk:` escrita",
         "steps": [
             "Recorrer los seis ítems: 1 datos o efectos irreversibles; 2 seguridad; 3 contratos que otros consumen; 4 concurrencia; 5 entrega o entorno; 6 nada que detecte una regresión en lo que cambia.",
             "Escribir la línea `Risk: item N (motivo)` si toca alguno, o `Risk: none` si no toca ninguno.",
@@ -126,6 +135,7 @@ PHASES = [
     {
         "name": "Commit",
         "when": "cuando el criterio está verificado y el trabajo está listo para integrarse",
+        "evidence": "la revisión o confirmación de la persona recibida",
         "steps": [
             "Preparar el commit y presentar el informe de preparación: qué entra, qué queda fuera y qué comprobaciones se ejecutaron.",
             "Esperar la confirmación explícita: cubre lo presentado, y un cambio de alcance pide otra.",
@@ -142,6 +152,7 @@ PHASES = [
     {
         "name": "Cierre de tarea",
         "when": "tras el commit, al terminar la unidad de trabajo",
+        "evidence": "la tarea cerrada o el siguiente paso declarado",
         "steps": [
             "Comprobar el criterio de la tarea contra el resultado real.",
             "Dejar la bitácora como comentario en términos del producto: qué se hizo y qué se comprobó, vía `tasks-agent`.",
@@ -157,6 +168,7 @@ PHASES = [
     {
         "name": "Memoria y sesión",
         "when": "tras cada decisión, bugfix o hallazgo, y antes de decir «done»",
+        "evidence": "ninguna: es la última fase y no hay transición que justificar; para reiniciar, borra el estado",
         "steps": [
             "Guardar con `mem_save` tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema.",
             "Antes de decir «done» o cerrar la sesión, `mem_session_summary` con objetivo, hallazgos, lo hecho, siguiente paso y archivos relevantes.",
@@ -172,40 +184,55 @@ HELP = """\
 Guía determinista del flujo del orquestador. La fase la decide este registro, no el agente.
 
 Uso, desde la raíz del proyecto en el que se trabaja:
-  ~/.config/opencode/agents/orchestrator-runner.py         muestra la fase actual sin cambiar el estado
-  ~/.config/opencode/agents/orchestrator-runner.py next    avanza a la siguiente fase y la muestra
-  ~/.config/opencode/agents/orchestrator-runner.py --help  esta ayuda
+  ~/.config/opencode/agents/orchestrator-runner.py                muestra la fase actual sin cambiar el estado
+  ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
+  ~/.config/opencode/agents/orchestrator-runner.py next "texto"   registra el texto como evidencia, avanza y muestra la nueva fase
+  ~/.config/opencode/agents/orchestrator-runner.py --help         esta ayuda
 
-Estado: .run/orchestrator-runner.json, en el directorio actual, con la forma {"phase": N}.
-El directorio actual es el proyecto en el que se trabaja; el estado nunca se escribe junto al
-script instalado.
-Si falta, la fase inicial es la 1 y la primera invocación crea el fichero. Un fichero
-corrupto o inválido vuelve a la fase 1 con un aviso por stderr. Para reiniciar, bórralo.
-`next` es la única forma de avanzar; en la fase 11 avisa de que es la última y no avanza.
+`next` exige evidencia: sin texto no avanza (código 0, es una consulta) y pide la evidencia de
+la fase actual. Un único argumento de texto; varios puntos van en el mismo texto separados por
+`;`. Texto vacío o solo espacios, o más de un argumento, son error de uso (código 1). En la fase
+11 no hay transición: `next`, con o sin evidencia, avisa de que es la última y no avanza.
+
+Estado: .run/orchestrator-runner.json, en el directorio actual, con la forma
+{"phase": N, "evidence": [{"phase": N, "text": "..."}]}, donde cada entrada es la evidencia con
+la que se dejó esa fase. Un estado viejo con solo {"phase": N} se acepta como fase válida y
+historial vacío. El directorio actual es el proyecto en el que se trabaja; el estado nunca se
+escribe junto al script instalado. Si falta, la fase inicial es la 1 y la primera invocación
+crea el fichero. Un fichero corrupto o con la fase fuera de rango vuelve a la fase 1 con un
+aviso por stderr; una evidencia que no es una lista se descarta con aviso y la fase se conserva.
+Para reiniciar, borra el fichero: el historial de evidencia vive en él.
+
+Códigos de salida: 0 consulta o avance correctos; 1 error de uso o no se pudo escribir el estado.
 
 Fases:
 """ + "".join("  %2d  %s\n" % (i, p["name"]) for i, p in enumerate(PHASES, 1))
 
+USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | --help]'
 
-def load_phase():
-    """Devuelve (fase, corrupto). Un estado ausente es la fase 1 sin aviso."""
+
+def load_state():
+    """Devuelve (fase, evidencias, corrupto, evidencia_invalida). Estado ausente: fase 1 sin aviso."""
     if not os.path.exists(STATE):
-        return 1, False
+        return 1, [], False, False
     try:
         with open(STATE, encoding="utf-8") as f:
             data = json.load(f)
         phase = data["phase"]
-        if type(phase) is int and 1 <= phase <= len(PHASES):
-            return phase, False
+        if not (type(phase) is int and 1 <= phase <= len(PHASES)):
+            return 1, [], True, False
+        evidence = data.get("evidence", [])
+        if not isinstance(evidence, list):
+            return phase, [], False, True
+        return phase, evidence, False, False
     except (OSError, ValueError, KeyError, TypeError):
-        pass
-    return 1, True
+        return 1, [], True, False
 
 
-def save_phase(phase):
+def save_state(phase, evidence):
     os.makedirs(os.path.dirname(STATE), exist_ok=True)
     with open(STATE, "w", encoding="utf-8") as f:
-        json.dump({"phase": phase}, f)
+        json.dump({"phase": phase, "evidence": evidence}, f)
         f.write("\n")
 
 
@@ -217,6 +244,18 @@ def render(phase):
     return "\n".join(lines)
 
 
+def render_evidence(phase):
+    p = PHASES[phase - 1]
+    return "\n".join([
+        "",
+        "Evidencia para dejar la fase %d/%d · %s:" % (phase, len(PHASES), p["name"]),
+        "  Se espera que declares %s." % p["evidence"],
+        "  Sin ella el runner no avanza: sigues en la fase %d." % phase,
+        '  Para avanzar: orchestrator-runner.py next "texto de evidencia"',
+        "  Varios puntos van en el mismo texto, separados por `;`.",
+    ])
+
+
 def main(argv):
     args = argv[1:]
     if args and args[0] in ("--help", "-h"):
@@ -226,30 +265,44 @@ def main(argv):
         return 0
     if args and args[0] != "next":
         return usage_error(args)
-    if len(args) > 1:
+    if len(args) > 2:
         return usage_error(args)
-
-    phase, corrupt = load_phase()
-    if corrupt:
-        print("aviso: estado inválido en %s; se vuelve a la fase 1" % STATE, file=sys.stderr)
-    if args and phase < len(PHASES):
-        phase += 1
-    try:
-        save_phase(phase)
-    except OSError as e:
-        print("error: no se pudo escribir %s: %s" % (STATE, e), file=sys.stderr)
+    text = args[1] if len(args) == 2 else None
+    if text is not None and not text.strip():
+        print("error: la evidencia no puede estar vacía ni ser solo espacios", file=sys.stderr)
+        print(USAGE, file=sys.stderr)
         return 1
 
+    phase, evidence, corrupt, bad_evidence = load_state()
+    if corrupt:
+        print("aviso: estado inválido en %s; se vuelve a la fase 1" % STATE, file=sys.stderr)
+    if bad_evidence:
+        print("aviso: historial de evidencia inválido en %s; se descarta" % STATE, file=sys.stderr)
+
+    # La fase 11 no tiene transición: solo informa, con evidencia o sin ella.
+    advances = text is not None and phase < len(PHASES)
+    if advances:
+        evidence.append({"phase": phase, "text": text})
+        phase += 1
+    if not args or advances:
+        try:
+            save_state(phase, evidence)
+        except OSError as e:
+            print("error: no se pudo escribir %s: %s" % (STATE, e), file=sys.stderr)
+            return 1
+
     print(render(phase))
-    if args and phase == len(PHASES):
+    if phase == len(PHASES):
         print("")
         print("Última fase (%d/%d): el runner no avanza más." % (phase, len(PHASES)))
+    elif text is None:
+        print(render_evidence(phase))
     return 0
 
 
 def usage_error(args):
     print("error: argumento no reconocido: %s" % " ".join(args), file=sys.stderr)
-    print("uso: orchestrator-runner.py [next | --help]", file=sys.stderr)
+    print(USAGE, file=sys.stderr)
     return 1
 
 
