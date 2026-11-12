@@ -9,8 +9,9 @@ los frontmatters de los agentes, un bloque de configuración y dos lecciones de 
 solo viven en la cabeza de quien lo montó.
 
 El producto es una carpeta autocontenida, versionada en Git, que contiene los artefactos
-canónicos, los instaladores para las dos familias de sistema y la documentación que
-explica qué instala, cómo se comprueba y dónde se acaba. Quien copie la carpeta y lance el
+canónicos, los instaladores para las dos familias de sistema, la puerta de verificación que
+los comprueba y la documentación que explica qué instala, cómo se comprueba y dónde se
+acaba. Quien copie la carpeta y lance el
 instalador de su sistema debe quedarse con la misma delegación que la máquina de origen,
 sin leerse la historia de cómo se llegó a ella.
 
@@ -39,8 +40,8 @@ ser una introducción a la orquestación en general.
 
 ### No objetivos
 
-- No trae código ejecutable fuera de los dos instaladores: nada que compilar ni
-  dependencias que gestionar.
+- No trae código ejecutable fuera de los dos instaladores y la puerta de verificación
+  `check-package.sh`: nada que compilar ni dependencias que gestionar.
 - No orquesta nada por sí mismo: la delegación es un contrato por prompt que OpenCode
   carga con los agentes; sin OpenCode el paquete es papel.
 - No gestiona el acceso al proveedor `nan`: la API key se configura con
@@ -71,6 +72,13 @@ ser una introducción a la orquestación en general.
   todos los agentes; solo `tasks-agent` las reabre en su frontmatter. La regla se añade una
   vez y reejecutar no la duplica; si `permissions` existe y no es una lista, avisan y no la
   tocan.
+- R9. `check-package.sh` ejecuta de una vez la batería de verificación: sintaxis de
+  `install.sh`, plantilla JSON estricta, instalación limpia en un `HOME` temporal, fusión
+  con claves ajenas y copia `.bak`, camino JSONC con el fichero intacto y el bloque manual
+  impreso, y `diff` contra los agentes instalados. No pide interacción, solo escribe en
+  directorios temporales y devuelve 0 si todo está en verde o un código distinto de 0 con
+  el nombre de la comprobación fallida. Si la máquina no tiene agentes instalados, omite el
+  `diff` con un aviso y no lo cuenta como fallo.
 
 ### Reglas de negocio
 
@@ -126,8 +134,14 @@ ser una introducción a la orquestación en general.
   instalador lo reemplaza y deja `orchestrator.md.bak.<fecha>`; una segunda ejecución sin
   cambios no crea otra copia.
 - `diff -r` entre `agents/` del paquete y la configuración global de la máquina de origen
-  no reporta diferencias.
+  no reporta diferencias, excluidas las copias `.bak` que el propio instalador deja (R7).
 - La plantilla `config/opencode.jsonc` carga como JSON estricto.
 - La guía parsea como HTML con etiquetas balanceadas y sus enlaces internos resuelven a
   secciones existentes.
 - Los datos de la tabla de modelos coinciden con los frontmatter declarados en `agents/`.
+- Con `HOME` limpio, `bash check-package.sh` termina con código 0 y nombra en verde cada
+  comprobación.
+- Con un `install.sh` roto o un `config/opencode.jsonc` inválido, `bash check-package.sh`
+  termina con código distinto de 0 y nombra la comprobación fallida.
+- Ejecutar `bash check-package.sh` no cambia la configuración real del usuario: solo la lee
+  para el `diff` contra los agentes instalados.

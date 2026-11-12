@@ -32,7 +32,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   (motivo)` o `Risk: none`, con verificación independiente para el riesgo alto.
   `CONTRIBUTING` alinea la línea de riesgo en los commits.
 
-### Añadido
+- Puerta de verificación `check-package.sh`: ejecuta de una vez la batería que CONTRIBUTING
+  describe en prosa —sintaxis del instalador, plantilla JSON estricta, instalación limpia,
+  fusión con claves ajenas y copia `.bak`, camino JSONC y `diff` contra la máquina—, sin
+  interacción y escribiendo solo en temporales. El PRD ajusta su alcance: el paquete sigue
+  sin código que compilar, ahora con los dos instaladores y este script.
 
 - Paquete instalable con la delegación de subagentes `nan` para OpenCode V2: los agentes
   de configuración global (`orchestrator` primario; `verify`, `review`, `docs` y

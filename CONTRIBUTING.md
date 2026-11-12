@@ -59,13 +59,15 @@ git log --format='%h %s' --grep='Refs: tk-1'
 
 ## Verificación
 
-La verificación es proporcional al cambio. Batería completa de este paquete, que cabe en
-unas pocas órdenes:
+La verificación es proporcional al cambio. La batería completa de este paquete está
+automatizada en `bash check-package.sh`, que ejecuta de una vez las comprobaciones que
+siguen. Esta lista sigue siendo la definición de la batería y la vía manual cuando no se
+quiere o no se puede usar el script:
 
 ```bash
 bash -n install.sh
 python3 -c "import json; json.load(open('config/opencode.jsonc'))"
-diff -r agents ~/.config/opencode/agents
+diff -r -x '*.bak.*' agents "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/agents"   # sin copias .bak (R7)
 env -u XDG_CONFIG_HOME HOME=$(mktemp -d) bash install.sh   # instalación limpia
 ```
 

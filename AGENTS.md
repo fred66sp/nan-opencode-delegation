@@ -12,6 +12,7 @@ enlaza.
 | Qué hace cada agente, con qué modelo y qué permisos | `agents/<nombre>.md`, frontmatter y prompt |
 | Cómo se evaluaron los agentes y qué demostró cada prueba | [`docs/evals/README.md`](docs/evals/README.md) |
 | Qué instala exactamente el instalador y qué hace con una config existente | [`install.sh`](install.sh), [`install.ps1`](install.ps1) |
+| Comprobar el paquete entero de una vez | [`check-package.sh`](check-package.sh) |
 | Qué fragmento de configuración se añade y cómo se escribe la variante | [`config/opencode.jsonc`](config/opencode.jsonc), [`README.md`](README.md) |
 | Requisitos, alcance y criterios de aceptación | [`docs/PRD.md`](docs/PRD.md) |
 | Qué cambió en cada versión | [`CHANGELOG.md`](CHANGELOG.md) |
