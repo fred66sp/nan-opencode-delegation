@@ -100,6 +100,17 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Corregido
 
+- `orchestrator-runner.py` no ofrecía forma de reiniciar el flujo: su estado está vetado
+  al agente por el `.llmignore` del paquete y su ayuda mandaba «borra el fichero» a mano —
+  imposible para quien lo ejecuta, y el runner quedaba clavado en la última fase. Ahora
+  tiene el subcomando `reset`, que borra fase e historial y devuelve a la fase 1; el
+  estado sigue moviéndose solo por el runner.
+
+- `tasks-agent` tardaba demasiado en operaciones simples: recibe ahora un prompt
+  compactado a las guardas esenciales, `steps: 8` y la variante `#low`; sus permisos no
+  cambian (`tasks_*`, sólo). Una operación trivial cocinada cae de minutos a segundos;
+  el resto del tiempo bajo no era suyo, era del encargo.
+
 - La guía deja de presentar el instalador de Windows como pendiente de prueba: se ha
   ejecutado y verificado con el PowerShell de Windows, también desde WSL, y la guía y
   CONTRIBUTING lo declaran a la par que el de Linux.

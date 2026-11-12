@@ -168,11 +168,11 @@ PHASES = [
     {
         "name": "Memoria y sesión",
         "when": "tras cada decisión, bugfix o hallazgo, y antes de decir «done»",
-        "evidence": "ninguna: es la última fase y no hay transición que justificar; para reiniciar, borra el estado",
+        "evidence": "ninguna: es la última fase y no hay transición que justificar; el reinicio lo hace `reset`",
         "steps": [
             "Guardar con `mem_save` tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema.",
             "Antes de decir «done» o cerrar la sesión, `mem_session_summary` con objetivo, hallazgos, lo hecho, siguiente paso y archivos relevantes.",
-            "Dejar el runner en fase 1 al terminar la sesión; si queda trabajo abierto, en la fase donde queda.",
+            "Al terminar la sesión, `reset` devuelve el flujo a la fase 1; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.",
         ],
         "warnings": [
             "Lo que no se guarda se pierde en la próxima sesión.",
@@ -187,6 +187,7 @@ Uso, desde la raíz del proyecto en el que se trabaja:
   ~/.config/opencode/agents/orchestrator-runner.py                muestra la fase actual sin cambiar el estado
   ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
   ~/.config/opencode/agents/orchestrator-runner.py next "texto"   registra el texto como evidencia, avanza y muestra la nueva fase
+  ~/.config/opencode/agents/orchestrator-runner.py reset          borra el estado: vuelve a la fase 1 sin historial
   ~/.config/opencode/agents/orchestrator-runner.py --help         esta ayuda
 
 `next` exige evidencia: sin texto no avanza (código 0, es una consulta) y pide la evidencia de
@@ -201,14 +202,14 @@ historial vacío. El directorio actual es el proyecto en el que se trabaja; el e
 escribe junto al script instalado. Si falta, la fase inicial es la 1 y la primera invocación
 crea el fichero. Un fichero corrupto o con la fase fuera de rango vuelve a la fase 1 con un
 aviso por stderr; una evidencia que no es una lista se descarta con aviso y la fase se conserva.
-Para reiniciar, borra el fichero: el historial de evidencia vive en él.
+Para reiniciar, `reset`: borra el fichero completo —fase e historial— sin tocar nada más.
 
 Códigos de salida: 0 consulta o avance correctos; 1 error de uso o no se pudo escribir el estado.
 
 Fases:
 """ + "".join("  %2d  %s\n" % (i, p["name"]) for i, p in enumerate(PHASES, 1))
 
-USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | --help]'
+USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | reset | --help]'
 
 
 def load_state():
@@ -262,6 +263,19 @@ def main(argv):
         if len(args) > 1:
             return usage_error(args)
         print(HELP, end="")
+        return 0
+    if args and args[0] == "reset":
+        if len(args) > 1:
+            return usage_error(args)
+        if os.path.exists(STATE):
+            try:
+                os.remove(STATE)
+            except OSError as e:
+                print("error: no se pudo borrar %s: %s" % (STATE, e), file=sys.stderr)
+                return 1
+            print("estado borrado: la próxima invocación empieza en la fase 1 sin historial")
+        else:
+            print("sin estado: sigues en la fase 1")
         return 0
     if args and args[0] != "next":
         return usage_error(args)
