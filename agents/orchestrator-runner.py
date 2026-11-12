@@ -8,7 +8,8 @@ import os
 import sys
 
 # El estado vive en el .run/ del directorio actual, que es el proyecto en el que se trabaja.
-# shortcut: invocar desde la raíz del proyecto; desde otro directorio crea su propio .run/.
+# shortcut: invocar desde la raíz del proyecto en el que se trabaja (este paquete u otro);
+# desde otro directorio crea su propio .run/.
 STATE = os.path.join(".run", "orchestrator-runner.json")
 
 PHASES = [
@@ -19,7 +20,7 @@ PHASES = [
             "Recuperar el contexto con `mem_context`; `mem_search` si la petición toca algo ya trabajado.",
             "Leer el `AGENTS.md` del proyecto y su mapa de fuentes antes de decidir nada.",
             "Consultar el tablero (en curso y listas para empezar) a través de `tasks-agent`.",
-            "Comprobar la fase con `./orchestrator-runner.py`; si la sesión anterior dejó otra y empiezas trabajo nuevo, borra `.run/orchestrator-runner.json` para volver a la fase 1.",
+            "Comprobar la fase con `~/.config/opencode/agents/orchestrator-runner.py`; si la sesión anterior dejó otra y empiezas trabajo nuevo, borra `.run/orchestrator-runner.json` para volver a la fase 1.",
         ],
         "warnings": [
             "Nada se lanza antes de leer la memoria de la sesión y el tablero.",
@@ -170,12 +171,14 @@ PHASES = [
 HELP = """\
 Guía determinista del flujo del orquestador. La fase la decide este registro, no el agente.
 
-Uso:
-  ./orchestrator-runner.py         muestra la fase actual sin cambiar el estado
-  ./orchestrator-runner.py next    avanza a la siguiente fase y la muestra
-  ./orchestrator-runner.py --help  esta ayuda
+Uso, desde la raíz del proyecto en el que se trabaja:
+  ~/.config/opencode/agents/orchestrator-runner.py         muestra la fase actual sin cambiar el estado
+  ~/.config/opencode/agents/orchestrator-runner.py next    avanza a la siguiente fase y la muestra
+  ~/.config/opencode/agents/orchestrator-runner.py --help  esta ayuda
 
 Estado: .run/orchestrator-runner.json, en el directorio actual, con la forma {"phase": N}.
+El directorio actual es el proyecto en el que se trabaja; el estado nunca se escribe junto al
+script instalado.
 Si falta, la fase inicial es la 1 y la primera invocación crea el fichero. Un fichero
 corrupto o inválido vuelve a la fase 1 con un aviso por stderr. Para reiniciar, bórralo.
 `next` es la única forma de avanzar; en la fase 11 avisa de que es la última y no avanza.

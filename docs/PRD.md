@@ -40,8 +40,9 @@ ser una introducción a la orquestación en general.
 
 ### No objetivos
 
-- No trae código ejecutable fuera de los dos instaladores y la puerta de verificación
-  `check-package.sh`: nada que compilar ni dependencias que gestionar.
+- No trae código ejecutable fuera de los dos instaladores, la puerta de verificación
+  `check-package.sh` y la herramienta del flujo `agents/orchestrator-runner.py`: nada que
+  compilar ni dependencias que gestionar.
 - No orquesta nada por sí mismo: la delegación es un contrato por prompt que OpenCode
   carga con los agentes; sin OpenCode el paquete es papel.
 - No gestiona el acceso al proveedor `nan`: la API key se configura con
@@ -53,8 +54,11 @@ ser una introducción a la orquestación en general.
 
 ### Funcionales
 
-- R1. El instalador copia los agentes de `agents/` a `~/.config/opencode/agents/`, honrando
-  `XDG_CONFIG_HOME` si está definido.
+- R1. El instalador copia los agentes de `agents/` y la herramienta del flujo
+  `agents/orchestrator-runner.py` a `~/.config/opencode/agents/`, honrando
+  `XDG_CONFIG_HOME` si está definido. En Unix la herramienta queda con permiso de ejecución;
+  si ya existe una con el mismo nombre y contenido distinto, deja copia `.bak.<fecha>` antes
+  de reemplazarla, con la política de R7.
 - R2. Si la configuración global no existe, el instalador crea una desde su plantilla con
   el bloque `agents` de `explore` y `general` y la regla de `permissions` que deniega
   `tasks_*`.
@@ -75,14 +79,14 @@ ser una introducción a la orquestación en general.
 - R9. `check-package.sh` ejecuta de una vez la batería de verificación: sintaxis de
   `install.sh`, plantilla JSON estricta, instalación limpia en un `HOME` temporal, fusión
   con claves ajenas y copia `.bak`, camino JSONC con el fichero intacto y el bloque manual
-  impreso, y `diff` contra los agentes instalados. No pide interacción, solo escribe en
-  directorios temporales y devuelve 0 si todo está en verde o un código distinto de 0 con
+  impreso, y `diff` contra los agentes y la herramienta instalados. No pide interacción,
+  solo escribe en directorios temporales y devuelve 0 si todo está en verde o un código distinto de 0 con
   el nombre de la comprobación fallida. Si la máquina no tiene agentes instalados, omite el
   `diff` con un aviso y no lo cuenta como fallo.
 
 ### Reglas de negocio
 
-- Los artefactos de `agents/` son copias byte a byte de la configuración que funciona; el
+- Los ficheros `agents/*.md` son copias byte a byte de la configuración que funciona; el
   paquete no es el lugar de donde nacen los cambios, sino por donde viajan.
 - La variante de modelo usa `#variant` en el frontmatter Markdown y en la forma abreviada
   de `agents`; en `agents` también puede ir en el objeto `model` (`providerID`, `model`,
@@ -118,8 +122,15 @@ ser una introducción a la orquestación en general.
 
 ## 5. Criterios de aceptación
 
-- Con `HOME` limpio, `bash install.sh` crea los agentes y una configuración nueva
-  desde la plantilla; salida por pantalla nombra ambos destinos.
+- Con `HOME` limpio, `bash install.sh` crea los agentes, la herramienta del flujo y una
+  configuración nueva desde la plantilla; salida por pantalla nombra ambos destinos.
+- La herramienta queda en `~/.config/opencode/agents/orchestrator-runner.py` con permiso de
+  ejecución y su contenido coincide con el del paquete. Reejecutar el instalador con el
+  contenido idéntico no crea `.bak`; con contenido distinto, deja
+  `orchestrator-runner.py.bak.<fecha>` antes de reemplazarlo.
+- Invocada desde el directorio de un proyecto arbitrario, la herramienta crea su estado en
+  el `.run/orchestrator-runner.json` de ese proyecto y guía el flujo; nunca escribe estado
+  junto al script instalado.
 - Con una configuración JSON preexistente con claves ajenas (`share`, `mcp`), la fusión
   conserva esas claves y crea la copia `.bak` con fecha.
 - Con una configuración JSONC con comentarios, el instalador termina con código 0, imprime
@@ -134,7 +145,8 @@ ser una introducción a la orquestación en general.
   instalador lo reemplaza y deja `orchestrator.md.bak.<fecha>`; una segunda ejecución sin
   cambios no crea otra copia.
 - `diff -r` entre `agents/` del paquete y la configuración global de la máquina de origen
-  no reporta diferencias, excluidas las copias `.bak` que el propio instalador deja (R7).
+  no reporta diferencias —incluida `agents/orchestrator-runner.py`—, excluidas las copias
+  `.bak` que el propio instalador deja (R7).
 - La plantilla `config/opencode.jsonc` carga como JSON estricto.
 - La guía parsea como HTML con etiquetas balanceadas y sus enlaces internos resuelven a
   secciones existentes.

@@ -8,6 +8,14 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Herramienta del flujo `agents/orchestrator-runner.py`: guía determinista del orquestador
+  que muestra la fase actual con su lista operativa y sus advertencias, y solo avanza con
+  `next`. Sin dependencias y sin reloj. Los instaladores la depositan junto a los agentes
+  (`~/.config/opencode/agents/`), ejecutable en Unix, con la misma idempotencia y copia
+  `.bak.<fecha>` que los agentes; su estado vive en el `.run/` del proyecto en el que se
+  trabaja, no junto al script. El PRD ajusta su alcance: sigue sin código que compilar, con
+  los dos instaladores, la puerta de verificación y esta herramienta.
+
 - Subagente `tasks-agent`: operador exclusivo del tablero tasks-ai. Recibe la intención de
   otro agente y la ejecuta con las herramientas `tasks_*`; no planifica ni toca nada fuera
   del tablero. Sus permisos deniegan todo y reabren solo `tasks_*`, corre en una sesión

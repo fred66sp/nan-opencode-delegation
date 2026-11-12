@@ -2,7 +2,7 @@
 
 Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un agente orquestador, cinco subagentes con permisos acotados —uno de ellos, `tasks-agent`, opera el tablero del proyecto— y los modelos de dos subagentes integrados del propio OpenCode (`explore` y `general`). La carpeta se copia tal cual a otra máquina y el instalador deja cada fichero en su sitio. No toca tu configuración más allá de lo que necesita: antes de escribir guarda una copia con fecha de la configuración y conserva las claves y agentes ajenos, aunque el fichero quede reescrito y normalizado. Los ficheros de `agents/` con el mismo nombre que uno tuyo se reemplazan tras guardar una copia `.bak` con fecha.
 
-Los ficheros de `agents/` son copias literales de la configuración que ya funciona en la máquina de origen. El paquete no es donde nacen los cambios de la delegación, sino por donde viajan.
+Los ficheros `agents/*.md` son copias literales de la configuración que ya funciona en la máquina de origen; la herramienta del flujo, `agents/orchestrator-runner.py`, nace en el paquete. El paquete no es donde nacen los cambios de la delegación, sino por donde viajan.
 
 El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamaño del trabajo, registra el trabajo grande en el tablero —a través de `tasks-agent`— antes de escribir, y cierra cada cambio de código con una línea de riesgo; el riesgo alto pasa por verificación independiente.
 
@@ -27,6 +27,7 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 | `agents/docs.md` | `~/.config/opencode/agents/docs.md` | Documentación y CHANGELOG dentro de su perímetro |
 | `agents/ui.md` | `~/.config/opencode/agents/ui.md` | Verificación de interfaz con navegador; pide permiso para Playwright |
 | `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Operador del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
+| `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` para avanzar |
 | `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general` y la regla que deniega `tasks_*` |
 
 ## Requisitos

@@ -11,20 +11,23 @@ if ! command -v opencode >/dev/null 2>&1; then
   exit 1
 fi
 
-# 1. Los agentes: verificación, revisión, documentación, interfaz, tablero y orquestador.
+# 1. Los agentes —verificación, revisión, documentación, interfaz, tablero y orquestador—
+# y la herramienta del flujo, en el mismo directorio.
 agents_dir="$config_root/agents"
 mkdir -p "$agents_dir"
 stamp="$(date +%Y%m%d%H%M%S)"
-for src in "$here"/agents/*.md; do
+for src in "$here"/agents/*; do
+  [ -f "$src" ] || continue   # salta directorios sueltos (p. ej. __pycache__ de py_compile)
   target="$agents_dir/$(basename "$src")"
   if [ -f "$target" ] && ! cmp -s "$src" "$target"; then
     cp "$target" "$target.bak.$stamp"
     echo "Copia previa del agente: $target.bak.$stamp"
   fi
   cp "$src" "$target"
+  if [ -x "$src" ]; then chmod 755 "$target"; fi
 done
 echo "Agentes copiados en $agents_dir:"
-ls -1 "$agents_dir"/*.md
+ls -1 "$agents_dir"/*.md "$agents_dir"/orchestrator-runner.py
 
 # 2. Modelos de explore y general, y la regla global que deniega tasks_*.
 dest=""
