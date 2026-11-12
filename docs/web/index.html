@@ -245,7 +245,7 @@
         <div class="flow-step"><code>review</code><strong>glm5.3-flash#xhigh · 12</strong><p>Hallazgos con fichero y línea. No edita.</p></div>
         <div class="flow-step"><code>docs</code><strong>deepseek-v4-flash#medium · 20</strong><p>Markdown, docs/ y CHANGELOG. Nada de código.</p></div>
         <div class="flow-step"><code>ui</code><strong>mimo-v2.6-flash#medium · 20</strong><p>Navegador con permiso ask para Playwright.</p></div>
-        <div class="flow-step"><code>tasks-agent</code><strong>mimo-v2.6-flash · 16</strong><p>Opera el tablero: solo las herramientas <code>tasks_*</code>.</p></div>
+        <div class="flow-step"><code>tasks-agent</code><strong>mimo-v2.6-flash#low · 8</strong><p>Opera el tablero: solo las herramientas <code>tasks_*</code>.</p></div>
         <div class="flow-step"><code>general</code><strong>deepseek-v4-flash · variant high · config</strong><p>La implementación que el orquestador le delega por defecto.</p></div>
         <div class="flow-step"><code>explore</code><strong>glm5.3-flash · variant low · config</strong><p>Búsqueda y contexto rápido. No edita por diseño.</p></div>
         <div class="flow-step"><code>build</code><strong>arranque por defecto, sin cambios</strong><p>Sigue siendo el agente con el que se abre OpenCode.</p></div>
@@ -396,7 +396,7 @@
             <tr><td><code>review</code></td><td>subagent</td><td><code>nan/glm5.3-flash</code></td><td>xhigh</td><td>12</td><td>La revisión gasta más razón por paso</td></tr>
             <tr><td><code>docs</code></td><td>subagent</td><td><code>nan/deepseek-v4-flash</code></td><td>medium</td><td>20</td><td>Prosa en su perímetro propio</td></tr>
             <tr><td><code>ui</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>medium</td><td>20</td><td>Recorre y relata lo que ve</td></tr>
-            <tr><td><code>tasks-agent</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>medium</td><td>16</td><td>Opera el tablero con las herramientas <code>tasks_*</code></td></tr>
+            <tr><td><code>tasks-agent</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>low</td><td>8</td><td>Opera el tablero con las herramientas <code>tasks_*</code></td></tr>
             <tr><td><code>explore</code></td><td>integrado</td><td><code>nan/glm5.3-flash</code></td><td>low</td><td>—</td><td>Contexto rápido, bajo coste</td></tr>
             <tr><td><code>general</code></td><td>integrado</td><td><code>nan/deepseek-v4-flash</code></td><td>high</td><td>—</td><td>El trabajador de los grandes encargos</td></tr>
           </tbody>
@@ -611,7 +611,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
                 <path d="M-4,-7 V7 M1,-7 V7"/>
               </g>
               <text x="522" y="472" font-size="16.5" font-weight="700" fill="var(--text)">tasks-agent</text>
-              <text x="522" y="494">subagente · nan/mimo-v2.6-flash · 16 pasos</text>
+              <text x="522" y="494">subagente · nan/mimo-v2.6-flash · 8 pasos</text>
               <text x="522" y="513">Puerta de las herramientas tasks_*: solo tablero.</text>
               <rect x="756" y="450" width="82" height="22" rx="11" fill="url(#gArc12)"/>
               <text x="797" y="465" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" letter-spacing=".5">tasks_*</text>

@@ -91,7 +91,7 @@ El frontmatter de `agents/` es la fuente canónica de modelos, pasos y permisos;
 | `review` | subagent | `nan/glm5.3-flash` | xhigh | 12 | Sin editar; shell abierto |
 | `docs` | subagent | `nan/deepseek-v4-flash` | medium | 20 | Edición solo Markdown, `docs/` y `CHANGELOG`; shell abierto (el prompt le prohíbe código) |
 | `ui` | subagent | `nan/mimo-v2.6-flash` | medium | 20 | Edición permitida; Playwright con permiso `ask`; `npm run` y `pnpm` abiertos |
-| `tasks-agent` | subagent | `nan/mimo-v2.6-flash` | medium | 16 | Solo `tasks_*`: el resto de herramientas, denegado |
+| `tasks-agent` | subagent | `nan/mimo-v2.6-flash` | low | 8 | Solo `tasks_*`: el resto de herramientas, denegado |
 | `explore` | integrado | `nan/glm5.3-flash` | low | — | Solo configuración |
 | `general` | integrado | `nan/deepseek-v4-flash` | high | — | Solo configuración |
 
