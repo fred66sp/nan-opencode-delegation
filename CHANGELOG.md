@@ -118,3 +118,9 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 - La prosa de README, guía y evals ya no menciona el modelo `nan/glm5.3` sin flash, fuera
   del plan del proveedor; las transcripciones históricas de `docs/evals/` se conservan tal
   como se ejecutaron.
+
+- `verify` deja de quedarse bloqueado en modo estático: su allowlist de shell cubre ahora
+  `python3`, `python` y la batería `bash check-package.sh` del paquete, y su prompt ordena
+  lanzar los comandos de uno en uno, sin `cd` ni encadenados, porque el scanner comprueba
+  cada subcomando por separado y un `cd` encadenado no tiene permiso. La guía refleja los
+  quince prefijos.
