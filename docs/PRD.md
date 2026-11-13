@@ -112,7 +112,11 @@ ser una introducción a la orquestación en general.
   el permiso.
 - El tablero tiene una sola puerta: la configuración global deniega `tasks_*` a todos los
   agentes y `tasks-agent` las reabre en su frontmatter; los demás le delegan las escrituras
-  del tablero, mientras las lecturas van directas por la CLI `tasks-ai`. Los lotes de
+  del tablero, mientras las lecturas van directas por la CLI `tasks-ai`. A `tasks-agent` no se le delega ninguna
+   lectura ni investigación —ni a través de la intención del encargo—: el encargo lleva
+   cada operación con sus campos, etiquetas y referencias ya resueltas por el orquestador,
+   y ante una instrucción que no pueda ejecutar con `tasks_*`, el escritor devuelve un
+   fallo de una línea y para. Los lotes de
   creación —épica, subtareas, etiquetas, comentario— van en un único encargo ordenado, en
   segundo plano, y se comprueban por CLI antes de usar su resultado; el cierre y el
   comentario de bitácora del momento van en primer plano.

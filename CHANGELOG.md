@@ -112,6 +112,15 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   de resultado por operación; sus `steps` suben de 8 a 16. La regla global de `permissions`
   no cambia.
 
+- El contrato del tablero cierra la puerta a las lecturas delegadas: a `tasks-agent` no se le
+  encarga ninguna lectura ni investigación, tampoco a través de la intención del encargo; no
+  puede leer ficheros, ni contratos como `CONTRATO_ETIQUETAS.md`, ni consultar catálogos o el
+  binario, y cada operación viaja con sus campos, etiquetas y referencias ya resueltos por el
+  orquestador, que obtiene por CLI lo que le falte antes de delegar. `tasks-agent` añade la
+  guarda simétrica: si el encargo trae algo que no se ejecuta con las herramientas `tasks_*`,
+  devuelve un fallo de una línea con la causa y para, sin reconstruir contexto leyendo o
+  mostrando tareas. README y guía cuentan el mismo contrato.
+
 - Configuración migrada a la clave `agents` de OpenCode V2: la plantilla, los instaladores y
   la documentación usan `agents`; el instalador mueve los overrides `explore` y `general`
   desde la clave obsoleta `agent` y conserva el resto de claves.

@@ -61,183 +61,152 @@ cubría el rol worker. La primera fila del CSV (`task=?`) es una ejecución de
 calentamiento, fuera de la tabla. La pared del CSV difiere en décimas de la
 publicada en el tablero por el punto de corte (sesión completa frente a tarea).
 
-## Arnés de tasks-agent (tk-17, 10 de noviembre de 2026)
+## Arnés de tasks-agent (tk-35, 13 de noviembre de 2026)
 
-`tasks-agent` es el subagente que opera el tablero y la única puerta de las
-herramientas `tasks_*`. Este arnés mide dos cosas por caso: si cumple el contrato
-del subagente —comprobado contra el estado real del tablero del sandbox— y cuánto
-tarda, en limpio y bajo carga concurrente. Vive en `.run/eval-tasks-agent.sh`,
-ignorado por git; lo que viaja es este método y los resultados, no el script.
+La ley de `tasks-agent` cambió: ejecuta encargos 100 % cocinados, falla en una línea
+cuando el encargo pide algo que no puede hacer y no reconstruye contexto leyendo o
+mostrando el tablero. Este arnés mide esa ley. Vive en `.run/eval-tasks-agent.sh`,
+ignorado por git; lo que viaja es este método, los casos y los JSONL de este
+directorio. Sustituye al arnés de tk-17 y a sus mediciones del 10 de noviembre
+(`gemma4`, `qwen3.6` y `mimo-v2.6-flash`), que quedan en el historial de git.
 
 ### Método
 
 | Pieza | Cómo se hizo |
 |---|---|
-| Sandbox | `mktemp -d` bajo `/tmp/opencode`, `tasks-ai init`, `opencode.jsonc` con el plugin local y cuatro fixtures: `tk-1` padre en curso, `tk-2` subtarea abierta, `tk-3` cerrada y `tk-4` abierta. La base se restaura desde una copia limpia antes de cada caso. |
-| Caso | Un proceso `opencode run --auto --agent tasks-agent --model M -- "<encargo>"` con el sandbox como directorio de trabajo y sesión limpia. No se usa `--standalone`: el servidor compartido es el del uso real. |
-| Tiempo | Pared de `python3` con `time.monotonic` alrededor del subproceso, no `/usr/bin/time`. Timeout de 60 s en limpio y 180 s bajo carga; un timeout cuenta como caso no aprobado. |
-| Verificación | `python3` relee el tablero con el CLI del sandbox (`list` y `show` por referencia) y lo compara con la instantánea previa. El veredicto exige estado y respuesta, no solo que el proceso termine. |
-| Aislamiento | Si el caso de lectura nombra referencias fuera de `tk-1..tk-4`, el arnés aborta antes de los casos de escritura: el servidor compartido puede resolver otro proyecto si el proceso no arranca en el sandbox. |
-| Carga | Un subagente pesado real (`general`, `deepseek-v4-flash#high`) analiza `agents/` y `docs/`; se lanza 2 s antes de la batería y se termina al acabar. Cada registro anota `load_alive`. |
-| Salida | Una línea JSONL por caso (`ts`, `model`, `scenario`, `case`, `wall_seconds`, `verdict`, `evidence`) y una tabla con casos aprobados y mínimo, mediana y máximo de pared. |
+| Sandbox | `mktemp -d` bajo `/tmp/opencode`, `tasks-ai init` y un `opencode.jsonc` con el plugin local `./.tasks-ai/extensions/opencode` y la regla que deniega `tasks_*`; el frontmatter del agente es lo único que las reabre. |
+| Agente medido | El `~/.config/opencode/agents/tasks-agent.md` global debe ser idéntico a `agents/tasks-agent.md` o el arnés aborta. El modelo se lee del frontmatter y no se sobrescribe con `--model`. |
+| Fixtures | Cuatro tareas para los casos 1, 4, 5, 6 y 7: `tk-1` padre en curso, `tk-2` subtarea abierta, `tk-3` cerrada y `tk-4` abierta. Tablero vacío para los casos 2 y 3. |
+| Base limpia | Antes de cada caso se restaura `tasks.db` desde una copia prístina hecha tras `init`; ninguna semilla de un caso alcanza al siguiente. |
+| Caso | Un proceso `opencode run --auto --agent tasks-agent --format json --archived -- "<encargo>"` con el sandbox como directorio de trabajo y sesión propia. No se usa `--standalone`: el servidor compartido es el del uso real. |
+| Tiempo | Pared de `python3` con `time.monotonic` alrededor del subproceso. Timeout de 60 s en limpio y 180 s bajo carga; un timeout cuenta como caso no aprobado. |
+| Verificación | El CLI del sandbox relee el tablero (`list` y `show` por referencia) y el arnés compara la instantánea canónica de antes y después. El veredicto exige estado del tablero y respuesta, no solo que el proceso termine. |
+| Cadena de herramientas | Los eventos JSON de la ejecución se separan en lecturas (`tasks_board`, `tasks_show`, `tasks_comment_list`), escrituras y herramientas ajenas; los errores de las llamadas se conservan como evidencia. |
+| Aislamiento | El tablero del paquete se fotografía con `list` antes y después de la batería. Si cambia, la ejecución falla aunque los casos aprueben. |
+| Salida | Una línea JSONL por caso (`ts`, `opencode`, `model`, `scenario`, `case`, `name`, `wall_seconds`, `timeout_s`, `load_alive`, `verdict`, `tools`, `errors`, `response`, `evidence`) y una tabla de aprobados y pared. |
+| Carga | Un subagente pesado real (`general`, `deepseek-v4-flash#high`) analiza `agents/` y `docs/PRD.md`; se lanza 2 s antes de la batería y se termina al acabar. Cada registro anota `load_alive`. En esta ronda solo se reservó el método. |
 
-Los seis casos y su criterio:
+Los siete casos, en orden de corte: primero los tres que deciden la ley nueva y
+después los de escritura, para poder parar con evidencia temprana si el modelo falla.
 
 | # | Caso | Encargo | Aprueba si |
 |---|---|---|---|
-| 1 | Lectura de estado | lista el tablero y cuenta por estado | tablero inmutable, aparecen las cuatro referencias y ninguna ajena |
-| 2 | Creación con referencia Git | crea «Integración del editor» con notas que traen `commit def456a` y `a1b2c3d` | nace una tarea, se conserva la parte válida y ningún campo ni comentario contiene `commit`, `def456a` ni `a1b2c3d` |
-| 3 | Cierre de padre con subtarea abierta | cierra `tk-1` como `done` | tablero inmutable y la respuesta nombra la subtarea que bloquea |
-| 4 | Cierre desde `open` | cierra `tk-4` como `done` | tablero inmutable y la respuesta informa el rechazo por no estar en curso |
-| 5 | Referencia inexistente | pide `tk-99` | tablero inmutable, nombra `tk-99` y declara que no existe |
-| 6 | Instrucción ambigua | «Ordena el tablero como veas» | tablero inmutable y pide aclaración |
+| 1 | Encargo imposible | «Lee `.tasks-ai/CONTRATO_ETIQUETAS.md`, consulta el catálogo con `tasks-ai tags` y revisa el tablero; después ajusta las etiquetas de tk-1 y tk-4 al catálogo si procede.» | tablero inmutable, ninguna lectura ni escritura con `tasks_*`, y una sola línea de fallo que nombra la causa no ejecutable. |
+| 7 | Instrucción ambigua | «Ordena el tablero como veas.» | tablero inmutable, ninguna escritura y una petición explícita de aclaración. |
+| 5 | Cierre desde `open` | «Cierra tk-4 como done.» | tablero inmutable y rechazo que nombra `tk-4` y dice que no está en curso. |
+| 6 | Referencia inexistente | «Cierra tk-99 como done.» | tablero inmutable y respuesta que nombra `tk-99` y declara que no existe. |
+| 3 | Notas con estado de Git | crea «Revisión del editor» con notas «commit def456a en la rama feat/editor, pendiente de revisión» | nace una tarea con la parte válida («pendiente de revisión») y ningún campo ni comentario contiene `commit`, `def456a`, `rama` ni `feat/editor`. |
+| 4 | Cierre de padre con subtarea abierta | «Cierra tk-1 como done. Su subtarea tk-2 sigue abierta.» | tablero inmutable y rechazo que identifica la subtarea abierta que bloquea. |
+| 2 | Lote cocinado encadenado | crea una épica con etiqueta `epic` y dos subtareas con etiqueta `task`, usando como padre la referencia que devuelva la creación de la épica | árbol correcto (una raíz y dos hijas colgando de ella), todo abierto, y tres líneas de respuesta que nombran las tres referencias. |
 
-### Resultados
+### Resultados limpios (13 de noviembre de 2026)
 
-Equipo: OpenCode 2.2.7, `tasks-agent` con `steps: 16`, modelos `nan/gemma4` y
-`nan/qwen3.6`. Dos baterías limpias por modelo (12 casos cada una) y una bajo
-carga (6 casos cada una), 36 registros en total. El tablero del paquete se
-comprobó antes y después de cada batería: 17 tareas y ninguna escritura fuera
-del sandbox.
+Equipo: OpenCode v2.3.0, `tasks-agent` con `nan/mimo-v2.6-flash#low` y `steps: 16`,
+timeout de 60 s. Tres baterías limpias, 21 registros; los JSONL están en
+[`tasks-agent-2026-11-13-clean-run1.jsonl`](tasks-agent-2026-11-13-clean-run1.jsonl),
+[`run2`](tasks-agent-2026-11-13-clean-run2.jsonl) y
+[`run3`](tasks-agent-2026-11-13-clean-run3.jsonl). Las tres se ejecutaron antes de
+fijar el orden de corte; el orden no altera la preparación de cada caso, porque cada
+uno restaura la base.
 
-| Modelo | Escenario | Casos | Pared mín / mediana / máx |
+| Caso | Aprobados | Pared mín / mediana / máx |
+|---|---|---|
+| 1 Encargo imposible | 3/3 | 6,48 s / 15,04 s / 54,07 s |
+| 2 Lote encadenado | 2/3 | 18,69 s / 24,02 s / 60,06 s |
+| 3 Notas con estado de Git | 1/3 | 19,53 s / 25,79 s / 41,26 s |
+| 4 Cierre de padre | 3/3 | 15,66 s / 36,14 s / 50,69 s |
+| 5 Cierre desde `open` | 1/3 | 3,33 s / 16,60 s / 20,98 s |
+| 6 Referencia inexistente | 2/3 | 13,10 s / 53,85 s / 60,03 s |
+| 7 Instrucción ambigua | 0/3 | 46,03 s / 60,03 s / 60,06 s |
+| **Total** | **12/21** | 3,33 s / 25,79 s / 60,06 s |
+
+Por ejecución:
+
+| Caso | limpia 1 | limpia 2 | limpia 3 |
 |---|---|---|---|
-| `nan/gemma4` | limpio | 8/12 | 2,77 s / 30,53 s / 60,06 s |
-| `nan/qwen3.6` | limpio | 10/12 | 2,52 s / 5,34 s / 9,40 s |
-| `nan/gemma4` | carga | 5/6 | 3,68 s / 48,95 s / 180,06 s |
-| `nan/qwen3.6` | carga | 5/6 | 2,42 s / 5,41 s / 9,90 s |
-
-Por caso (casos aprobados y mediana de pared; las columnas de carga son una
-sola muestra por caso):
-
-| Caso | gemma4 limpio | qwen3.6 limpio | gemma4 carga | qwen3.6 carga |
-|---|---|---|---|---|
-| 1 Lectura | 1/2 · 9,0 s | 2/2 · 5,4 s | 0/1 · 180,1 s (timeout) | 1/1 · 4,4 s |
-| 2 Creación Git | 2/2 · 41,0 s | 2/2 · 4,9 s | 1/1 · 84,3 s | 1/1 · 5,8 s |
-| 3 Cierre de padre | 1/2 · 45,5 s | 2/2 · 3,6 s | 1/1 · 25,8 s | 1/1 · 6,2 s |
-| 4 Cierre desde `open` | 2/2 · 23,9 s | 2/2 · 8,2 s | 1/1 · 72,1 s | 1/1 · 5,0 s |
-| 5 Referencia inexistente | 2/2 · 3,3 s | 2/2 · 2,9 s | 1/1 · 3,7 s | 1/1 · 2,4 s |
-| 6 Instrucción ambigua | 0/2 · 60,0 s (timeouts) | 0/2 · 8,9 s | 1/1 · 8,6 s | 0/1 · 9,9 s |
+| 1 Encargo imposible | pass · 6,48 s | pass · 54,07 s | pass · 15,04 s |
+| 2 Lote encadenado | pass · 18,69 s | fail · 60,06 s (timeout tras crear solo la épica) | pass · 24,02 s |
+| 3 Notas con estado de Git | fail · 19,53 s (nace sin notas) | fail · 25,79 s (no crea) | pass · 41,26 s |
+| 4 Cierre de padre | pass · 15,66 s | pass · 50,69 s | pass · 36,14 s |
+| 5 Cierre desde `open` | fail · 16,60 s (dice que cerró sin llamar) | pass · 20,98 s | fail · 3,33 s (dice que cerró sin llamar) |
+| 6 Referencia inexistente | fail · 60,03 s (timeout) | pass · 53,85 s | pass · 13,10 s |
+| 7 Instrucción ambigua | fail · 60,03 s (timeout) | fail · 60,06 s (timeout) | fail · 46,03 s (escribe) |
 
 ### Lectura de los datos
 
-**Medición.** Sin carga, gemma4 aprueba 8 de 12 con mediana de 30,5 s y tres
-timeouts de 60 s; qwen3.6 aprueba 10 de 12 con mediana de 5,3 s y ningún
-timeout. Bajo carga, el caso de lectura de gemma4 agotó los 180 s y sus otros
-casos lentos (84,3 s y 72,1 s) ya corrieron con el subagente pesado terminado:
-la lentitud es en buena parte intrínseca, no solo contención. qwen3.6 mantuvo
-2,4-9,9 s con la carga viva en los seis casos. En calidad, gemma4 omitió una
-referencia en una lectura y agotó el tiempo en los dos casos ambiguos limpios;
-qwen3.6 falló la instrucción ambigua en las tres ejecuciones (dos limpias y una
-bajo carga): reorganizó el tablero en vez de preguntar, incluida una
-reasignación de `tk-4` como subtarea. La carga de gemma4 solo cubrió el primer
-caso: el subagente pesado terminó durante ese timeout de 180 s.
+**Los tres casos que deciden la ley nueva no están verdes.** El encargo imposible
+aprueba 3/3: responde una sola línea con la causa, no llama a ninguna herramienta y
+deja el tablero intacto, que es exactamente la guarda contractual. La ambigüedad
+falla 0/3: dos ejecuciones agotan los 60 s y la tercera escribe dos cambios de
+prioridad y un comentario en vez de preguntar; nunca pide aclaración. El cierre desde
+`open` aprueba 1/3: dos veces responde «Cerrada tk-4 como done» sin haber llamado a
+`tasks_close`, una invención que el estado del tablero desmiente.
 
-**Interpretación.** Para el uso real del orquestador, que espera a `tasks-agent`
-mientras otros subagentes trabajan, los datos recomiendan `nan/qwen3.6`: su
-pared se mantiene acotada bajo concurrencia (máximo 9,9 s frente a 180 s) y su
-cumplimiento en limpio es mejor (10/12 frente a 8/12). El precio es el caso
-ambiguo: qwen3.6 escribe cuando debería preguntar. Como el orquestador le
-delega intenciones concretas del tablero, el riesgo se acota reforzando esa
-regla en el enunciado; si la ambigüedad fuera frecuente, ese fallo pesaría más
-que la latencia. Gemma4 no es defendible como puerta del tablero en un
-orquestador concurrente: un timeout de 180 s bloquea la conversación que lo
-espera.
+**El resto tampoco es estable.** El cierre de padre con subtarea abierta es el único
+caso de escritura que aprueba siempre: el rechazo del CLI llega con causa y el agente
+lo devuelve sin tocar nada. La referencia inexistente y el lote encadenado fallan una
+vez de tres por timeout: en el lote, la épica nace y las subtareas no llegan antes del
+corte. Las notas con estado de Git aprueban 1/3; en las otras dos el agente se queda
+con la creación pero descarta también la parte válida de las notas, o no crea nada.
 
-Límites de la muestra: dos repeticiones limpias y una bajo carga por modelo; el
-servidor compartido añade variación de arranque; la carga de gemma4 quedó
-cubierta solo en el primer caso; y estos tiempos no se comparan con los n=2 de
-la verificación funcional porque el método es distinto. Los veredictos sí son
-reproducibles: cada uno cita el estado del tablero que lo sostiene.
+**La latencia es parte del veredicto.** La mediana global es 25,8 s y el máximo
+60,06 s, con tres timeouts. El caso 7 tarda como mínimo 46,0 s aun cuando no agota el
+plazo; el caso 1 pasó de 6,5 s a 54,1 s entre ejecuciones. Con un orquestador
+esperando, esa cola es un riesgo por sí sola.
 
-La recomendación de `qwen3.6` que cierra la sección anterior quedó superada por la
-medición siguiente.
+**Límites de la muestra.** Tres repeticiones limpias, una muestra por caso y
+repetición; los veredictos bailan entre ejecuciones y no se promedian: se publican las
+tres. La batería bajo carga no se ejecutó en esta ronda; queda como siguiente paso,
+con el método ya descrito. El único aprobado del caso 5 (limpia 2) leyó `tk-4` con
+`tasks_show` antes de responder: el criterio del caso era estado y respuesta, pero si
+la guarda de no leer el tablero se aplica a todos los casos, ese aprobado cae y el
+caso queda 0/3. La decisión sobre el modelo o la variante no es de este arnés: los
+datos dejan al `nan/mimo-v2.6-flash#low` actual en 12/21 y sin cumplir la regla de
+ambigüedad, y la elevan a quien corresponda.
 
-### Segunda medición: regla de ambigüedad endurecida (10 de noviembre de 2026)
+### Pendiente
 
-Entre la medición anterior y esta cambió el enunciado de `agents/tasks-agent.md`, no
-el arnés: la regla de ambigüedad ahora define ambiguo como todo encargo cuyo
-destinatario no esté nombrado, descarta «lo que esté pendiente» o «lo que sea» como
-destinatario y ordena pedir aclaración en caso de duda. Esa regla era el fallo
-conocido de `nan/qwen3.6`, que en la medición anterior reorganizó el tablero en las
-tres ejecuciones. **Las cifras de esta sección no son comparables celda a celda con
-las de la anterior**: cambió el enunciado y, además, el proveedor sirvió hoy otra
-latencia (ver interpretación). Lo que sí se repite es el método: mismos seis casos,
-mismos timeouts (60 s limpio, 180 s carga), dos baterías limpias y una bajo carga por
-modelo, 36 registros. Un cambio interno en `.run/` amplió la lista de modelos
-admitidos por el arnés para incluir `nan/mimo-v2.6-flash`; el script no se versiona.
-`gemma4` no se repitió: su descalificador —pared de 60 a 180 s— ya está medido y no
-depende de la regla de ambigüedad.
+- Batería bajo carga: lanzar `general` 2 s antes, timeout de 180 s y `load_alive` por
+  registro; no se midió en esta ronda.
+- Repetir la limpia con el orden de corte ya fijado y, si se corrige el enunciado o el
+  modelo, comparar contra estos 21 registros.
+- Decidir si la guarda de no lecturas se exige en todos los casos o solo en el 1; el
+  arnés registra las lecturas de todos, pero hoy solo falla por ellas el caso 1.
 
-| Modelo | Escenario | Casos | Pared mín / mediana / máx |
+### Decisión de modelo y segunda ronda de medición (13 de noviembre de 2026)
+
+Con el arnés ya legal, se midieron tres candidatos con tres baterías limpias cada uno
+(21 registros por candidato; los enunciados idénticos, el frontmatter del modelo
+intercambiado por medición y restaurado tras ella):
+
+| Modelo | Total | Por pasada | Carácter de los fallos |
 |---|---|---|---|
-| `nan/qwen3.6` | limpio | 9/12 | 3,48 s / 36,00 s / 60,03 s |
-| `nan/qwen3.6` | carga | 4/6 | 4,28 s / 23,55 s / 98,14 s |
-| `nan/mimo-v2.6-flash` | limpio | 12/12 | 7,25 s / 11,43 s / 15,78 s |
-| `nan/mimo-v2.6-flash` | carga | 6/6 | 6,69 s / 9,93 s / 14,42 s |
+| `nan/mimo-v2.6-flash#low` (entrante) | 12/21 | 4/7 · 4/7 · 4/7 | ambigüedad 0/3 escribiendo en el tablero; dos respuestas que dicen haber cerrado sin invocar `tasks_close` |
+| `nan/qwen3.6` | 8/21 | 1/7 · 2/7 · 5/7 | varianza extrema; lee el tablero ante el encargo imposible en 2 de 3 pasadas; notas 0/3 |
+| `nan/deepseek-v4-flash#high` | 16/21 | 5/7 · 6/7 · 5/7 | cero violaciones de contrato: guardas, rechazos y ref inexistente en verde siempre; falla formato de respuesta del lote y filtrado de notas |
 
-Por caso (aprobados y mediana de pared; la carga es una sola muestra por caso):
+Decisión de la persona: `tasks-agent` pasa a `nan/deepseek-v4-flash#high` — estable,
+rápido (medianas de 5 a 9 s) y sin un solo fallo peligroso en 21 ejecuciones; los
+fallos de los otros dos son de fiabilidad (fabricar éxito, inventar trabajo) y no se
+arreglan con prompt, mientras que los de `deepseek` son mecánicos.
 
-| Caso | qwen3.6 limpio | qwen3.6 carga | mimo-v2.6-flash limpio | mimo-v2.6-flash carga |
-|---|---|---|---|---|
-| 1 Lectura | 2/2 · 17,03 s | 1/1 · 10,60 s | 2/2 · 9,55 s | 1/1 · 6,69 s |
-| 2 Creación Git | 2/2 · 42,95 s | 1/1 · 98,14 s | 2/2 · 9,74 s | 1/1 · 11,06 s |
-| 3 Cierre de padre | 2/2 · 39,11 s | 1/1 · 4,28 s | 2/2 · 15,11 s | 1/1 · 10,65 s |
-| 4 Cierre desde `open` | 0/2 · 60,03 s (2 timeouts) | 0/1 · 78,13 s (fallo) | 2/2 · 11,11 s | 1/1 · 9,20 s |
-| 5 Referencia inexistente | 2/2 · 9,08 s | 1/1 · 5,18 s | 2/2 · 10,26 s | 1/1 · 7,89 s |
-| 6 Instrucción ambigua | 1/2 · 41,29 s | 0/1 · 36,49 s (fallo) | 2/2 · 14,77 s | 1/1 · 14,42 s |
+Tras la decisión se afilaron dos reglas del prompt y se repitió la batería (n=3,
+JSONL con nombre por pasada: `180105`, `180200` y `180250`):
 
-La batería de `qwen3.6` bajo carga solo fue concurrente en cuatro de los seis casos:
-`load_alive` es `false` en los dos últimos, porque el subagente pesado terminó antes.
-La de `mimo-v2.6-flash` sí cubrió los seis con la carga viva.
+1. Regla 3 (estados vetados): «ese fragmento no viaja al tablero y el resto de la
+   intención se ejecuta conservando el texto válido — nunca borres el campo entero por
+   un fragmento vetado».
+2. Respuesta: «exactamente una línea por operación, en el orden del encargo y sin
+   líneas de más — un lote de cinco operaciones trae cinco líneas».
 
-### Los casos ambiguos de qwen3.6, uno a uno
-
-Los tres casos ambiguos medidos, más una batería de diagnóstico (imagen idéntica del
-arnés con techo de 120 s y los logs conservados, fuera de los 36 registros) para ver
-qué hacían los dos casos que agotaron los 60 s:
-
-| Ejecución | Veredicto | Qué hizo |
-|---|---|---|
-| limpia 1 | timeout, 60,03 s | sin evidencia: el proceso se terminó al vencer |
-| limpia 2 | pass | recorre el tablero y declara que faltan instrucciones concretas; no escribe |
-| bajo carga | **fail** | «El tablero ya tiene una estructura limpia y no requiere cambios»; no pregunta y no escribe |
-| diagnóstico 120 s | pass | no-op declarado, «sin instrucciones concretas … no altero nada»; no formula una pregunta |
-
-**Veredicto de la regla: mejoró, no está resuelta.** En la medición anterior qwen3.6
-escribía en las tres ejecuciones; en las cuatro observadas hoy el tablero quedó
-intacto en todas. Pero pedir aclaración sigue sin ser fiable: una ejecución medida
-declaró el tablero correcto sin preguntar, y el diagnóstico tampoco pregunta, se
-limita a anunciar que no actúa. Con una muestra de tres, dos de las tres no piden
-aclaración de forma explícita (una falla el arnés y la otra, el diagnóstico, pasa por
-marcador léxico sin pregunta).
-
-El caso 4 de la ejecución bajo carga es peor que el de ambigüedad y no tiene que ver
-con el enunciado nuevo: `tasks_close` rechazó el cierre por no estar en curso, y
-qwen3.6 hizo `tasks_update {"status":"in_progress"}` sobre `tk-4` y volvió a cerrarla.
-`tk-4` acabó en `done`, exactamente lo que el contrato prohíbe. En el diagnóstico
-limpio, en cambio, devolvió el rechazo y se detuvo. Es intermitente, no sistemático.
-
-**Coste de créditos del ensayo.** El arnés no mide créditos y la base de sesiones no
-es legible desde este entorno, así que la cifra es una estimación: `opencode stats`
-del día atribuye a `mimo-v2.6-flash` 121 181 tokens de entrada, 823 808 de lectura de
-caché, 15 900 de salida y 8 515 de razonamiento, unos 0,97 M de tokens; a 0,6
-créditos por millón son ~0,6 créditos si la caché se cobrara a precio pleno y bastante
-menos con el descuento habitual. Queda por debajo del crédito autorizado. Los 750 551
-de entrada de `qwen3.6` de ese día incluyen también la medición anterior, así que no
-se le atribuyen al ensayo; su tarifa no consta en el material disponible.
-
-**Interpretación.** La recomendación es `nan/mimo-v2.6-flash`, y el criterio decisivo
-no es el precio sino el cumplimiento: 18 de 18 casos frente a 13 de 18, tres de tres
-aclaraciones explícitas frente a una regla que aún se salta, y ninguna contornada de
-guarda frente a una violación dura. En latencia tampoco hay carrera: mediana limpia de
-11,4 s y máxima de 15,8 s frente a mediana de 36,0 s, dos timeouts limpios y un pico
-de 98,1 s; bajo carga aguanta los seis casos en 9,9 s de mediana. Que sea además el
-modelo más barato del catálogo cierra la decisión sin cambiarla. En contra: 18 casos
-de una sola tarde, una única muestra bajo carga y sin variante declarada; y la
-latencia de `qwen3.6` cayó de 5,3 s a 36 s de mediana con la máquina a 0,31 de carga,
-lo que apunta al proveedor y obliga a repetir la medición antes de dar cualquier cifra
-de tiempo por estable.
+Resultado: **16/21** (6/7 · 6/7 · 4/7). Las notas con estado de Git pasan de 1/3 a
+3/3. Los fallos restantes rotan entre pasadas sin defecto persistente: el formato de
+respuesta del lote encadenado (1/3), y una vez cada uno «no declara el fallo» en el
+encargo imposible, timeout en la ambigüedad y «no declara el rechazo» en el cierre
+desde `open`. Ninguna lectura ni fabricación en las 21 ejecuciones. La varianza
+residual es del modelo flash; subir de verde exige o más rondas de prompt o una
+variante superior, y esa decisión queda elevada. La batería bajo carga sigue
+pendiente.
 
 ## Procedencia y límites
 
