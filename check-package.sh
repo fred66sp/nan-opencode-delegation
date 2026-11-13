@@ -135,11 +135,12 @@ else
   printf 'aviso: diff omitido, no hay agentes instalados en esta máquina\n'
 fi
 
-# g. Los cinco subagentes deniegan el permiso de acción skill en su frontmatter.
-# `tools` es campo V1 y se ignora en V2; el reparto se expresa con permisos.
-step "los cinco subagentes deniegan el permiso de acción skill"
+# g. Los cuatro subagentes de verificación y documentación deniegan el permiso de
+# acción skill en su frontmatter; tasks-agent lo conserva. `tools` es campo V1 y se
+# ignora en V2; el reparto se expresa con permisos.
+step "los cuatro subagentes deniegan el permiso de acción skill"
 missing_g=''
-for name in verify review docs ui tasks-agent; do
+for name in verify review docs ui; do
   if ! python3 - "agents/$name.md" <<'PY'
 import re, sys
 text = open(sys.argv[1], encoding="utf-8").read()

@@ -93,11 +93,12 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 - Reparto de skills: el orquestador conserva el catálogo y adjunta al encargo la ruta
   absoluta del `SKILL.md` que cada trabajo necesita, con una línea de por qué aplica. Los
-  cinco subagentes y los agentes integrados `explore` y `general` llevan el permiso `skill`
+  cuatro subagentes de verificación y documentación —verify, review, docs y ui— y los
+  agentes integrados `explore` y `general` llevan el permiso `skill`
   denegado (`action: skill`, `resource: "*"`, `effect: deny`), que oculta la skill al modelo
-  y rechaza la carga; los instaladores escriben esa regla en la configuración. `tools` es
+  y rechaza la carga; `tasks-agent` conserva el catálogo. `tools` es
   un campo de la V1 que V2 ignora, así que no se usa. `check-package.sh` gana tres guardas:
-  los cinco subagentes con el permiso denegado, ningún agente ni la plantilla de
+  los cuatro subagentes con el permiso denegado, ningún agente ni la plantilla de
   configuración que lo abra en `allow` o `ask`, y las skills citadas presentes en una raíz
   de descubrimiento —con aviso, no fallo, si la máquina no tiene ninguna—.
 
@@ -120,6 +121,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   encargos con `explore` y la documentación con `docs`.
 
 ### Corregido
+
+- `tasks-agent` recupera el catálogo de skills: la regla que le denegaba el permiso `skill`
+  se le había aplicado por error en el reparto general a los subagentes. `check-package.sh`
+  ahora exige el permiso denegado solo a los cuatro subagentes de verificación y
+  documentación (verify, review, docs y ui).
 
 - La documentación citaba `playwright-cli`, que no es el nombre de la skill que usa el
   agente `ui`: README, PRD y guía nombran ahora `playwright-cli-usage`, la ruta que el

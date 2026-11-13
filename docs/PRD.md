@@ -80,7 +80,8 @@ ser una introducción a la orquestación en general.
   `install.sh`, plantilla JSON estricta, instalación limpia en un `HOME` temporal, fusión
   con claves ajenas y copia `.bak`, camino JSONC con el fichero intacto y el bloque manual
   impreso, `diff` contra los agentes y la herramienta instalados, y las guardas de skills
-  —los cinco subagentes con el permiso `skill` denegado, ningún agente que lo abra en
+  —los cuatro subagentes (verify, review, docs y ui) con el permiso `skill` denegado,
+  `tasks-agent` conservando el catálogo, ningún agente que lo abra en
   `allow` o `ask` y las skills citadas presentes en una raíz de descubrimiento—. No pide interacción,
   solo escribe en directorios temporales y devuelve 0 si todo está en verde o un código distinto de 0 con
   el nombre de la comprobación fallida. Si la máquina no tiene agentes instalados, omite el
@@ -101,8 +102,9 @@ ser una introducción a la orquestación en general.
   `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
 - Los instaladores funden solo `agents.explore`, `agents.general` y la regla global de
   `permissions`; el resto de claves y agentes ajenos se conservan.
-- El orquestador conserva el catálogo de skills y lo reparte: los subagentes y los agentes
-  integrados `explore` y `general` llevan el permiso `skill` denegado (`action: skill`,
+- El orquestador conserva el catálogo de skills y lo reparte: los subagentes salvo
+  `tasks-agent` —que conserva el suyo— y los agentes integrados `explore` y `general`
+  llevan el permiso `skill` denegado (`action: skill`,
   `resource: "*"`, `effect: deny`), que oculta la skill al modelo y rechaza la carga, y no
   pueden cargarlas por su cuenta; cuando una aplica, el encargo lleva su ruta absoluta y
   el subagente la lee antes de empezar. Ninguna skill vive en el paquete. `tools` es un
@@ -165,9 +167,10 @@ ser una introducción a la orquestación en general.
   no reporta diferencias —incluida `agents/orchestrator-runner.py`—, excluidas las copias
   `.bak` que el propio instalador deja (R7).
 - La plantilla `config/opencode.jsonc` carga como JSON estricto.
-- Ningún subagente abre el permiso de acción `skill` en `allow` ni `ask`, y los cinco lo
+- Ningún subagente abre el permiso de acción `skill` en `allow` ni `ask`, y los cuatro de
+  verificación y documentación (verify, review, docs y ui) lo
   deniegan (`action: skill`, `resource: "*"`, `effect: deny`): no reciben catálogo ni
-  pueden cargarlas por su cuenta.
+  pueden cargarlas por su cuenta; `tasks-agent` conserva el suyo.
 - Con `HOME` limpio, `agents.explore.permissions` y `agents.general.permissions` contienen
   `{"action": "skill", "resource": "*", "effect": "deny"}`; la fusión sobre claves ajenas
   deja la misma regla.

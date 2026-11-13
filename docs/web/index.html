@@ -204,7 +204,7 @@
 
     <section id="que-es">
       <div class="section-head"><span class="section-num">01</span><h2 class="title">Qué es</h2></div>
-      <p class="sub">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <code>orchestrator</code>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cinco subagentes que solo pueden hacer su parte: comprobar, revisar, documentar, recorrer la interfaz o escribir en el tablero. Los planes y los cierres se quedan en el orquestador; cuatro de los cinco subagentes tienen la edición restringida por permisos, y el quinto, <code>ui</code>, pide permiso persona a persona antes de tocar el navegador.</p>
+      <p class="sub">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <code>orchestrator</code>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cinco subagentes que solo pueden hacer su parte: comprobar, revisar, documentar, recorrer la interfaz o escribir en el tablero. Los planes y los cierres se quedan en el orquestador; cuatro de ellos tienen la edición restringida por permisos, y el quinto, <code>ui</code>, pide permiso persona a persona antes de tocar el navegador.</p>
       <p>Con la delegación no cambia la forma de trabajar: <code>build</code> sigue siendo el agente de arranque y <code>orchestrator</code> se elige cuando quieres orquestar. La delegación vive por prompt: el contrato está en el texto del agente. Si el orquestador no delega, no hay mecanismo de configuración que lo obligue.</p>
       <div class="grid cols-3">
         <div class="card">
@@ -328,7 +328,7 @@
       <p>Un cambio de riesgo alto recibe, además de sus propias comprobaciones, una verificación independiente: otro agente lee el criterio de la tarea y lo prueba contra el resultado real. En este paquete la hacen <code>verify</code> —evidencia de las comprobaciones— y <code>review</code> —hallazgos contra el criterio—, ninguno de los dos edita.</p>
 
       <h3>Cómo se reparte el trabajo</h3>
-      <p>La implementación se delega por defecto a <code>general</code>, sea cual sea su tamaño; el orquestador implementa en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporta valor. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Las escrituras del tablero van a <code>tasks-agent</code>; las lecturas van directas por la CLI <code>tasks-ai</code>. El catálogo de skills vive solo en el orquestador: los subagentes llevan el permiso <code>skill</code> denegado (<code>action: skill</code>, <code>resource: "*"</code>, <code>effect: deny</code>), que oculta la skill al modelo y rechaza la carga; no pueden cargarlas por su cuenta, y cuando una aplica el encargo lleva su ruta absoluta y una línea de por qué.</p>
+      <p>La implementación se delega por defecto a <code>general</code>, sea cual sea su tamaño; el orquestador implementa en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporta valor. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Las escrituras del tablero van a <code>tasks-agent</code>; las lecturas van directas por la CLI <code>tasks-ai</code>. El catálogo de skills vive en el orquestador y en <code>tasks-agent</code>: los subagentes salvo <code>tasks-agent</code> llevan el permiso <code>skill</code> denegado (<code>action: skill</code>, <code>resource: "*"</code>, <code>effect: deny</code>), que oculta la skill al modelo y rechaza la carga; no pueden cargarlas por su cuenta, y cuando una aplica el encargo lleva su ruta absoluta y una línea de por qué.</p>
     </section>
 
     <section id="permisos">
@@ -354,7 +354,7 @@
               <td><code>ui</code></td><td>Sí</td><td><code>npx playwright</code> y <code>playwright</code> piden permiso; <code>npm run</code> y <code>pnpm</code> abiertos</td><td>Sin catálogo: recibe <code>playwright-cli-usage</code> en el encargo</td>
             </tr>
             <tr>
-              <td><code>tasks-agent</code></td><td>Nada</td><td>Nada</td><td>Sin catálogo; todo denegado salvo las herramientas <code>tasks_*</code></td>
+              <td><code>tasks-agent</code></td><td>Nada</td><td>Nada</td><td>Conserva el catálogo; todo denegado salvo las herramientas <code>tasks_*</code></td>
             </tr>
           </tbody>
         </table>

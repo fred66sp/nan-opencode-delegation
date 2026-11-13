@@ -34,7 +34,7 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 
 - OpenCode V2 instalado y en el PATH ([https://opencode.ai](https://opencode.ai)).
 - Acceso a los modelos del proveedor `nan`: `opencode auth login` y elige el proveedor NaN para pegar su API key. Sin esto los agentes cargan pero no responden.
-- Para el agente `ui`, la skill `playwright-cli-usage`, que el orquestador le pasa como ruta absoluta en el encargo. Es opcional: los subagentes no llevan catálogo de skills y ninguno más la necesita.
+- Para el agente `ui`, la skill `playwright-cli-usage`, que el orquestador le pasa como ruta absoluta en el encargo. Es opcional: los subagentes salvo `tasks-agent` no llevan catálogo de skills y ninguno más la necesita.
 - En Linux y macOS, el instalador fusiona una configuración existente con Python cuando el fichero es JSON estricto; con comentarios JSONC o sin Python deja el fichero intacto e imprime el bloque exacto para pegar a mano.
 
 ## Instalación
@@ -71,7 +71,7 @@ Un detalle que importa: en el frontmatter de los agentes en Markdown, el modelo 
 
 La regla `permissions` deniega `tasks_*` a todos los agentes; solo `tasks-agent` las reabre en su frontmatter, y por eso es la única puerta de las herramientas `tasks_*`. Las lecturas del tablero no pasan por esas herramientas: van directas por la CLI `tasks-ai` —o `.tasks-ai/bin/tasks-ai` si no está en el PATH—. `tasks-agent` acepta secuencias ordenadas de escrituras en un solo encargo, con una línea de resultado por operación. Corre en una sesión hija con contexto limpio: cada invocación recibe la intención y los identificadores, no el historial de la conversación.
 
-El reparto de skills también va por `permissions`: los subagentes y `explore` y `general` llevan `action: skill` con `resource: "*"` y `effect: deny`, que oculta la skill al modelo y rechaza la carga. `tools` es un campo de la V1 que OpenCode V2 acepta en el esquema pero ignora; el mecanismo vigente es el permiso.
+El reparto de skills también va por `permissions`: los subagentes salvo `tasks-agent`, y `explore` y `general`, llevan `action: skill` con `resource: "*"` y `effect: deny`, que oculta la skill al modelo y rechaza la carga; `tasks-agent` conserva el catálogo. `tools` es un campo de la V1 que OpenCode V2 acepta en el esquema pero ignora; el mecanismo vigente es el permiso.
 
 ## Verificación
 
@@ -123,7 +123,7 @@ El visor de escritorio vive en [`tasks-viewer/`](tasks-viewer/): la misma interf
 - Un subagente no puede lanzar otro; el anidamiento es de un nivel.
 - `ui` con permiso `ask` bloquea su sesión hasta que alguien aprueba: no lo lances en segundo plano si no estás delante.
 - `verify` solo permite los prefijos de comprobación declarados en su frontmatter; un comando compuesto (`cd x && make test`) se rechaza.
-- El reparto de skills depende del orquestador: ningún subagente lleva catálogo —tiene el permiso `skill` denegado (`action: skill`, `resource: "*"`, `effect: deny`)— y no puede cargar ninguna. Si el orquestador no adjunta la skill que el encargo necesita, el subagente trabaja sin ella y nada lo detecta automáticamente.
+- El reparto de skills depende del orquestador: ningún subagente salvo `tasks-agent` lleva catálogo —tiene el permiso `skill` denegado (`action: skill`, `resource: "*"`, `effect: deny`)— y no puede cargar ninguna. Si el orquestador no adjunta la skill que el encargo necesita, el subagente trabaja sin ella y nada lo detecta automáticamente.
 - Las instrucciones `AGENTS.md` global y de proyecto siguen llegando a todos los agentes: el reparto de skills no las sustituye.
 - El instalador reescribe `agents.explore` y `agents.general` enteros: cualquier clave propia dentro de esos dos agentes se pierde al instalar.
 - Las herramientas de extensiones (MCP) aplican el permiso que ellas mismas declaran: la prohibición de escribir en sistemas externos vive en el prompt del orquestador, no en la configuración de permisos.
