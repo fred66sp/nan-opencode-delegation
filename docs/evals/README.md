@@ -1,9 +1,11 @@
 # Evidencia de las evaluaciones de los agentes
 
 Este directorio conserva las pruebas con las que se validaron los cinco agentes de
-delegación antes de empaquetarlos. El material se generó los días 6 y 7 de noviembre de
-2026 en temporales que luego se borraron; se recuperó de la base de sesiones de OpenCode
-(copia hecha por la persona de `opencode.db`) y de los resúmenes de sesión de Engram.
+delegación antes de empaquetarlos, e incluye además una comprobación posterior del
+contrato de skills (13 de noviembre de 2026), fuera de ese material. El material se
+generó los días 6 y 7 de noviembre de 2026 en temporales que luego se borraron; se
+recuperó de la base de sesiones de OpenCode (copia hecha por la persona de
+`opencode.db`) y de los resúmenes de sesión de Engram.
 No es una batería ejecutable: es el registro de lo que se probó y lo que falló. La
 excepción es el arnés de `tasks-agent` de la última sección: se ejecuta, pero no se
 versiona porque el paquete no distribuye código fuera de los dos instaladores, del script
@@ -17,6 +19,7 @@ de verificación `check-package.sh` y de la herramienta del flujo
 | [`smoke/`](smoke/) | 9 transcripciones del smoke test de los cinco agentes contra un repo Go desechable (`/tmp/opencode/delegation-smoke`, borrado) |
 | [`measure/`](measure/) | 19 transcripciones y [`tk-281-results.csv`](measure/tk-281-results.csv) de la medición `glm5.3-flash#high` frente a `deepseek-v4-flash#high` como worker: 3 proyectos × 3 tareas × 2 modelos desde worktrees limpios |
 | [`session-summaries.md`](session-summaries.md) | Resúmenes de sesión que los propios agentes escribieron en Engram al terminar (verbatims) |
+| [`skill-routing.md`](skill-routing.md) | 4 ejecuciones del reparto de skills: subagentes sin catálogo y orquestador con él (13 de noviembre de 2026, opencode v2.3.0) |
 
 ## Qué demostró el smoke test (tk-280 del tablero de tasks-ai)
 
@@ -31,6 +34,8 @@ Repo sembrado con un fallo (`Mul` con `a+b` en `calc.go:5`) y un encargo complet
   `src/` y `calc.go` quedaron denegados por permisos.
 - **ui**: pidió permiso antes de cargar la skill `playwright-cli` (el `ask`
   bloquea y en no interactivo se auto-rechaza, que es el comportamiento esperado).
+  Ese fue el resultado del smoke; hoy `ui` no puede cargar skills porque su permiso
+  `skill` está denegado y la skill le llega adjunta en el encargo.
 - **orchestrator**: delegó la implementación en `general`, verificó la salida por
   su cuenta (`git status`, `go vet && go test`) y lanzó `review` después.
 

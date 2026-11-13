@@ -47,8 +47,8 @@ ser una introducción a la orquestación en general.
   carga con los agentes; sin OpenCode el paquete es papel.
 - No gestiona el acceso al proveedor `nan`: la API key se configura con
   `opencode auth login` y el paquete solo la menciona en la comprobación.
-- No incluye la skill `playwright-cli`: el agente `ui` la necesita y su instalación queda
-  fuera por venir de otro catálogo.
+- No incluye la skill `playwright-cli-usage`: el agente `ui` la necesita, el orquestador la
+  adjunta por ruta al delegar y su instalación queda fuera por venir de otro catálogo.
 
 ## 4. Requisitos aprobados
 
@@ -79,10 +79,13 @@ ser una introducción a la orquestación en general.
 - R9. `check-package.sh` ejecuta de una vez la batería de verificación: sintaxis de
   `install.sh`, plantilla JSON estricta, instalación limpia en un `HOME` temporal, fusión
   con claves ajenas y copia `.bak`, camino JSONC con el fichero intacto y el bloque manual
-  impreso, y `diff` contra los agentes y la herramienta instalados. No pide interacción,
+  impreso, `diff` contra los agentes y la herramienta instalados, y las guardas de skills
+  —los cinco subagentes con el permiso `skill` denegado, ningún agente que lo abra en
+  `allow` o `ask` y las skills citadas presentes en una raíz de descubrimiento—. No pide interacción,
   solo escribe en directorios temporales y devuelve 0 si todo está en verde o un código distinto de 0 con
   el nombre de la comprobación fallida. Si la máquina no tiene agentes instalados, omite el
-  `diff` con un aviso y no lo cuenta como fallo.
+  `diff` con un aviso y no lo cuenta como fallo; si no tiene ninguna raíz de descubrimiento
+  de skills, avisa y tampoco lo cuenta como fallo.
 
 ### Reglas de negocio
 
@@ -98,6 +101,13 @@ ser una introducción a la orquestación en general.
   `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
 - Los instaladores funden solo `agents.explore`, `agents.general` y la regla global de
   `permissions`; el resto de claves y agentes ajenos se conservan.
+- El orquestador conserva el catálogo de skills y lo reparte: los subagentes y los agentes
+  integrados `explore` y `general` llevan el permiso `skill` denegado (`action: skill`,
+  `resource: "*"`, `effect: deny`), que oculta la skill al modelo y rechaza la carga, y no
+  pueden cargarlas por su cuenta; cuando una aplica, el encargo lleva su ruta absoluta y
+  el subagente la lee antes de empezar. Ninguna skill vive en el paquete. `tools` es un
+  campo de la V1 que OpenCode V2 acepta en el esquema pero ignora: el mecanismo vigente es
+  el permiso.
 - El tablero tiene una sola puerta: la configuración global deniega `tasks_*` a todos los
   agentes y `tasks-agent` las reabre en su frontmatter; los demás le delegan las escrituras
   del tablero, mientras las lecturas van directas por la CLI `tasks-ai`. Los lotes de
@@ -155,6 +165,15 @@ ser una introducción a la orquestación en general.
   no reporta diferencias —incluida `agents/orchestrator-runner.py`—, excluidas las copias
   `.bak` que el propio instalador deja (R7).
 - La plantilla `config/opencode.jsonc` carga como JSON estricto.
+- Ningún subagente abre el permiso de acción `skill` en `allow` ni `ask`, y los cinco lo
+  deniegan (`action: skill`, `resource: "*"`, `effect: deny`): no reciben catálogo ni
+  pueden cargarlas por su cuenta.
+- Con `HOME` limpio, `agents.explore.permissions` y `agents.general.permissions` contienen
+  `{"action": "skill", "resource": "*", "effect": "deny"}`; la fusión sobre claves ajenas
+  deja la misma regla.
+- Toda skill citada por el paquete existe en una raíz de descubrimiento
+  (`~/.config/opencode/skills`, `~/.agents/skills` o `~/.claude/skills`); si la máquina no
+  tiene ninguna, `check-package.sh` avisa y no falla.
 - La guía parsea como HTML con etiquetas balanceadas y sus enlaces internos resuelven a
   secciones existentes.
 - Los datos de la tabla de modelos coinciden con los frontmatter declarados en `agents/`.

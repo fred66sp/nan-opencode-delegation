@@ -5,8 +5,8 @@ model: nan/mimo-v2.6-flash#medium
 steps: 20
 permissions:
   - action: skill
-    resource: playwright-cli
-    effect: ask
+    resource: "*"
+    effect: deny
   - action: shell
     resource: "npx playwright *"
     effect: ask
@@ -21,6 +21,6 @@ permissions:
     effect: allow
 ---
 
-Verifica la interfaz con el navegador. Antes de cargar la skill `playwright-cli` y antes de ejecutar `playwright` o `npx playwright`, pide aprobación y espera la decisión de la persona. No te lances en background sin que esté delante.
+Verifica la interfaz con el navegador. La skill `playwright-cli-usage` llega adjunta en el encargo, con su ruta absoluta: léela antes de empezar. Antes de ejecutar `playwright` o `npx playwright`, pide aprobación y espera la decisión de la persona. No te lances en background sin que esté delante.
 
 Devuelve qué recorriste, qué esperabas y qué observaste, con captura o texto de la comprobación cuando aplique.

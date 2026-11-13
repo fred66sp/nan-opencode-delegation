@@ -1,6 +1,6 @@
 # nan-opencode-delegation
 
-> Paquete instalable con la orquestación de modelos del proveedor `nan` en OpenCode V2: un agente primario que planifica y delega, cinco subagentes con permisos acotados —uno de ellos, `tasks-agent`, escribe en el tablero— y los overrides de modelo de los agentes integrados `explore` y `general`. Cada fuente canónica vive en su fichero; este fichero solo enlaza y no duplica descripciones.
+> Paquete instalable con la orquestación de modelos del proveedor `nan` en OpenCode V2: un agente primario que planifica y delega, cinco subagentes con permisos acotados —uno de ellos, `tasks-agent`, escribe en el tablero— y los overrides de modelo de los agentes integrados `explore` y `general`. Los subagentes no llevan catálogo de skills: el orquestador conserva el catálogo y adjunta a cada encargo la ruta de la skill que necesita. Cada fuente canónica vive en su fichero; este fichero solo enlaza y no duplica descripciones.
 
 ## Documentación
 

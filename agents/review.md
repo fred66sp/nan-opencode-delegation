@@ -4,6 +4,9 @@ mode: subagent
 model: nan/glm5.3-flash#xhigh
 steps: 12
 permissions:
+  - action: skill
+    resource: "*"
+    effect: deny
   - action: edit
     resource: "*"
     effect: deny

@@ -77,7 +77,7 @@ else {
             @{ Name = 'explore'; Model = [pscustomobject]@{ providerID = 'nan'; model = 'glm5.3-flash'; variant = 'low' } },
             @{ Name = 'general'; Model = [pscustomobject]@{ providerID = 'nan'; model = 'deepseek-v4-flash'; variant = 'high' } }
         )) {
-            $entry = [pscustomobject]@{ model = $pair.Model }
+            $entry = [pscustomobject]@{ model = $pair.Model; permissions = @([pscustomobject]@{ action = 'skill'; resource = '*'; effect = 'deny' }) }
             if ($agents.PSObject.Properties[$pair.Name]) { $agents.($pair.Name) = $entry }
             else { $agents | Add-Member -NotePropertyName $pair.Name -NotePropertyValue $entry }
         }
@@ -109,8 +109,8 @@ else {
         Write-Host "Copia previa en $backup. Anade a mano este bloque dentro del objeto raiz:"
         Write-Host ''
         Write-Host '  "agents": {'
-        Write-Host '    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },'
-        Write-Host '    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }'
+        Write-Host '    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] },'
+        Write-Host '    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] }'
         Write-Host '  },'
         Write-Host '  "permissions": ['
         Write-Host '    { "action": "tasks_*", "resource": "*", "effect": "deny" }'
