@@ -28,13 +28,13 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 | `agents/ui.md` | `~/.config/opencode/agents/ui.md` | Verificación de interfaz con navegador; pide permiso para Playwright |
 | `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Escritor del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
 | `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` con la evidencia de la fase para avanzar |
-| `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general` y la regla que deniega `tasks_*` |
+| `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general`, su permiso `skill` denegado y la regla que deniega `tasks_*` |
 
 ## Requisitos
 
 - OpenCode V2 instalado y en el PATH ([https://opencode.ai](https://opencode.ai)).
 - Acceso a los modelos del proveedor `nan`: `opencode auth login` y elige el proveedor NaN para pegar su API key. Sin esto los agentes cargan pero no responden.
-- Para el agente `ui`, la skill `playwright-cli`. Es opcional: los otros cinco agentes no la necesitan.
+- Para el agente `ui`, la skill `playwright-cli-usage`, que el orquestador le pasa como ruta absoluta en el encargo. Es opcional: los subagentes no llevan catálogo de skills y ninguno más la necesita.
 - En Linux y macOS, el instalador fusiona una configuración existente con Python cuando el fichero es JSON estricto; con comentarios JSONC o sin Python deja el fichero intacto e imprime el bloque exacto para pegar a mano.
 
 ## Instalación
@@ -59,8 +59,8 @@ Copia los ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `op
 
 ```jsonc
 "agents": {
-  "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },
-  "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }
+  "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] },
+  "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] }
 },
 "permissions": [
   { "action": "tasks_*", "resource": "*", "effect": "deny" }
@@ -70,6 +70,8 @@ Copia los ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `op
 Un detalle que importa: en el frontmatter de los agentes en Markdown, el modelo lleva la variante con `#` (`nan/glm5.3-flash#high`). En `agents`, la variante va en el objeto `model` (`providerID`, `model`, `variant`) o en el string `nan/glm5.3-flash#low`; no hay campo `variant` suelto. `agent` en singular está obsoleto; el instalador escribe en `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
 
 La regla `permissions` deniega `tasks_*` a todos los agentes; solo `tasks-agent` las reabre en su frontmatter, y por eso es la única puerta de las herramientas `tasks_*`. Las lecturas del tablero no pasan por esas herramientas: van directas por la CLI `tasks-ai` —o `.tasks-ai/bin/tasks-ai` si no está en el PATH—. `tasks-agent` acepta secuencias ordenadas de escrituras en un solo encargo, con una línea de resultado por operación. Corre en una sesión hija con contexto limpio: cada invocación recibe la intención y los identificadores, no el historial de la conversación.
+
+El reparto de skills también va por `permissions`: los subagentes y `explore` y `general` llevan `action: skill` con `resource: "*"` y `effect: deny`, que oculta la skill al modelo y rechaza la carga. `tools` es un campo de la V1 que OpenCode V2 acepta en el esquema pero ignora; el mecanismo vigente es el permiso.
 
 ## Verificación
 
@@ -121,8 +123,11 @@ El visor de escritorio vive en [`tasks-viewer/`](tasks-viewer/): la misma interf
 - Un subagente no puede lanzar otro; el anidamiento es de un nivel.
 - `ui` con permiso `ask` bloquea su sesión hasta que alguien aprueba: no lo lances en segundo plano si no estás delante.
 - `verify` solo permite los prefijos de comprobación declarados en su frontmatter; un comando compuesto (`cd x && make test`) se rechaza.
+- El reparto de skills depende del orquestador: ningún subagente lleva catálogo —tiene el permiso `skill` denegado (`action: skill`, `resource: "*"`, `effect: deny`)— y no puede cargar ninguna. Si el orquestador no adjunta la skill que el encargo necesita, el subagente trabaja sin ella y nada lo detecta automáticamente.
+- Las instrucciones `AGENTS.md` global y de proyecto siguen llegando a todos los agentes: el reparto de skills no las sustituye.
+- El instalador reescribe `agents.explore` y `agents.general` enteros: cualquier clave propia dentro de esos dos agentes se pierde al instalar.
 - Las herramientas de extensiones (MCP) aplican el permiso que ellas mismas declaran: la prohibición de escribir en sistemas externos vive en el prompt del orquestador, no en la configuración de permisos.
 
 ## Qué no es
 
-No es orquestación automática: no hay planificador que reparta trabajo solo, ni límite de concurrencia configurable. El padre decide cuándo delegar con la herramienta `subagent`. Tampoco trae una skill de navegador: la verificación de interfaz depende de que la máquina tenga `playwright-cli`.
+No es orquestación automática: no hay planificador que reparta trabajo solo, ni límite de concurrencia configurable. El padre decide cuándo delegar con la herramienta `subagent`. Tampoco trae una skill de navegador: la verificación de interfaz depende de que la máquina tenga `playwright-cli-usage` y de que el orquestador la adjunte al encargo de `ui`.

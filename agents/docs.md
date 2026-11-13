@@ -4,6 +4,9 @@ mode: subagent
 model: nan/deepseek-v4-flash#medium
 steps: 20
 permissions:
+  - action: skill
+    resource: "*"
+    effect: deny
   - action: edit
     resource: "*"
     effect: deny

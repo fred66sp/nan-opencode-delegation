@@ -175,7 +175,7 @@
     </div>
     <div class="status-strip" role="status">
       <span class="status-mark" aria-hidden="true">OK</span>
-      <div><strong>Instalación probada en Linux y en Windows</strong><span>Las conductas dependen del prompt y de los permisos: verify ejecuta y no edita; review tiene la edición denegada; docs la limita a Markdown; ui pide permiso al cargar la skill. El shell sigue abierto en review, docs y ui.</span></div>
+      <div><strong>Instalación probada en Linux y en Windows</strong><span>Las conductas dependen del prompt y de los permisos: verify ejecuta y no edita; review tiene la edición denegada; docs la limita a Markdown; ui pide permiso antes de Playwright. El shell sigue abierto en review, docs y ui.</span></div>
     </div>
   </div>
 </section>
@@ -227,7 +227,7 @@
 
     <section id="empezar">
       <div class="section-head"><span class="section-num">02</span><h2 class="title">Empezar aquí</h2></div>
-      <p class="sub">Tres condiciones y una orden. OpenCode V2 en el PATH; acceso a los modelos <code>nan</code> con <code>opencode auth login</code>; y, solo para el agente <code>ui</code>, la skill <code>playwright-cli</code>. Después, el instalador de tu sistema sobre la carpeta del paquete, copiada tal cual desde donde la tengas.</p>
+      <p class="sub">Tres condiciones y una orden. OpenCode V2 en el PATH; acceso a los modelos <code>nan</code> con <code>opencode auth login</code>; y, solo para el agente <code>ui</code>, la skill <code>playwright-cli-usage</code>, que el orquestador adjunta al encargo con su ruta. Después, el instalador de tu sistema sobre la carpeta del paquete, copiada tal cual desde donde la tengas.</p>
       <p class="cmdcap">Linux, macOS o WSL</p>
       <div class="code"><pre data-language="bash"><code>bash install.sh</code></pre></div>
       <p class="cmdcap">Windows (PowerShell)</p>
@@ -328,7 +328,7 @@
       <p>Un cambio de riesgo alto recibe, además de sus propias comprobaciones, una verificación independiente: otro agente lee el criterio de la tarea y lo prueba contra el resultado real. En este paquete la hacen <code>verify</code> —evidencia de las comprobaciones— y <code>review</code> —hallazgos contra el criterio—, ninguno de los dos edita.</p>
 
       <h3>Cómo se reparte el trabajo</h3>
-      <p>La implementación se delega por defecto a <code>general</code>, sea cual sea su tamaño; el orquestador implementa en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporta valor. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Las escrituras del tablero van a <code>tasks-agent</code>; las lecturas van directas por la CLI <code>tasks-ai</code>.</p>
+      <p>La implementación se delega por defecto a <code>general</code>, sea cual sea su tamaño; el orquestador implementa en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporta valor. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Las escrituras del tablero van a <code>tasks-agent</code>; las lecturas van directas por la CLI <code>tasks-ai</code>. El catálogo de skills vive solo en el orquestador: los subagentes llevan el permiso <code>skill</code> denegado (<code>action: skill</code>, <code>resource: "*"</code>, <code>effect: deny</code>), que oculta la skill al modelo y rechaza la carga; no pueden cargarlas por su cuenta, y cuando una aplica el encargo lleva su ruta absoluta y una línea de por qué.</p>
     </section>
 
     <section id="permisos">
@@ -339,22 +339,22 @@
           <thead><tr><th>Agente</th><th>Editar</th><th>Shell</th><th>Skills y subagentes</th></tr></thead>
           <tbody>
             <tr>
-              <td><code>orchestrator</code></td><td>Sí</td><td>Sí</td><td>Solo puede lanzar los subagentes que declara su lista</td>
+              <td><code>orchestrator</code></td><td>Sí</td><td>Sí</td><td>Solo puede lanzar los subagentes que declara su lista; conserva el catálogo y pasa la skill por ruta</td>
             </tr>
             <tr>
-              <td><code>verify</code></td><td>Nada</td><td><code>*</code> denegado; prefijos de comprobación abiertos</td><td>Sin restricción</td>
+              <td><code>verify</code></td><td>Nada</td><td><code>*</code> denegado; prefijos de comprobación abiertos</td><td>Sin catálogo: la skill llega en el encargo</td>
             </tr>
             <tr>
-              <td><code>review</code></td><td>Nada</td><td>Sí</td><td>Sin restricción</td>
+              <td><code>review</code></td><td>Nada</td><td>Sí</td><td>Sin catálogo: la skill llega en el encargo</td>
             </tr>
             <tr>
-              <td><code>docs</code></td><td>Solo <code>*.md</code>, <code>*.mdx</code>, <code>docs/*</code> y <code>CHANGELOG*</code></td><td>Sí</td><td>Sin restricción</td>
+              <td><code>docs</code></td><td>Solo <code>*.md</code>, <code>*.mdx</code>, <code>docs/*</code> y <code>CHANGELOG*</code></td><td>Sí</td><td>Sin catálogo: la skill llega en el encargo</td>
             </tr>
             <tr>
-              <td><code>ui</code></td><td>Sí</td><td><code>npx playwright</code> y <code>playwright</code> piden permiso; <code>npm run</code> y <code>pnpm</code> abiertos</td><td><code>playwright-cli</code> pide permiso</td>
+              <td><code>ui</code></td><td>Sí</td><td><code>npx playwright</code> y <code>playwright</code> piden permiso; <code>npm run</code> y <code>pnpm</code> abiertos</td><td>Sin catálogo: recibe <code>playwright-cli-usage</code> en el encargo</td>
             </tr>
             <tr>
-              <td><code>tasks-agent</code></td><td>Nada</td><td>Nada</td><td>Todo denegado salvo las herramientas <code>tasks_*</code></td>
+              <td><code>tasks-agent</code></td><td>Nada</td><td>Nada</td><td>Sin catálogo; todo denegado salvo las herramientas <code>tasks_*</code></td>
             </tr>
           </tbody>
         </table>
@@ -372,8 +372,8 @@
       <div class="code"><pre data-language="json"><code>{
   "$schema": "https://opencode.ai/config.json",
   "agents": {
-    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },
-    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }
+    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] },
+    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] }
   },
   "permissions": [
     { "action": "tasks_*", "resource": "*", "effect": "deny" }
@@ -414,7 +414,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
       <p>La batería completa del paquete se ejecuta de una vez con <code>bash check-package.sh</code>: sintaxis del instalador, plantilla JSON, instalación limpia, fusión con claves ajenas, camino JSONC y <code>diff</code> contra los agentes y la herramienta ya instalados. No pide interacción y solo escribe en temporales.</p>
       <p>La herramienta del flujo queda junto a los agentes: <code>~/.config/opencode/agents/orchestrator-runner.py</code> guía al orquestador por las once fases desde cualquier proyecto, con la fase actual, su lista operativa y solo <code>next</code> para avanzar — y <code>next</code> exige la evidencia de la fase completada: sin ella, pide la que toca y no avanza; con ella, la registra en el historial. Su estado vive en el <code>.run/</code> del proyecto en el que se trabaja.</p>
       <p>Para que el agente no toque ese registro a mano, el paquete lleva un <code>.llmignore</code> con la regla; se aplica con el plugin <code>opencode-ignore-file</code> instalado globalmente (<code>npm run install:plugin</code> desde su repositorio, y reiniciar opencode). Sin el plugin, la regla no bloquea: vale la convención.</p>
-      <p>Las conductas dependen del prompt y de los permisos: <code>verify</code> ejecuta y no edita; <code>review</code> tiene la edición denegada; <code>docs</code> la tiene limitada a Markdown, <code>docs/</code> y <code>CHANGELOG</code>; <code>ui</code> la tiene abierta y pide permiso al cargar la skill; <code>tasks-agent</code> no edita ni ejecuta comandos, solo usa las herramientas <code>tasks_*</code>. El shell sigue abierto en <code>review</code>, <code>docs</code> y <code>ui</code>; lo que les impide escribir por esa vía es su prompt.</p>
+      <p>Las conductas dependen del prompt y de los permisos: <code>verify</code> ejecuta y no edita; <code>review</code> tiene la edición denegada; <code>docs</code> la tiene limitada a Markdown, <code>docs/</code> y <code>CHANGELOG</code>; <code>ui</code> la tiene abierta y pide permiso antes de Playwright; <code>tasks-agent</code> no edita ni ejecuta comandos, solo usa las herramientas <code>tasks_*</code>. El shell sigue abierto en <code>review</code>, <code>docs</code> y <code>ui</code>; lo que les impide escribir por esa vía es su prompt.</p>
       <p>La prueba funcional de <code>tasks-agent</code> —diez casos, los hallazgos que corrigieron su enunciado y la latencia de lectura por modelo— está en <a href="tasks-agent-verification.html">la verificación de tasks-agent</a>.</p>
     </section>
 
@@ -485,7 +485,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
         <div class="card">
           <span class="mono">Navegador</span>
           <h3>No trae la skill de navegador</h3>
-          <p>La verificación de interfaz depende de que la máquina tenga <code>playwright-cli</code>. Sin ella, <code>ui</code> no tiene con qué recorrer.</p>
+          <p>La verificación de interfaz depende de que la máquina tenga <code>playwright-cli-usage</code> y de que el orquestador adjunte su ruta al encargo de <code>ui</code>. Sin ella, <code>ui</code> no tiene con qué recorrer.</p>
         </div>
         <div class="card">
           <span class="mono">Acceso al proveedor</span>

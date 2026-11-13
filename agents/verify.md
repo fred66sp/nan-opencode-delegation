@@ -4,6 +4,9 @@ mode: subagent
 model: nan/qwen3.8-flash#medium
 steps: 12
 permissions:
+  - action: skill
+    resource: "*"
+    effect: deny
   - action: edit
     resource: "*"
     effect: deny

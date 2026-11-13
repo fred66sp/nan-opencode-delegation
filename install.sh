@@ -64,8 +64,8 @@ if isinstance(old, dict):
 elif old is not None:
     print("Aviso: la clave obsoleta 'agent' no es un objeto; no se migra.")
 
-agents["explore"] = {"model": {"providerID": "nan", "model": "glm5.3-flash", "variant": "low"}}
-agents["general"] = {"model": {"providerID": "nan", "model": "deepseek-v4-flash", "variant": "high"}}
+agents["explore"] = {"model": {"providerID": "nan", "model": "glm5.3-flash", "variant": "low"}, "permissions": [{"action": "skill", "resource": "*", "effect": "deny"}]}
+agents["general"] = {"model": {"providerID": "nan", "model": "deepseek-v4-flash", "variant": "high"}, "permissions": [{"action": "skill", "resource": "*", "effect": "deny"}]}
 
 rule = {"action": "tasks_*", "resource": "*", "effect": "deny"}
 perms = data.get("permissions")
@@ -89,8 +89,8 @@ PY
     cat <<'EOF'
 
   "agents": {
-    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" } },
-    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" } }
+    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] },
+    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] }
   },
   "permissions": [
     { "action": "tasks_*", "resource": "*", "effect": "deny" }

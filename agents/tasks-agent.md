@@ -4,6 +4,9 @@ mode: subagent
 model: nan/mimo-v2.6-flash#low
 steps: 16
 permissions:
+  - action: skill
+    resource: "*"
+    effect: deny
   - action: "*"
     resource: "*"
     effect: deny

@@ -2,10 +2,12 @@
   "$schema": "https://opencode.ai/config.json",
   "agents": {
     "explore": {
-      "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }
+      "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" },
+      "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ]
     },
     "general": {
-      "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }
+      "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" },
+      "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ]
     }
   },
   "permissions": [

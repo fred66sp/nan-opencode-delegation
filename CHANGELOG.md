@@ -91,6 +91,16 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Modificado
 
+- Reparto de skills: el orquestador conserva el catálogo y adjunta al encargo la ruta
+  absoluta del `SKILL.md` que cada trabajo necesita, con una línea de por qué aplica. Los
+  cinco subagentes y los agentes integrados `explore` y `general` llevan el permiso `skill`
+  denegado (`action: skill`, `resource: "*"`, `effect: deny`), que oculta la skill al modelo
+  y rechaza la carga; los instaladores escriben esa regla en la configuración. `tools` es
+  un campo de la V1 que V2 ignora, así que no se usa. `check-package.sh` gana tres guardas:
+  los cinco subagentes con el permiso denegado, ningún agente ni la plantilla de
+  configuración que lo abra en `allow` o `ask`, y las skills citadas presentes en una raíz
+  de descubrimiento —con aviso, no fallo, si la máquina no tiene ninguna—.
+
 - El tablero tiene dos caminos: las lecturas —consultar, mostrar una tarea, listar
   comentarios, etiquetas o ADR— van directas por la CLI `tasks-ai`, sin delegar, y solo las
   escrituras se delegan a `tasks-agent`. Los lotes de creación —épica, subtareas, etiquetas,
@@ -110,6 +120,10 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   encargos con `explore` y la documentación con `docs`.
 
 ### Corregido
+
+- La documentación citaba `playwright-cli`, que no es el nombre de la skill que usa el
+  agente `ui`: README, PRD y guía nombran ahora `playwright-cli-usage`, la ruta que el
+  orquestador adjunta al encargo.
 
 - `orchestrator-runner.py` no ofrecía forma de reiniciar el flujo: su estado está vetado
   al agente por el `.llmignore` del paquete y su ayuda mandaba «borra el fichero» a mano —
