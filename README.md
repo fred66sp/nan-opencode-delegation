@@ -1,10 +1,10 @@
 # Delegación de subagentes nan para OpenCode
 
-Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un agente orquestador, cinco subagentes con permisos acotados —uno de ellos, `tasks-agent`, opera el tablero del proyecto— y los modelos de dos subagentes integrados del propio OpenCode (`explore` y `general`). La carpeta se copia tal cual a otra máquina y el instalador deja cada fichero en su sitio. No toca tu configuración más allá de lo que necesita: antes de escribir guarda una copia con fecha de la configuración y conserva las claves y agentes ajenos, aunque el fichero quede reescrito y normalizado. Los ficheros de `agents/` con el mismo nombre que uno tuyo se reemplazan tras guardar una copia `.bak` con fecha.
+Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un agente orquestador, cinco subagentes con permisos acotados —uno de ellos, `tasks-agent`, escribe en el tablero del proyecto— y los modelos de dos subagentes integrados del propio OpenCode (`explore` y `general`). La carpeta se copia tal cual a otra máquina y el instalador deja cada fichero en su sitio. No toca tu configuración más allá de lo que necesita: antes de escribir guarda una copia con fecha de la configuración y conserva las claves y agentes ajenos, aunque el fichero quede reescrito y normalizado. Los ficheros de `agents/` con el mismo nombre que uno tuyo se reemplazan tras guardar una copia `.bak` con fecha.
 
 Los ficheros `agents/*.md` son copias literales de la configuración que ya funciona en la máquina de origen; la herramienta del flujo, `agents/orchestrator-runner.py`, nace en el paquete. El paquete no es donde nacen los cambios de la delegación, sino por donde viajan.
 
-El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamaño del trabajo, registra el trabajo grande en el tablero —a través de `tasks-agent`— antes de escribir, y cierra cada cambio de código con una línea de riesgo; el riesgo alto pasa por verificación independiente.
+El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamaño del trabajo, lanza el registro del trabajo grande en el tablero a `tasks-agent` en segundo plano y lo comprueba por la CLI antes de la primera edición, y cierra cada cambio de código con una línea de riesgo; el riesgo alto pasa por verificación independiente.
 
 ## Documentación
 
@@ -26,7 +26,7 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 | `agents/review.md` | `~/.config/opencode/agents/review.md` | Revisa un cambio contra su criterio sin modificarlo |
 | `agents/docs.md` | `~/.config/opencode/agents/docs.md` | Documentación y CHANGELOG dentro de su perímetro |
 | `agents/ui.md` | `~/.config/opencode/agents/ui.md` | Verificación de interfaz con navegador; pide permiso para Playwright |
-| `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Operador del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
+| `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Escritor del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
 | `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` con la evidencia de la fase para avanzar |
 | `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general` y la regla que deniega `tasks_*` |
 
@@ -69,7 +69,7 @@ Copia los ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `op
 
 Un detalle que importa: en el frontmatter de los agentes en Markdown, el modelo lleva la variante con `#` (`nan/glm5.3-flash#high`). En `agents`, la variante va en el objeto `model` (`providerID`, `model`, `variant`) o en el string `nan/glm5.3-flash#low`; no hay campo `variant` suelto. `agent` en singular está obsoleto; el instalador escribe en `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
 
-La regla `permissions` deniega `tasks_*` a todos los agentes; solo `tasks-agent` las reabre en su frontmatter, y por eso es la única puerta del tablero. Corre en una sesión hija con contexto limpio: cada invocación recibe la intención, no el historial de la conversación.
+La regla `permissions` deniega `tasks_*` a todos los agentes; solo `tasks-agent` las reabre en su frontmatter, y por eso es la única puerta de las herramientas `tasks_*`. Las lecturas del tablero no pasan por esas herramientas: van directas por la CLI `tasks-ai` —o `.tasks-ai/bin/tasks-ai` si no está en el PATH—. `tasks-agent` acepta secuencias ordenadas de escrituras en un solo encargo, con una línea de resultado por operación. Corre en una sesión hija con contexto limpio: cada invocación recibe la intención y los identificadores, no el historial de la conversación.
 
 ## Verificación
 
@@ -91,7 +91,7 @@ El frontmatter de `agents/` es la fuente canónica de modelos, pasos y permisos;
 | `review` | subagent | `nan/glm5.3-flash` | xhigh | 12 | Sin editar; shell abierto |
 | `docs` | subagent | `nan/deepseek-v4-flash` | medium | 20 | Edición solo Markdown, `docs/` y `CHANGELOG`; shell abierto (el prompt le prohíbe código) |
 | `ui` | subagent | `nan/mimo-v2.6-flash` | medium | 20 | Edición permitida; Playwright con permiso `ask`; `npm run` y `pnpm` abiertos |
-| `tasks-agent` | subagent | `nan/mimo-v2.6-flash` | low | 8 | Solo `tasks_*`: el resto de herramientas, denegado |
+| `tasks-agent` | subagent | `nan/mimo-v2.6-flash` | low | 16 | Escribe en el tablero: solo `tasks_*`, el resto de herramientas denegado |
 | `explore` | integrado | `nan/glm5.3-flash` | low | — | Solo configuración |
 | `general` | integrado | `nan/deepseek-v4-flash` | high | — | Solo configuración |
 

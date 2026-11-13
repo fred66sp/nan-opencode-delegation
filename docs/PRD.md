@@ -31,7 +31,7 @@ ser una introducción a la orquestación en general.
 ### Objetivos
 
 - Transportar la delegación tal cual: los ficheros de agente son copias literales
-  con su frontmatter de modelo, pasos y permisos, incluido `tasks-agent`, el operador
+  con su frontmatter de modelo, pasos y permisos, incluido `tasks-agent`, el escritor
   del tablero que concentra las herramientas `tasks_*`.
 - Un instalador por familia de sistema: `install.sh` para Linux, macOS y WSL, e
   `install.ps1` para Windows, con el mismo comportamiento observable.
@@ -99,7 +99,11 @@ ser una introducción a la orquestación en general.
 - Los instaladores funden solo `agents.explore`, `agents.general` y la regla global de
   `permissions`; el resto de claves y agentes ajenos se conservan.
 - El tablero tiene una sola puerta: la configuración global deniega `tasks_*` a todos los
-  agentes y `tasks-agent` las reabre en su frontmatter; los demás delegan en él.
+  agentes y `tasks-agent` las reabre en su frontmatter; los demás le delegan las escrituras
+  del tablero, mientras las lecturas van directas por la CLI `tasks-ai`. Los lotes de
+  creación —épica, subtareas, etiquetas, comentario— van en un único encargo ordenado, en
+  segundo plano, y se comprueban por CLI antes de usar su resultado; el cierre y el
+  comentario de bitácora del momento van en primer plano.
 - La prosa documental vive en castellano; los identificadores, rutas y comandos no se traducen.
 - La guía solo usa el verde donde algo se ha comprobado; los datos de medición nombran su
   método y su alcance.

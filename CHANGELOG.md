@@ -21,10 +21,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   El PRD ajusta su alcance: sigue sin código que compilar, con
   los dos instaladores, la puerta de verificación y esta herramienta.
 
-- Subagente `tasks-agent`: operador exclusivo del tablero tasks-ai. Recibe la intención de
+- Subagente `tasks-agent`: escritor exclusivo del tablero tasks-ai. Recibe la intención de
   otro agente y la ejecuta con las herramientas `tasks_*`; no planifica ni toca nada fuera
   del tablero. Sus permisos deniegan todo y reabren solo `tasks_*`, corre en una sesión
-  hija con contexto limpio y el orquestador le delega siempre las operaciones del tablero.
+  hija con contexto limpio y el orquestador le delega las escrituras del tablero, mientras
+  las lecturas van directas por la CLI `tasks-ai`.
 
 - Regla global de `permissions` que deniega `tasks_*` a todos los agentes; solo
   `tasks-agent` las reabre en su frontmatter. Los instaladores la añaden una sola vez y, en
@@ -90,6 +91,16 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Modificado
 
+- El tablero tiene dos caminos: las lecturas —consultar, mostrar una tarea, listar
+  comentarios, etiquetas o ADR— van directas por la CLI `tasks-ai`, sin delegar, y solo las
+  escrituras se delegan a `tasks-agent`. Los lotes de creación —épica, subtareas, etiquetas,
+  comentario— van en un único encargo con la secuencia ordenada, en segundo plano, y se
+  comprueban por CLI antes de usar su resultado: lanzado no es hecho. El cierre y el
+  comentario de bitácora del momento van en primer plano. `tasks-agent` pasa de operador a
+  escritor del tablero: ejecuta secuencias ordenadas en un solo encargo y devuelve una línea
+  de resultado por operación; sus `steps` suben de 8 a 16. La regla global de `permissions`
+  no cambia.
+
 - Configuración migrada a la clave `agents` de OpenCode V2: la plantilla, los instaladores y
   la documentación usan `agents`; el instalador mueve los overrides `explore` y `general`
   desde la clave obsoleta `agent` y conserva el resto de claves.
@@ -107,7 +118,7 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   estado sigue moviéndose solo por el runner.
 
 - `tasks-agent` tardaba demasiado en operaciones simples: recibe ahora un prompt
-  compactado a las guardas esenciales, `steps: 8` y la variante `#low`; sus permisos no
+  compactado a las guardas esenciales y la variante `#low`; sus permisos no
   cambian (`tasks_*`, sólo). Una operación trivial cocinada cae de minutos a segundos;
   el resto del tiempo bajo no era suyo, era del encargo.
 

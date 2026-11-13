@@ -21,7 +21,7 @@ PHASES = [
         "steps": [
             "Recuperar el contexto con `mem_context`; `mem_search` si la petición toca algo ya trabajado.",
             "Leer el `AGENTS.md` del proyecto y su mapa de fuentes antes de decidir nada.",
-            "Consultar el tablero (en curso y listas para empezar) a través de `tasks-agent`.",
+            "Consultar el tablero (en curso y listas para empezar) con la CLI `tasks-ai` del proyecto, directamente: las lecturas del tablero no se delegan.",
             "Comprobar la fase con `~/.config/opencode/agents/orchestrator-runner.py`; si la sesión anterior dejó otra y empiezas trabajo nuevo, borra `.run/orchestrator-runner.json` para volver a la fase 1.",
         ],
         "warnings": [
@@ -51,7 +51,7 @@ PHASES = [
         "steps": [
             "Aplicar el test de la sesión interrumpida: si la sesión se parara ahora, ¿alguien podría terminar el trabajo con la petición original y `git diff`?",
             "Respuesta sí: trabajo pequeño. No se crea tarea nueva, salvo que la persona la quiera.",
-            "Respuesta no: trabajo grande. Antes de escribir, registrar en el tablero, vía `tasks-agent`, una épica (`epic` + `ODD` + tipo) y sus subtareas (`task` + `ODD` + tipo) con el criterio observable de cada una y la petición original en un comentario.",
+            "Respuesta no: trabajo grande. Lanza a `tasks-agent` en background un único encargo con la secuencia ordenada de registro: una épica (`epic` + `ODD` + tipo), sus subtareas (`task` + `ODD` + tipo), el criterio observable de cada una y la petición original en un comentario. Continúa con tu proceso y, antes de la primera edición, comprueba por CLI que la épica quedó con su criterio.",
             "Comprobar el catálogo con `tasks-ai tags`: las etiquetas nacen ahí antes de usarse.",
         ],
         "warnings": [
@@ -94,12 +94,12 @@ PHASES = [
         "evidence": "los subagentes lanzados y la tarea de cada uno",
         "steps": [
             "Todo encargo lleva cuatro cosas: objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación; si hay tablero, la referencia de la tarea.",
-            "Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación, `verify` y `review` para verificación independiente, `tasks-agent` para el tablero.",
+            "Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación, `verify` y `review` para verificación independiente, `tasks-agent` para escribir en el tablero; sus lecturas van directas por la CLI `tasks-ai`.",
             "Usar `background` solo para unidades independientes con archivos distintos, y esperar el aviso antes de integrar.",
             "Implementar en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor.",
         ],
         "warnings": [
-            "El subagente no toca el tablero ni inventa estados: cada operación de `tasks-*` va a `tasks-agent`.",
+            "El subagente no toca el tablero ni inventa estados: cada escritura de `tasks-*` va a `tasks-agent`; una escritura lanzada no es evidencia, se comprueba por CLI antes de usarse.",
             "Revisa la salida del subagente antes de integrarla; un encargo sustancial nace además con alcance y criterios en su tarea.",
         ],
     },
@@ -155,9 +155,9 @@ PHASES = [
         "evidence": "la tarea cerrada o el siguiente paso declarado",
         "steps": [
             "Comprobar el criterio de la tarea contra el resultado real.",
-            "Dejar la bitácora como comentario en términos del producto: qué se hizo y qué se comprobó, vía `tasks-agent`.",
-            "Cerrar con `tasks-ai close <ref> --reason done` solo con la revisión de la persona o su pedido expreso.",
-            "Dejar el trabajo a medias: `tasks-ai update <ref> --status open` y un comentario con el siguiente paso.",
+            "Dejar la bitácora como comentario en términos del producto: qué se hizo y qué se comprobó, vía `tasks-agent` en primer plano.",
+            "Cerrar con `tasks-agent` en primer plano (`tasks-ai close <ref> --reason done`) solo con la revisión de la persona o su pedido expreso.",
+            "Dejar el trabajo a medias: lanza a `tasks-agent` en background el paso a `open` y un comentario con el siguiente paso, y comprueba por CLI que quedó registrado.",
             "Épica: cerrarla cuando cierren todas sus hijas; cerrar con hijas abiertas se rechaza sin escribir nada.",
         ],
         "warnings": [

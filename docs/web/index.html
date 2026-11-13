@@ -168,7 +168,7 @@
   <div class="hero-inner">
     <span class="pill"><span class="dot" aria-hidden="true"></span>Linux y Windows con instalación probada</span>
     <h1>Delegación de subagentes nan <span class="grad">en OpenCode</span></h1>
-    <p class="lead">Un orquestador que planifica y delega, cinco subagentes con permisos acotados —uno de ellos opera el tablero— y dos agentes integrados afinados por configuración. Todo con modelos del proveedor <code>nan</code>, con un instalador por sistema, probado en Linux, en Windows y desde WSL.</p>
+    <p class="lead">Un orquestador que planifica y delega, cinco subagentes con permisos acotados —uno de ellos escribe en el tablero— y dos agentes integrados afinados por configuración. Todo con modelos del proveedor <code>nan</code>, con un instalador por sistema, probado en Linux, en Windows y desde WSL.</p>
     <div class="hero-actions">
       <a class="btn btn-primary" href="#empezar">Empezar</a>
       <a class="btn btn-ghost" href="#arquitectura">Ver la arquitectura</a>
@@ -204,7 +204,7 @@
 
     <section id="que-es">
       <div class="section-head"><span class="section-num">01</span><h2 class="title">Qué es</h2></div>
-      <p class="sub">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <code>orchestrator</code>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cinco subagentes que solo pueden hacer su parte: comprobar, revisar, documentar, recorrer la interfaz u operar el tablero. Los planes y los cierres se quedan en el orquestador; cuatro de los cinco subagentes tienen la edición restringida por permisos, y el quinto, <code>ui</code>, pide permiso persona a persona antes de tocar el navegador.</p>
+      <p class="sub">OpenCode ejecuta el agente que tú eliges; no reparte nada por su cuenta. Este paquete añade a la configuración global un agente primario, <code>orchestrator</code>, que clasifica la petición y decide entre hacerla él mismo o delegarla. Del lado de abajo hay cinco subagentes que solo pueden hacer su parte: comprobar, revisar, documentar, recorrer la interfaz o escribir en el tablero. Los planes y los cierres se quedan en el orquestador; cuatro de los cinco subagentes tienen la edición restringida por permisos, y el quinto, <code>ui</code>, pide permiso persona a persona antes de tocar el navegador.</p>
       <p>Con la delegación no cambia la forma de trabajar: <code>build</code> sigue siendo el agente de arranque y <code>orchestrator</code> se elige cuando quieres orquestar. La delegación vive por prompt: el contrato está en el texto del agente. Si el orquestador no delega, no hay mecanismo de configuración que lo obligue.</p>
       <div class="grid cols-3">
         <div class="card">
@@ -214,7 +214,7 @@
         </div>
         <div class="card">
           <h3>Cinco subagentes acotados</h3>
-          <p><code>verify</code> ejecuta las comprobaciones, <code>review</code> juzga sin tocar nada, <code>docs</code> escribe solo Markdown, <code>ui</code> recorre el navegador pidiendo permiso antes de Playwright y <code>tasks-agent</code> opera el tablero.</p>
+          <p><code>verify</code> ejecuta las comprobaciones, <code>review</code> juzga sin tocar nada, <code>docs</code> escribe solo Markdown, <code>ui</code> recorre el navegador pidiendo permiso antes de Playwright y <code>tasks-agent</code> escribe en el tablero.</p>
           <span class="mono">verify, review, docs y tasks-agent sin edición · ui con ask</span>
         </div>
         <div class="card">
@@ -245,7 +245,7 @@
         <div class="flow-step"><code>review</code><strong>glm5.3-flash#xhigh · 12</strong><p>Hallazgos con fichero y línea. No edita.</p></div>
         <div class="flow-step"><code>docs</code><strong>deepseek-v4-flash#medium · 20</strong><p>Markdown, docs/ y CHANGELOG. Nada de código.</p></div>
         <div class="flow-step"><code>ui</code><strong>mimo-v2.6-flash#medium · 20</strong><p>Navegador con permiso ask para Playwright.</p></div>
-        <div class="flow-step"><code>tasks-agent</code><strong>mimo-v2.6-flash#low · 8</strong><p>Opera el tablero: solo las herramientas <code>tasks_*</code>.</p></div>
+        <div class="flow-step"><code>tasks-agent</code><strong>mimo-v2.6-flash#low · 16</strong><p>Escribe en el tablero: solo las herramientas <code>tasks_*</code>; los lotes van en un único encargo ordenado.</p></div>
         <div class="flow-step"><code>general</code><strong>deepseek-v4-flash · variant high · config</strong><p>La implementación que el orquestador le delega por defecto.</p></div>
         <div class="flow-step"><code>explore</code><strong>glm5.3-flash · variant low · config</strong><p>Búsqueda y contexto rápido. No edita por diseño.</p></div>
         <div class="flow-step"><code>build</code><strong>arranque por defecto, sin cambios</strong><p>Sigue siendo el agente con el que se abre OpenCode.</p></div>
@@ -264,14 +264,14 @@
         <li><strong>Todo encargo a un subagente lleva objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación</strong>. Si el proyecto tiene sistema de seguimiento, pásale la referencia; el subagente de trabajo no modifica el tablero ni inventa sus estados, porque eso queda para <code>tasks-agent</code>. Un encargo sustancial nace con objetivo, alcance y criterios de aceptación en la descripción de su tarea; los comentarios son la bitácora, en el momento en que surge cada avance; al dejar el trabajo queda un siguiente paso identificable. Un cambio pequeño no necesita más que un título claro.</li>
         <li><strong>Un subagente lanzado no es evidencia</strong>: revisa su salida antes de integrarla. El orquestador es el único que cierra.</li>
         <li><strong>Usa el trabajo en segundo plano solo para trabajo independiente</strong> y espera el aviso antes de integrar.</li>
-        <li><strong>El tablero se delega siempre a <code>tasks-agent</code></strong>: consultar, crear, actualizar, cerrar, reabrir, bloquear, comentar y etiquetar van con la intención y los identificadores, sin volcar historial. Ningún otro agente llama a las herramientas <code>tasks_*</code>: la configuración global las deniega y solo <code>tasks-agent</code> las reabre.</li>
+        <li><strong>El tablero tiene dos caminos: leer directo y escribir delegado</strong>: consultar, mostrar una tarea, listar comentarios, etiquetas o ADR van directos por la CLI del proyecto (<code>tasks-ai</code>, o <code>.tasks-ai/bin/tasks-ai</code> si no está en el PATH) y no se delegan; crear, actualizar, cerrar, reabrir, bloquear, comentar y etiquetar van a <code>tasks-agent</code> con la intención y los identificadores, sin volcar historial. Los lotes de creación —épica, subtareas, etiquetas, comentario— van en un único encargo con la secuencia ordenada, en segundo plano, y su resultado se comprueba por CLI antes de usarlo: lanzado no es hecho. El cierre y el comentario de bitácora del momento van en primer plano. Ningún otro agente llama a las herramientas <code>tasks_*</code>: la configuración global las deniega y solo <code>tasks-agent</code> las reabre.</li>
       </ol>
     </section>
 
     <section id="metodologia">
       <div class="section-head"><span class="section-num">05</span><h2 class="title">La metodología ODD</h2></div>
       <p class="sub">ODD (<em>Organic Driven Development</em>) es la forma de trabajar de este paquete: se decide antes de escribir, el trabajo se registra en el tablero y nada se da por hecho hasta haberlo observado.</p>
-      <p>ODD es una derivación de SDD (<em>Spec-Driven Development</em>): como en SDD, el resultado y su criterio se especifican antes de escribir. La diferencia es una regla: el tablero de tasks-ai es la única fuente de tareas. No hay documentos de tareas aparte ni listas paralelas; lo que otros flujos guardan en un documento de especificación vive en la propia tarea. El orquestador no opera el tablero: cada consulta o escritura se delega a <code>tasks-agent</code>, la única puerta a las herramientas <code>tasks_*</code>.</p>
+      <p>ODD es una derivación de SDD (<em>Spec-Driven Development</em>): como en SDD, el resultado y su criterio se especifican antes de escribir. La diferencia es una regla: el tablero de tasks-ai es la única fuente de tareas. No hay documentos de tareas aparte ni listas paralelas; lo que otros flujos guardan en un documento de especificación vive en la propia tarea. El orquestador lee el tablero directamente por la CLI <code>tasks-ai</code> y delega en <code>tasks-agent</code> solo las escrituras, porque es la única puerta a las herramientas <code>tasks_*</code>.</p>
 
       <h3>El protocolo, paso a paso</h3>
       <div class="table-wrap">
@@ -282,7 +282,7 @@
             <tr><td><strong>2 · Explorar</strong></td><td>Se lee el código y los requisitos, en proporción a la petición, antes de proponer nada.</td></tr>
             <tr><td><strong>3 · Resolver dudas</strong></td><td>Una pregunta a la vez, solo para decisiones de producto reales; después se espera la respuesta.</td></tr>
             <tr><td><strong>4 · Clasificar</strong></td><td>Pequeña o grande. Decide si hace falta registrar el trabajo en el tablero.</td></tr>
-            <tr><td><strong>5 · Registrar</strong></td><td>Solo si es grande: frente, subtareas con su criterio y la petición original, antes de la primera escritura y a través de <code>tasks-agent</code>.</td></tr>
+            <tr><td><strong>5 · Registrar</strong></td><td>Solo si es grande: frente, subtareas con su criterio y la petición original, antes de la primera escritura; el lote va en un único encargo a <code>tasks-agent</code> lanzado en segundo plano y se comprueba por CLI antes de la primera edición.</td></tr>
             <tr><td><strong>6 · Implementar</strong></td><td>Tarea a tarea: en curso antes de tocar archivos —el frente con su primera subtarea—, prueba primero cuando se puede y una unidad a la vez sobre el mismo código.</td></tr>
             <tr><td><strong>7 · Cerrar</strong></td><td>Se comprueba el criterio contra el resultado real, se prepara el commit —que solo se crea con confirmación explícita— y se cierra la tarea con su motivo.</td></tr>
           </tbody>
@@ -328,7 +328,7 @@
       <p>Un cambio de riesgo alto recibe, además de sus propias comprobaciones, una verificación independiente: otro agente lee el criterio de la tarea y lo prueba contra el resultado real. En este paquete la hacen <code>verify</code> —evidencia de las comprobaciones— y <code>review</code> —hallazgos contra el criterio—, ninguno de los dos edita.</p>
 
       <h3>Cómo se reparte el trabajo</h3>
-      <p>La implementación se delega por defecto a <code>general</code>, sea cual sea su tamaño; el orquestador implementa en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporta valor. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Cualquier operación del tablero va a <code>tasks-agent</code>.</p>
+      <p>La implementación se delega por defecto a <code>general</code>, sea cual sea su tamaño; el orquestador implementa en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporta valor. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Las escrituras del tablero van a <code>tasks-agent</code>; las lecturas van directas por la CLI <code>tasks-ai</code>.</p>
     </section>
 
     <section id="permisos">
@@ -362,7 +362,7 @@
       <div class="note"><p><strong>Denegar antes de abrir.</strong> Como la política base permite todo, una lista blanca sin un <code>deny *</code> previo no tiene efecto. <code>verify</code> lo lleva: cierra edición y shell por completo y después abre los quince prefijos de comprobación (<code>go test</code>, <code>go vet</code>, <code>go build</code>, <code>make</code>, <code>npm test</code>, <code>npm run</code>, <code>pnpm</code>, <code>pytest</code>, <code>cargo test</code>, <code>git status</code>, <code>git diff</code>, <code>python3</code>, <code>python</code>, <code>bash check-package.sh</code> con y sin argumentos).</p></div>
       <div class="note"><p><strong>Los comodines no cruzan la raíz como cabría esperar.</strong> <code>**/*.md</code> no casa los Markdown de la raíz del proyecto, que es por lo que <code>docs</code> combina patrones de raíz (<code>*.md</code>, <code>*.mdx</code>, <code>docs/*</code>, <code>CHANGELOG*</code>).</p></div>
       <div class="note"><p><strong>Edición no es shell.</strong> El permiso <code>edit</code> no cubre el shell: <code>review</code>, <code>docs</code> y <code>ui</code> pueden ejecutar comandos que escriban. En <code>review</code> la edición está denegada, en <code>docs</code> limitada a Markdown, <code>docs/</code> y <code>CHANGELOG</code>, y en <code>ui</code> abierta. Lo que impide escribir por shell es el prompt.</p></div>
-      <div class="note"><p><strong>Una sola puerta al tablero.</strong> La regla global de <code>permissions</code> deniega <code>tasks_*</code> a todos los agentes; el frontmatter de <code>tasks-agent</code> empieza con un <code>deny *</code> y reabre solo <code>tasks_*</code>. Como las reglas del agente se aplican después de las globales, esas herramientas son su única superficie y el resto de agentes delega en él.</p></div>
+      <div class="note"><p><strong>Una sola puerta al tablero.</strong> La regla global de <code>permissions</code> deniega <code>tasks_*</code> a todos los agentes; el frontmatter de <code>tasks-agent</code> empieza con un <code>deny *</code> y reabre solo <code>tasks_*</code>. Como las reglas del agente se aplican después de las globales, esas herramientas son su única superficie y el resto de agentes le delega las escrituras. Las lecturas del tablero no usan <code>tasks_*</code>: van directas por la CLI <code>tasks-ai</code>, y por eso la puerta solo gobierna las escrituras.</p></div>
       <div class="note note--warn"><p><strong>Ask bloquea.</strong> El permiso <code>ask</code> de <code>ui</code> detiene la sesión hija hasta que una persona aprueba. Lanzar <code>ui</code> en segundo plano sin estar delante deja el agente colgado del aviso.</p></div>
     </section>
 
@@ -396,7 +396,7 @@
             <tr><td><code>review</code></td><td>subagent</td><td><code>nan/glm5.3-flash</code></td><td>xhigh</td><td>12</td><td>La revisión gasta más razón por paso</td></tr>
             <tr><td><code>docs</code></td><td>subagent</td><td><code>nan/deepseek-v4-flash</code></td><td>medium</td><td>20</td><td>Prosa en su perímetro propio</td></tr>
             <tr><td><code>ui</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>medium</td><td>20</td><td>Recorre y relata lo que ve</td></tr>
-            <tr><td><code>tasks-agent</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>low</td><td>8</td><td>Opera el tablero con las herramientas <code>tasks_*</code></td></tr>
+            <tr><td><code>tasks-agent</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>low</td><td>16</td><td>Escribe en el tablero con las herramientas <code>tasks_*</code></td></tr>
             <tr><td><code>explore</code></td><td>integrado</td><td><code>nan/glm5.3-flash</code></td><td>low</td><td>—</td><td>Contexto rápido, bajo coste</td></tr>
             <tr><td><code>general</code></td><td>integrado</td><td><code>nan/deepseek-v4-flash</code></td><td>high</td><td>—</td><td>El trabajador de los grandes encargos</td></tr>
           </tbody>
@@ -611,7 +611,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
                 <path d="M-4,-7 V7 M1,-7 V7"/>
               </g>
               <text x="522" y="472" font-size="16.5" font-weight="700" fill="var(--text)">tasks-agent</text>
-              <text x="522" y="494">subagente · nan/mimo-v2.6-flash · 8 pasos</text>
+              <text x="522" y="494">subagente · nan/mimo-v2.6-flash · 16 pasos</text>
               <text x="522" y="513">Puerta de las herramientas tasks_*: solo tablero.</text>
               <rect x="756" y="450" width="82" height="22" rx="11" fill="url(#gArc12)"/>
               <text x="797" y="465" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" letter-spacing=".5">tasks_*</text>
@@ -709,7 +709,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
               <text x="476" y="327" text-anchor="middle" font-size="19" font-weight="700" fill="url(#gArc13)">3</text>
               <text x="522" y="304" font-size="16.5" font-weight="700" fill="url(#gArc13)">PASO 3<tspan fill="var(--text)"> · Delega</tspan></text>
               <text x="522" y="328">general por defecto; explore y docs si aportan;</text>
-              <text x="522" y="346">tablero a tasks-agent; background independiente.</text>
+              <text x="522" y="346">escrituras del tablero a tasks-agent; lotes en background.</text>
             </g>
             <g>
               <rect x="430" y="390" width="420" height="100" rx="50" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#sh13)"/>
