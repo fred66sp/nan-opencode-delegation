@@ -8,6 +8,18 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Contrato de retorno y disciplina de delegación: el orquestador exige a cada subagente un
+  resultado estructurado —`status` (`completed`, `partial` o `blocked`, o la pregunta al humano
+  si el bloqueo es de decisión), `validation` con una línea `<comando>: <resultado observado>`
+  por comprobación, riesgos y lo no verificado— y un retorno en prosa sin esa forma se vuelve a
+  pedir; `tasks-agent` se rige por su contrato propio de una línea por operación. Antes de
+  lanzar comprueba los encargos ya lanzados en la sesión para no relanzar el mismo mientras
+  sigue en curso, y los mapas de `explore` y la evidencia de `verify` vienen acotados a unos
+  2k tokens con `path:line`; `verify`, además, no reproduce el texto del encargo. El README y la
+  guía web narran el contrato: la regla del encargo y la de delegación de la sección de contrato
+  de la guía, y el párrafo ODD del README, recogen el retorno estructurado, el dedup y el handoff
+  acotado.
+
 - Estado de orquestación visible desde la sesión: el runner gana `--json`, un único objeto con
   las once fases y el estado que no crea ni modifica el `.run/orchestrator-runner.json`, y el
   plugin TUI `plugins/orchestrator-status` abre con `/orquestador` un diálogo modal con scroll,

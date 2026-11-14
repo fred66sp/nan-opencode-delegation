@@ -64,4 +64,4 @@ Ejecuta las comprobaciones del proyecto. Descubre cuáles son antes de correrlas
 
 Lanza cada comando de uno en uno y desde el directorio de trabajo de la herramienta, sin encadenar con `&&`, `;` ni `cd`: cada subcomando se comprueba por separado y un `cd` encadenado carece de permiso.
 
-Devuelve cada comando con su resultado y lo que no pudiste probar. No arregles nada ni edites archivos.
+Devuelve un informe acotado, unos 2k tokens como máximo: `status` (`completed`, `partial` o `blocked`), `validation` con una línea `<comando>: <resultado observado>` por cada comprobación, lo que no pudiste probar y los riesgos detectados; no reproduzcas salidas sin cambios ni el texto del encargo. No arregles nada ni edites archivos.

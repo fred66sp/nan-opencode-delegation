@@ -4,7 +4,7 @@ Un paquete instalable con la orquestación de modelos `nan` en OpenCode V2: un a
 
 Los ficheros `agents/*.md` son copias literales de la configuración que ya funciona en la máquina de origen; la herramienta del flujo, `agents/orchestrator-runner.py`, nace en el paquete. El paquete no es donde nacen los cambios de la delegación, sino por donde viajan.
 
-El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamaño del trabajo, lanza el registro del trabajo grande en el tablero a `tasks-agent` en segundo plano y lo comprueba por la CLI antes de la primera edición, y cierra cada cambio de código con una línea de riesgo; el riesgo alto pasa por verificación independiente.
+El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamaño del trabajo, lanza el registro del trabajo grande en el tablero a `tasks-agent` en segundo plano y lo comprueba por la CLI antes de la primera edición, y cierra cada cambio de código con una línea de riesgo; el riesgo alto pasa por verificación independiente. Todo encargo exige a su subagente un retorno estructurado —`status` (`completed`, `partial` o `blocked`, o la pregunta al humano si el bloqueo es de decisión), `validation` con una línea por comprobación, riesgos y lo no verificado; `tasks-agent` se rige por su contrato de una línea por operación—, no se lanza el mismo encargo dos veces mientras el primero siga en curso, y los mapas de `explore` y la evidencia de `verify` vuelven acotados a unos 2k tokens con `path:line`.
 
 ## Documentación
 
