@@ -28,7 +28,51 @@ Get-ChildItem (Join-Path $here 'agents\*') -File | ForEach-Object {
 Write-Host "Agentes copiados en $agentsDir :"
 Get-ChildItem $agentsDir -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
 
-# 2. Modelos de explore y general, y la regla global que deniega tasks_*.
+# 2. El plugin TUI del estado de orquestacion, con sus fuentes. Sin node_modules:
+# OpenCode resuelve sus dependencias en runtime. Va en cli-plugins y se registra en
+# cli.json: un paquete solo-TUI no puede vivir en plugins/ (el servidor lo cargaria
+# y colisiona con su OpenTUI interno) y solo la TUI debe importarlo.
+$pluginSrc = Join-Path $here 'plugins\orchestrator-status'
+$pluginDir = Join-Path $configRoot 'cli-plugins\orchestrator-status'
+Get-ChildItem $pluginSrc -Recurse -File | Where-Object { $_.FullName -notmatch '\\node_modules\\' } | ForEach-Object {
+    $rel = $_.FullName.Substring($pluginSrc.Length).TrimStart('\')
+    $target = Join-Path $pluginDir $rel
+    New-Item -ItemType Directory -Force -Path (Split-Path -Parent $target) | Out-Null
+    if ((Test-Path $target) -and ((Get-FileHash $_.FullName).Hash -ne (Get-FileHash $target).Hash)) {
+        Copy-Item $target ($target + '.bak.' + $stamp)
+        Write-Host "Copia previa del plugin: $target.bak.$stamp"
+    }
+    Copy-Item -Force $_.FullName $target
+}
+Write-Host "Plugin copiado en $pluginDir :"
+Get-ChildItem $pluginDir -Recurse -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
+
+$cliJson = Join-Path $configRoot 'cli.json'
+$cliBak = Join-Path $configRoot ("cli.json.bak." + $stamp)
+if (Test-Path $cliJson) { Copy-Item $cliJson $cliBak }
+try {
+    if (Test-Path $cliJson) { $cli = Get-Content $cliJson -Raw | ConvertFrom-Json } else { $cli = $null }
+    if ($null -eq $cli) { $cli = [pscustomobject]@{} }
+    if ($null -eq $cli.PSObject.Properties['plugins'] -or $null -eq $cli.plugins) {
+        $cli | Add-Member -MemberType NoteProperty -Name 'plugins' -Value @()
+    }
+    if ($cli.plugins -isnot [array] -and $cli.plugins) {
+        throw "la clave 'plugins' no es una lista"
+    }
+    $pluginsList = @($cli.plugins)
+    if ($pluginsList -notcontains $pluginDir) {
+        $cli.plugins = $pluginsList + $pluginDir
+    }
+    $cli | ConvertTo-Json -Depth 20 | Set-Content -Path $cliJson -Encoding UTF8
+    Write-Host "Plugin registrado en cli.json (copia previa en $cliBak, si existia)"
+} catch {
+    if (Test-Path $cliBak) { Copy-Item $cliBak $cliJson -Force }
+    Write-Host "No pude actualizar $cliJson automaticamente: $($_.Exception.Message)"
+    Write-Host "Anade a mano la ruta del plugin a la clave plugins de cli.json:"
+    Write-Host "  \"plugins\": [ \"$pluginDir\", ... ]"
+}
+
+# 3. Modelos de explore y general, y la regla global que deniega tasks_*.
 $dest = @('opencode.jsonc', 'opencode.json') |
     ForEach-Object { Join-Path $configRoot $_ } |
     Where-Object { Test-Path $_ } |

@@ -188,12 +188,23 @@ Uso, desde la raíz del proyecto en el que se trabaja:
   ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
   ~/.config/opencode/agents/orchestrator-runner.py next "texto"   registra el texto como evidencia, avanza y muestra la nueva fase
   ~/.config/opencode/agents/orchestrator-runner.py reset          borra el estado: vuelve a la fase 1 sin historial
+  ~/.config/opencode/agents/orchestrator-runner.py --json         imprime las fases y el estado en JSON, sin cambiar nada
   ~/.config/opencode/agents/orchestrator-runner.py --help         esta ayuda
 
 `next` exige evidencia: sin texto no avanza (código 0, es una consulta) y pide la evidencia de
 la fase actual. Un único argumento de texto; varios puntos van en el mismo texto separados por
-`;`. Texto vacío o solo espacios, o más de un argumento, son error de uso (código 1). En la fase
-11 no hay transición: `next`, con o sin evidencia, avisa de que es la última y no avanza.
+`;`. Texto vacío o solo espacios, texto que empieza por `--`, o más de un argumento, son error
+de uso (código 1): así `next --json` no avanza por accidente. En la fase 11 no hay transición:
+`next`, con o sin evidencia, avisa de que es la última y no avanza.
+
+`--json` se acepta solo y sin otros argumentos: imprime por stdout un único objeto JSON con
+`version` (1), `phases` (las 11 fases en orden, con número, nombre, cuándo, evidencia esperada,
+pasos y advertencias) y `state` (si existe el fichero de estado con `exists`, fase actual, si el
+estado es válido, si el historial lo es y la evidencia registrada). No crea ni modifica el
+estado y no emite avisos: su stdout es para un programa, no para una persona. Estado corrupto:
+fase 1 con `valid` en false y `exists` en true; historial que no es una lista: `evidence_valid`
+en false con la evidencia descartada y la fase conservada. Sin fichero de estado: `exists` en
+false, fase 1 y `valid` en true.
 
 Estado: .run/orchestrator-runner.json, en el directorio actual, con la forma
 {"phase": N, "evidence": [{"phase": N, "text": "..."}]}, donde cada entrada es la evidencia con
@@ -209,7 +220,7 @@ Códigos de salida: 0 consulta o avance correctos; 1 error de uso o no se pudo e
 Fases:
 """ + "".join("  %2d  %s\n" % (i, p["name"]) for i, p in enumerate(PHASES, 1))
 
-USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | reset | --help]'
+USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | reset | --json | --help]'
 
 
 def load_state():
@@ -257,8 +268,29 @@ def render_evidence(phase):
     ])
 
 
+def render_json():
+    """Devuelve el flujo y el estado como JSON, con la misma lectura que una consulta."""
+    phase, evidence, corrupt, bad_evidence = load_state()
+    return json.dumps({
+        "version": 1,
+        "phases": [dict(number=i, **p) for i, p in enumerate(PHASES, 1)],
+        "state": {
+            "exists": os.path.exists(STATE),
+            "phase": phase,
+            "valid": not corrupt,
+            "evidence_valid": not bad_evidence,
+            "evidence": evidence,
+        },
+    }, ensure_ascii=False, indent=2)
+
+
 def main(argv):
     args = argv[1:]
+    if args and args[0] == "--json":
+        if len(args) > 1:
+            return usage_error(args)
+        print(render_json())
+        return 0
     if args and args[0] in ("--help", "-h"):
         if len(args) > 1:
             return usage_error(args)
@@ -284,6 +316,10 @@ def main(argv):
     text = args[1] if len(args) == 2 else None
     if text is not None and not text.strip():
         print("error: la evidencia no puede estar vacía ni ser solo espacios", file=sys.stderr)
+        print(USAGE, file=sys.stderr)
+        return 1
+    if text is not None and text.startswith("--"):
+        print("error: la evidencia no puede empezar por --", file=sys.stderr)
         print(USAGE, file=sys.stderr)
         return 1
 

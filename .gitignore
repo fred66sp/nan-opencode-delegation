@@ -16,6 +16,11 @@ Desktop.ini
 *.swp
 *.swo
 
+# --- Dependencias de Node ------------------------------------------------------
+# Ningún node_modules se versiona; los plugins se ejecutan con lo que resuelve
+# OpenCode en runtime.
+**/node_modules/
+
 # --- Estado local de herramientas de IA ---------------------------------------
 .atl/
 .codegraph/
