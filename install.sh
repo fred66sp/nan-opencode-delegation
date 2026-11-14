@@ -29,7 +29,61 @@ done
 echo "Agentes copiados en $agents_dir:"
 ls -1 "$agents_dir"/*.md "$agents_dir"/orchestrator-runner.py
 
-# 2. Modelos de explore y general, y la regla global que deniega tasks_*.
+# 2. El plugin TUI del estado de orquestación, con sus fuentes. Sin node_modules:
+# OpenCode resuelve sus dependencias en runtime. Va en cli-plugins y se registra en
+# cli.json: un paquete solo-TUI no puede vivir en plugins/ (el servidor lo cargaría
+# y colisiona con su OpenTUI interno) y solo la TUI debe importarlo.
+plugin_src="$here/plugins/orchestrator-status"
+plugin_dir="$config_root/cli-plugins/orchestrator-status"
+if [ ! -d "$plugin_src" ]; then
+  echo "error: no existe $plugin_src: el paquete está incompleto" >&2
+  exit 1
+fi
+while IFS= read -r src; do
+  rel="${src#"$plugin_src"/}"
+  target="$plugin_dir/$rel"
+  mkdir -p "$(dirname "$target")"
+  if [ -f "$target" ] && ! cmp -s "$src" "$target"; then
+    cp "$target" "$target.bak.$stamp"
+    echo "Copia previa del plugin: $target.bak.$stamp"
+  fi
+  cp "$src" "$target"
+done < <(find "$plugin_src" -type f -not -path '*/node_modules/*')
+echo "Plugin copiado en $plugin_dir:"
+ls -1 "$plugin_dir"/tui.tsx "$plugin_dir"/package.json
+
+cli_json="$config_root/cli.json"
+cli_bak="$cli_json.bak.$stamp"
+cp "$cli_json" "$cli_bak" 2>/dev/null || true
+if python3 - "$cli_json" "$plugin_dir" 2>/dev/null <<'PY'
+import json, sys
+path, entry = sys.argv[1], sys.argv[2]
+try:
+    data = json.load(open(path, encoding="utf-8"))
+except FileNotFoundError:
+    data = {}
+plugins = data.get("plugins")
+if plugins is None:
+    plugins = []
+    data["plugins"] = plugins
+elif not isinstance(plugins, list):
+    raise ValueError("la clave 'plugins' no es una lista")
+if entry not in plugins:
+    plugins.append(entry)
+with open(path, "w", encoding="utf-8") as f:
+    json.dump(data, f, ensure_ascii=False, indent=2)
+    f.write("\n")
+PY
+then
+  echo "Plugin registrado en cli.json (copia previa en $cli_bak, si existía)"
+else
+  cp "$cli_bak" "$cli_json" 2>/dev/null || true
+  echo "No pude actualizar $cli_json automáticamente: falta python3, el fichero no es JSON estricto o la clave 'plugins' no es una lista."
+  echo "Añade a mano la ruta del plugin a la clave plugins de cli.json:"
+  echo "  \"plugins\": [ \"$plugin_dir\", ... ]"
+fi
+
+# 3. Modelos de explore y general, y la regla global que deniega tasks_*.
 dest=""
 for cand in "$config_root/opencode.jsonc" "$config_root/opencode.json"; do
   if [ -f "$cand" ]; then dest="$cand"; break; fi

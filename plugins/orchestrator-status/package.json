@@ -1,0 +1,21 @@
+{
+  "name": "opencode-orchestrator-status",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Panel de sesión con la fase del orquestador, su operativa y su historial de evidencias",
+  "exports": {
+    "./tui": "./tui.tsx"
+  },
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "_comment": "No se publica en npm: se distribuye copiando fuentes (tk-40) y OpenCode resuelve @opencode/plugin, OpenTUI y Solid en runtime. Las devDependencies documentan el origen real de las APIs y no se instalan; types/opencode-plugin.d.ts declara el subconjunto usado para que tsc funcione sin node_modules.",
+  "devDependencies": {
+    "@opencode/plugin": "latest",
+    "@opentui/core": ">=0.6.6",
+    "@opentui/solid": ">=0.6.6",
+    "solid-js": ">=1.9.0",
+    "typescript": "^5.0.0"
+  }
+}

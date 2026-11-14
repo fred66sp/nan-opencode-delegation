@@ -213,6 +213,121 @@ else
   if [ -z "$missing_i" ]; then ok; else ko; echo "    no encontradas en ninguna raíz:$missing_i"; fi
 fi
 
+# j. El flag --json del runner: JSON válido con las 11 fases y el estado, sin mutar nada,
+# con la ayuda y el estado corrupto cubiertos. El resto de usos del runner no cambian.
+runner="$here/agents/orchestrator-runner.py"
+dir_j="$tmp/runner-json"
+mkdir -p "$dir_j"
+
+step "runner --json: JSON válido, version 1 y las 11 fases"
+if (cd "$dir_j" && python3 "$runner" --json) >"$tmp/runner.json" 2>"$tmp/runner.err" &&
+  [ ! -e "$dir_j/.run" ] &&
+  python3 - "$tmp/runner.json" <<'PY'
+import json, sys
+doc = json.load(open(sys.argv[1], encoding="utf-8"))
+assert doc["version"] == 1, doc["version"]
+phases = doc["phases"]
+assert [p["number"] for p in phases] == list(range(1, 12)), "fases fuera de orden"
+for p in phases:
+    assert set(p) == {"number", "name", "when", "evidence", "steps", "warnings"}, p["number"]
+    assert p["name"] and p["when"] and p["evidence"], p["number"]
+    assert isinstance(p["steps"], list) and p["steps"], p["number"]
+    assert isinstance(p["warnings"], list), p["number"]
+assert doc["state"] == {"exists": False, "phase": 1, "valid": True, "evidence_valid": True, "evidence": []}, doc["state"]
+PY
+then ok; else ko; sed 's/^/    /' "$tmp/runner.err"; fi
+
+step "runner --json no crea ni modifica el estado"
+dir_k="$tmp/runner-json-estado"
+mkdir -p "$dir_k/.run"
+printf '%s\n' '{"phase": 4, "evidence": [{"phase": 3, "text": "explorado"}]}' >"$dir_k/.run/orchestrator-runner.json"
+cp "$dir_k/.run/orchestrator-runner.json" "$tmp/runner-estado-antes"
+if (cd "$dir_k" && python3 "$runner" --json) >"$tmp/runner-estado.json" 2>&1 &&
+  cmp -s "$tmp/runner-estado-antes" "$dir_k/.run/orchestrator-runner.json" &&
+  python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['state']['exists'] is True and d['state']['phase'] == 4, d['state']" "$tmp/runner-estado.json"
+then ok; else ko; echo "    el estado cambió o la fase no se conservó"; fi
+
+step "runner --json con otro argumento es error de uso (código 1)"
+(cd "$dir_j" && python3 "$runner" --json next) >/dev/null 2>"$tmp/runner-uso.err"
+rc_j=$?
+if [ "$rc_j" -eq 1 ] && grep -Fq "uso:" "$tmp/runner-uso.err"; then ok; else ko; echo "    código $rc_j"; fi
+
+step "runner next --json no avanza ni escribe estado (código 1)"
+(cd "$dir_j" && python3 "$runner" next --json) >/dev/null 2>"$tmp/runner-next-json.err"
+rc_nj=$?
+if [ "$rc_nj" -eq 1 ] && [ ! -e "$dir_j/.run" ]; then ok; else ko; echo "    código $rc_nj; ¿.run creado? $([ -e "$dir_j/.run" ] && echo sí || echo no)"; fi
+
+step "runner --help documenta --json"
+if python3 "$runner" --help | grep -Fq -- "--json"; then ok; else ko; fi
+
+step "runner --json marca el estado corrupto con valid=false"
+printf '%s\n' '{"phase": 99}' >"$dir_k/.run/orchestrator-runner.json"
+if (cd "$dir_k" && python3 "$runner" --json) >"$tmp/runner-corrupto.json" 2>&1 &&
+  python3 - "$tmp/runner-corrupto.json" <<'PY'
+import json, sys
+state = json.load(open(sys.argv[1], encoding="utf-8"))["state"]
+assert state["exists"] is True and state["valid"] is False and state["phase"] == 1, state
+PY
+then ok; else ko; fi
+
+step "runner sin argumentos, next y reset siguen funcionando"
+dir_l="$tmp/runner-usos"
+mkdir -p "$dir_l"
+if (cd "$dir_l" && python3 "$runner") >/dev/null 2>&1 &&
+  (cd "$dir_l" && python3 "$runner" next "texto de prueba") >/dev/null 2>&1 &&
+  python3 -c "import json, sys; assert json.load(open(sys.argv[1]))['phase'] == 2" "$dir_l/.run/orchestrator-runner.json" &&
+  (cd "$dir_l" && python3 "$runner" reset) >/dev/null 2>&1 &&
+  [ ! -e "$dir_l/.run/orchestrator-runner.json" ]
+then ok; else ko; echo "    un uso existente cambió de comportamiento"; fi
+
+# k. El plugin TUI viaja en la instalación limpia de c: sus fuentes, sus tipos y su
+# registro en cli.json (un paquete solo-TUI no va en plugins/, el servidor colisiona).
+step "instalación limpia: plugin orchestrator-status con sus fuentes"
+plugin_c="$home_c/.config/opencode/cli-plugins/orchestrator-status"
+missing_k=''
+for f in tui.tsx package.json tsconfig.json types/opencode-plugin.d.ts; do
+  [ -f "$plugin_c/$f" ] || missing_k="$missing_k $f"
+done
+if [ -z "$missing_k" ] &&
+  python3 -c "import json, sys; assert sys.argv[1] in json.load(open(sys.argv[2], encoding='utf-8'))['plugins']" "$plugin_c" "$home_c/.config/opencode/cli.json"
+then ok; else ko; echo "    faltan en $plugin_c:$missing_k o cli.json no lo registra"; fi
+
+# l. Sin node_modules: las dependencias las resuelve OpenCode en runtime.
+step "el plugin instalado no lleva node_modules"
+if [ -d "$plugin_c" ] && [ ! -e "$plugin_c/node_modules" ]; then
+  ok
+else
+  ko
+  echo "    $plugin_c/node_modules existe o falta el plugin"
+fi
+
+# m. Instalación sobre un plugin previo: copia .bak.<fecha>, reemplazo y segunda
+# pasada idempotente que no crea otra copia ni duplica el registro de cli.json.
+step "plugin sobre instalación previa: copia .bak y segunda pasada idempotente"
+home_m="$tmp/home-plugin-merge"
+plugin_m="$home_m/.config/opencode/cli-plugins/orchestrator-status"
+mkdir -p "$plugin_m"
+printf '%s\n' '// versión anterior del plugin' >"$plugin_m/tui.tsx"
+if env -u XDG_CONFIG_HOME HOME="$home_m" bash install.sh >"$tmp/plugin-merge.log" 2>&1 &&
+  cmp -s plugins/orchestrator-status/tui.tsx "$plugin_m/tui.tsx" &&
+  grep -qx '// versión anterior del plugin' "$plugin_m"/tui.tsx.bak.*
+then
+  copias_m="$(ls "$plugin_m"/tui.tsx.bak.* | wc -l)"
+  registros_m="$(python3 -c "import json, sys; print(json.load(open(sys.argv[1], encoding='utf-8'))['plugins'].count(sys.argv[2]))" "$home_m/.config/opencode/cli.json" "$plugin_m")"
+  if env -u XDG_CONFIG_HOME HOME="$home_m" bash install.sh >"$tmp/plugin-merge2.log" 2>&1 &&
+    [ "$(ls "$plugin_m"/tui.tsx.bak.* | wc -l)" -eq "$copias_m" ] &&
+    [ "$(python3 -c "import json, sys; print(json.load(open(sys.argv[1], encoding='utf-8'))['plugins'].count(sys.argv[2]))" "$home_m/.config/opencode/cli.json" "$plugin_m")" -eq "$registros_m" ]; then
+    ok
+  else
+    ko
+    echo "    la segunda pasada creó otra copia .bak o duplicó el registro"
+    sed 's/^/    /' "$tmp/plugin-merge2.log"
+  fi
+else
+  ko
+  sed 's/^/    /' "$tmp/plugin-merge.log"
+fi
+
 echo ""
 if [ "$failures" -eq 0 ]; then
   printf '%sTodo en verde.%s\n' "$green" "$reset"

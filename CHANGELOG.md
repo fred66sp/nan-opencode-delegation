@@ -8,6 +8,15 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Estado de orquestación visible desde la sesión: el runner gana `--json`, un único objeto con
+  las once fases y el estado que no crea ni modifica el `.run/orchestrator-runner.json`, y el
+  plugin TUI `plugins/orchestrator-status` abre con `/orquestador` un diálogo modal con scroll,
+  la fase actual, su operativa, sus advertencias y el historial de evidencias, con `r` para
+  refrescar y `esc` para cerrar. El diálogo solo lee; sin estado muestra la fase 1 y lo dice. Los instaladores copian el plugin a
+  `~/.config/opencode/cli-plugins/orchestrator-status/`, registrado en `cli.json`, sin `node_modules` y con copia `.bak.<fecha>`
+  al reemplazar una versión previa, y `check-package.sh` verifica la instalación junto al
+  contrato `--json`.
+
 - Herramienta del flujo `agents/orchestrator-runner.py`: guía determinista del orquestador
   que muestra la fase actual con su lista operativa y sus advertencias, y solo avanza con
   `next` — que exige la evidencia de la fase completada: sin ella, pide la que toca y no
