@@ -41,8 +41,9 @@ ser una introducción a la orquestación en general.
 ### No objetivos
 
 - No trae código ejecutable fuera de los dos instaladores, la puerta de verificación
-  `check-package.sh` y la herramienta del flujo `agents/orchestrator-runner.py`: nada que
-  compilar ni dependencias que gestionar.
+  `check-package.sh`, la herramienta del flujo `agents/orchestrator-runner.py` y el plugin
+  TUI `plugins/orchestrator-status`: fuentes que OpenCode carga en runtime, sin `node_modules`
+  ni nada que compilar.
 - No orquesta nada por sí mismo: la delegación es un contrato por prompt que OpenCode
   carga con los agentes; sin OpenCode el paquete es papel.
 - No gestiona el acceso al proveedor `nan`: la API key se configura con
@@ -87,6 +88,21 @@ ser una introducción a la orquestación en general.
   el nombre de la comprobación fallida. Si la máquina no tiene agentes instalados, omite el
   `diff` con un aviso y no lo cuenta como fallo; si no tiene ninguna raíz de descubrimiento
   de skills, avisa y tampoco lo cuenta como fallo.
+- R10. El estado de orquestación se puede ver desde la sesión. El runner gana
+  `--json`: un único objeto con `version` (1), las once fases —número, nombre, cuándo,
+  evidencia esperada, pasos y advertencias— y el `state` con si existe el fichero de estado,
+  la fase actual, si es válida, si lo es el historial y la evidencia registrada; se acepta solo
+  y sin otros argumentos, no
+  crea ni modifica el estado y no escribe avisos. El plugin `plugins/orchestrator-status`, que
+  los instaladores copian con sus fuentes a `~/.config/opencode/cli-plugins/orchestrator-status/`
+  y registran en la clave `plugins` de `cli.json` —un paquete solo-TUI no puede vivir en
+  `plugins/`, el servidor lo cargaría y colisiona con su OpenTUI interno—
+  —sin `node_modules`, con copia `.bak.<fecha>` si reemplaza una versión distinta—, se abre
+  con `/orquestador` y muestra en un diálogo modal con scroll la fase actual, su operativa, sus
+  advertencias y el historial de evidencias. El panel solo lee: consulta
+  `python3 ~/.config/opencode/agents/orchestrator-runner.py --json` desde el directorio del
+  proyecto y con `r` vuelve a consultar; sin estado muestra la fase 1 y lo dice.
+  `check-package.sh` comprueba el contrato `--json` y la instalación del plugin.
 
 ### Reglas de negocio
 
@@ -190,3 +206,17 @@ ser una introducción a la orquestación en general.
   termina con código distinto de 0 y nombra la comprobación fallida.
 - Ejecutar `bash check-package.sh` no cambia la configuración real del usuario: solo la lee
   para el `diff` contra los agentes instalados.
+- `orchestrator-runner.py --json` imprime un único objeto con `version` 1 y las once fases en
+  orden, cada una con nombre, cuándo, evidencia esperada, pasos y advertencias; no crea
+  `.run/` ni modifica el estado existente, y con otro argumento termina en 1.
+- `--json` marca un estado corrupto con `valid` en false y la fase 1, y un historial que no
+  es lista con `evidence_valid` en false sin perder la fase.
+- Con `HOME` limpio, los dos instaladores dejan
+  `~/.config/opencode/cli-plugins/orchestrator-status/` registrado en `cli.json`, con `tui.tsx`, `package.json`,
+  `tsconfig.json` y `types/opencode-plugin.d.ts`, sin `node_modules`.
+- Un plugin previo de contenido distinto se reemplaza tras dejar `tui.tsx.bak.<fecha>`; una
+  segunda pasada con el contenido idéntico no crea otra copia.
+- En una sesión de OpenCode con el paquete instalado, `/orquestador` abre el diálogo modal con
+  scroll con la fase actual, su operativa, sus advertencias y el historial de evidencias; sin estado
+  muestra la fase 1 y lo indica, un estado corrupto vuelve a la fase 1 con aviso, y sin
+  `python3` o sin runner muestra un error de consulta.

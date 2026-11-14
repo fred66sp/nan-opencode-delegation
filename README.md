@@ -27,8 +27,11 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 | `agents/docs.md` | `~/.config/opencode/agents/docs.md` | Documentación y CHANGELOG dentro de su perímetro |
 | `agents/ui.md` | `~/.config/opencode/agents/ui.md` | Verificación de interfaz con navegador; pide permiso para Playwright |
 | `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Escritor del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
-| `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` con la evidencia de la fase para avanzar |
+| `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` con la evidencia de la fase para avanzar; `--json` imprime las fases y el estado para un programa, sin cambiar nada |
+| `plugins/orchestrator-status/` | `~/.config/opencode/cli-plugins/orchestrator-status/` registrado en `cli.json` | Plugin TUI: diálogo modal con scroll y la fase del orquestador, su operativa, sus advertencias y el historial de evidencias; se abre con `/orquestador` y se cierra con `esc` |
 | `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general`, su permiso `skill` denegado y la regla que deniega `tasks_*` |
+
+El plugin no se compila ni se instala con npm: el instalador copia sus fuentes y OpenCode resuelve sus dependencias en runtime. El panel no guarda estado propio: invoca `orchestrator-runner.py --json` desde el directorio del proyecto y pinta lo que responde, así que abrirlo o pulsar `r` para refrescar no cambia la fase. Sin estado muestra la fase 1 y lo dice.
 
 ## Requisitos
 
@@ -55,7 +58,7 @@ El instalador resuelve todo desde su propia carpeta y el destino queda en el usu
 
 ### A mano
 
-Copia los ficheros de `agents/` a `~/.config/opencode/agents/` y añade a tu `opencode.jsonc`, dentro del objeto raíz, estos bloques:
+Son tres pasos: copia los ficheros de `agents/` a `~/.config/opencode/agents/`, copia `plugins/orchestrator-status/` a `~/.config/opencode/cli-plugins/orchestrator-status/` y añade esa ruta a la clave `plugins` de tu `cli.json`. Después añade a tu `opencode.jsonc`, dentro del objeto raíz, estos bloques:
 
 ```jsonc
 "agents": {
@@ -124,6 +127,7 @@ El visor de escritorio vive en [`tasks-viewer/`](tasks-viewer/): la misma interf
 - `ui` con permiso `ask` bloquea su sesión hasta que alguien aprueba: no lo lances en segundo plano si no estás delante.
 - `verify` solo permite los prefijos de comprobación declarados en su frontmatter; un comando compuesto (`cd x && make test`) se rechaza.
 - El reparto de skills depende del orquestador: ningún subagente salvo `tasks-agent` lleva catálogo —tiene el permiso `skill` denegado (`action: skill`, `resource: "*"`, `effect: deny`)— y no puede cargar ninguna. Si el orquestador no adjunta la skill que el encargo necesita, el subagente trabaja sin ella y nada lo detecta automáticamente.
+- La herramienta del flujo queda junto a los agentes: `~/.config/opencode/agents/orchestrator-runner.py`. El panel del plugin la busca en esa ruta; si instalaste con otro `XDG_CONFIG_HOME`, no la encuentra y muestra un error de consulta.
 - Las instrucciones `AGENTS.md` global y de proyecto siguen llegando a todos los agentes: el reparto de skills no las sustituye.
 - El instalador reescribe `agents.explore` y `agents.general` enteros: cualquier clave propia dentro de esos dos agentes se pierde al instalar.
 - Las herramientas de extensiones (MCP) aplican el permiso que ellas mismas declaran: la prohibición de escribir en sistemas externos vive en el prompt del orquestador, no en la configuración de permisos.

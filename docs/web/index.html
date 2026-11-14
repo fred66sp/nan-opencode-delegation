@@ -193,11 +193,12 @@
     <a href="#configuracion">07 · La configuración</a>
     <a href="#modelos">08 · El reparto de modelos</a>
     <a href="#verificacion">09 · La verificación</a>
-    <a href="#errores">10 · Errores y qué significan</a>
-    <a href="#limites">11 · Lo que no hace</a>
-    <a href="#preguntas">12 · Preguntas cortas</a>
-    <a href="#diagrama-arquitectura">13 · Diagrama de arquitectura</a>
-    <a href="#diagrama-flujo">14 · Diagrama de flujo</a>
+    <a href="#estado">10 · El estado en la TUI</a>
+    <a href="#errores">11 · Errores y qué significan</a>
+    <a href="#limites">12 · Lo que no hace</a>
+    <a href="#preguntas">13 · Preguntas cortas</a>
+    <a href="#diagrama-arquitectura">14 · Diagrama de arquitectura</a>
+    <a href="#diagrama-flujo">15 · Diagrama de flujo</a>
   </nav>
 
   <main id="main">
@@ -232,8 +233,8 @@
       <div class="code"><pre data-language="bash"><code>bash install.sh</code></pre></div>
       <p class="cmdcap">Windows (PowerShell)</p>
       <div class="code"><pre data-language="bash"><code>powershell -ExecutionPolicy Bypass -File install.ps1</code></pre></div>
-      <p>Lo que hace: copia los agentes de <code>agents/</code> a <code>~/.config/opencode/agents/</code> —la herramienta del flujo <code>orchestrator-runner.py</code> viaja con ellos— y deja el bloque <code>agents</code> de <code>explore</code> y <code>general</code> y la regla <code>permissions</code> que deniega <code>tasks_*</code> en la configuración global. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si un agente existente con el mismo nombre difiere, guarda también una copia <code>.bak</code> con fecha antes de reemplazarlo; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime los bloques para pegarlos a mano. Deposita además la herramienta del flujo junto a los agentes, en <code>~/.config/opencode/agents/orchestrator-runner.py</code>, ejecutable en Linux y macOS.</p>
-      <div class="note"><p><strong>A mano en dos pasos.</strong> Copia los ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
+      <p>Lo que hace: copia los agentes de <code>agents/</code> a <code>~/.config/opencode/agents/</code> —la herramienta del flujo <code>orchestrator-runner.py</code> viaja con ellos—, copia el plugin del estado a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code> con sus fuentes y sin <code>node_modules</code>, lo registra en la clave <code>plugins</code> de <code>cli.json</code> —un paquete solo-TUI no puede vivir en <code>plugins/</code>, el servidor lo cargaría y colisiona con su OpenTUI interno—, y deja el bloque <code>agents</code> de <code>explore</code> y <code>general</code> y la regla <code>permissions</code> que deniega <code>tasks_*</code> en la configuración global. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si un agente o fichero del plugin existente difiere, guarda también una copia <code>.bak</code> con fecha antes de reemplazarlo; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime los bloques para pegarlos a mano. Deposita además la herramienta del flujo junto a los agentes, en <code>~/.config/opencode/agents/orchestrator-runner.py</code>, ejecutable en Linux y macOS.</p>
+      <div class="note"><p><strong>A mano en tres pasos.</strong> Copia los ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code>, copia <code>plugins/orchestrator-status/</code> a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code>, añade esa ruta a la clave <code>plugins</code> de tu <code>cli.json</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
     </section>
 
     <section id="arquitectura">
@@ -418,8 +419,30 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
       <p>La prueba funcional de <code>tasks-agent</code> —diez casos, los hallazgos que corrigieron su enunciado y la latencia de lectura por modelo— está en <a href="tasks-agent-verification.html">la verificación de tasks-agent</a>.</p>
     </section>
 
+    <section id="estado">
+      <div class="section-head"><span class="section-num">10</span><h2 class="title">El estado en la TUI</h2></div>
+      <p class="sub">El runner dice en qué fase está el orquestador; el paquete añade la ventana para verlo sin salir de la sesión. El plugin <code>plugins/orchestrator-status</code> abre con <code>/orquestador</code> un diálogo modal, grande y centrado, con la fase actual, su operativa, sus advertencias y el historial de evidencias, con scroll cuando el contenido no cabe; <code>esc</code> cierra y <code>r</code> refresca.</p>
+      <p>El diálogo no guarda estado propio: invoca <code>python3 ~/.config/opencode/agents/orchestrator-runner.py --json</code> desde el directorio del proyecto y pinta lo que responde. Ese modo del runner imprime un único objeto JSON —<code>version</code>, las once fases con su número, nombre, cuándo, evidencia esperada, pasos y advertencias, y el <code>state</code> con si existe el fichero de estado, la fase actual, si es válida, si lo es el historial y la evidencia registrada— y no crea ni modifica el <code>.run/orchestrator-runner.json</code>. Abrir el diálogo o pulsar <code>r</code> para refrescar no cambia la fase: solo lee.</p>
+      <div class="code"><pre data-language="bash"><code>python3 ~/.config/opencode/agents/orchestrator-runner.py --json</code></pre></div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Bloque del diálogo</th><th>Qué muestra</th></tr></thead>
+          <tbody>
+            <tr><td>Fase</td><td>El número, el total y el nombre de la fase actual del runner.</td></tr>
+            <tr><td>Cuándo</td><td>El momento del flujo en que toca esa fase.</td></tr>
+            <tr><td>Operativa</td><td>Los pasos numerados de la fase, o «Sin pasos registrados» si no hay.</td></tr>
+            <tr><td>Advertencias</td><td>Las guardas de la fase, o «Ninguna» si no hay.</td></tr>
+            <tr><td>Historial de evidencias</td><td>La evidencia con la que se dejó cada fase, o «Sin evidencias registradas» si no hay.</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>Sin estado guardado el diálogo muestra la fase 1 y lo dice en el pie. Un estado corrupto vuelve a la fase 1 con <code>valid</code> en false, y un historial que no es una lista se omite conservando la fase. Si no encuentra <code>python3</code> o el runner, muestra un error de consulta en vez de inventar una fase.</p>
+      <p>Los instaladores copian las fuentes del plugin a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code> y registran esa ruta en la clave <code>plugins</code> de <code>cli.json</code>, sin <code>node_modules</code>: OpenCode resuelve sus dependencias en runtime y no hay nada que compilar. Si ya existía una versión distinta, dejan una copia <code>.bak</code> con fecha antes de reemplazarla. <code>check-package.sh</code> comprueba esa instalación, el registro, la ausencia de <code>node_modules</code> y que una segunda pasada no duplique la copia ni el registro.</p>
+      <div class="note"><p><strong>La ruta del runner es la de la instalación por defecto.</strong> El panel busca <code>~/.config/opencode/agents/orchestrator-runner.py</code>; con otro <code>XDG_CONFIG_HOME</code> no lo encuentra y muestra el error de consulta.</p></div>
+    </section>
+
     <section id="errores">
-      <div class="section-head"><span class="section-num">10</span><h2 class="title">Errores y qué significan</h2></div>
+      <div class="section-head"><span class="section-num">11</span><h2 class="title">Errores y qué significan</h2></div>
       <div class="table-wrap wrap-cells">
         <table>
           <thead><tr><th>Síntoma</th><th>Suele ser</th><th>Qué mirar</th></tr></thead>
@@ -460,7 +483,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="limites">
-      <div class="section-head"><span class="section-num">11</span><h2 class="title">Lo que no hace</h2></div>
+      <div class="section-head"><span class="section-num">12</span><h2 class="title">Lo que no hace</h2></div>
       <div class="grid cols-3">
         <div class="card">
           <span class="mono">Delegación por prompt</span>
@@ -496,7 +519,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="preguntas">
-      <div class="section-head"><span class="section-num">12</span><h2 class="title">Preguntas cortas</h2></div>
+      <div class="section-head"><span class="section-num">13</span><h2 class="title">Preguntas cortas</h2></div>
       <dl class="qa">
         <dt>¿Puedo cambiar los modelos y las variantes?</dt>
         <dd>Sí. Los de los agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agents</code> de la configuración. Recuerda la regla de la almohadilla de la sección 07.</dd>
@@ -512,7 +535,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="diagrama-arquitectura">
-      <div class="section-head"><span class="section-num">13</span><h2 class="title">Diagrama de arquitectura</h2></div>
+      <div class="section-head"><span class="section-num">14</span><h2 class="title">Diagrama de arquitectura</h2></div>
       <p class="sub">La arquitectura de la sección 03, dibujada: el orquestador en el centro y los siete agentes de trabajo que toca — <code>verify</code>, <code>review</code>, <code>docs</code>, <code>ui</code> y <code>tasks-agent</code> como subagentes por la herramienta <code>subagent</code>, y <code>explore</code> y <code>general</code> como integrados que el paquete fija en la configuración. <code>tasks-agent</code> es la única puerta de las herramientas <code>tasks_*</code>: ningún otro agente las toca.</p>
       <figure class="diagram">
         <svg viewBox="0 0 880 760" role="img" aria-label="Diagrama de arquitectura: el orquestador, en el centro, conecta por la herramienta subagent con verify, review, docs, ui y tasks-agent, y por la configuración con explore y general. tasks-agent es la única puerta de las herramientas tasks_*.">
@@ -647,7 +670,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="diagrama-flujo">
-      <div class="section-head"><span class="section-num">14</span><h2 class="title">Diagrama de flujo</h2></div>
+      <div class="section-head"><span class="section-num">15</span><h2 class="title">Diagrama de flujo</h2></div>
       <p class="sub">El contrato de la sección 04, del primer vistazo al cierre: cinco pasos que el orquestador recorre en cada encargo antes de dar nada por hecho. El registro es condicional —solo cuando el trabajo no cabe en la petición original más el <code>git diff</code>— y todo cambio de código termina con su línea <code>Risk:</code>.</p>
       <figure class="diagram">
         <svg viewBox="0 0 880 640" role="img" aria-label="Diagrama de flujo del contrato del orquestador: clasificar con el test de tamaño, registrar si es grande, delegar, verificar de forma proporcional y cerrar con informe y línea de riesgo.">
