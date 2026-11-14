@@ -187,18 +187,19 @@
     <a href="#que-es">01 · Qué es</a>
     <a href="#empezar">02 · Empezar aquí</a>
     <a href="#arquitectura">03 · La arquitectura</a>
-    <a href="#contrato">04 · El contrato de delegación</a>
-    <a href="#metodologia">05 · La metodología ODD</a>
-    <a href="#permisos">06 · Los permisos</a>
-    <a href="#configuracion">07 · La configuración</a>
-    <a href="#modelos">08 · El reparto de modelos</a>
-    <a href="#verificacion">09 · La verificación</a>
-    <a href="#estado">10 · El estado en la TUI</a>
-    <a href="#errores">11 · Errores y qué significan</a>
-    <a href="#limites">12 · Lo que no hace</a>
-    <a href="#preguntas">13 · Preguntas cortas</a>
-    <a href="#diagrama-arquitectura">14 · Diagrama de arquitectura</a>
-    <a href="#diagrama-flujo">15 · Diagrama de flujo</a>
+    <a href="#runner">04 · El runner</a>
+    <a href="#contrato">05 · El contrato de delegación</a>
+    <a href="#metodologia">06 · La metodología ODD</a>
+    <a href="#permisos">07 · Los permisos</a>
+    <a href="#configuracion">08 · La configuración</a>
+    <a href="#modelos">09 · El reparto de modelos</a>
+    <a href="#verificacion">10 · La verificación</a>
+    <a href="#estado">11 · El estado en la TUI</a>
+    <a href="#errores">12 · Errores y qué significan</a>
+    <a href="#limites">13 · Lo que no hace</a>
+    <a href="#preguntas">14 · Preguntas cortas</a>
+    <a href="#diagrama-arquitectura">15 · Diagrama de arquitectura</a>
+    <a href="#diagrama-flujo">16 · Diagrama de flujo</a>
   </nav>
 
   <main id="main">
@@ -246,7 +247,7 @@
         <div class="flow-step"><code>review</code><strong>glm5.3-flash#xhigh · 12</strong><p>Hallazgos con fichero y línea. No edita.</p></div>
         <div class="flow-step"><code>docs</code><strong>deepseek-v4-flash#medium · 20</strong><p>Markdown, docs/ y CHANGELOG. Nada de código.</p></div>
         <div class="flow-step"><code>ui</code><strong>mimo-v2.6-flash#medium · 20</strong><p>Navegador con permiso ask para Playwright.</p></div>
-        <div class="flow-step"><code>tasks-agent</code><strong>mimo-v2.6-flash#low · 16</strong><p>Escribe en el tablero: solo las herramientas <code>tasks_*</code>; recibe los lotes ordenados y con los datos ya resueltos.</p></div>
+        <div class="flow-step"><code>tasks-agent</code><strong>deepseek-v4-flash#high · 16</strong><p>Escribe en el tablero: solo las herramientas <code>tasks_*</code>; recibe los lotes ordenados y con los datos ya resueltos.</p></div>
         <div class="flow-step"><code>general</code><strong>deepseek-v4-flash · variant high · config</strong><p>La implementación que el orquestador le delega por defecto.</p></div>
         <div class="flow-step"><code>explore</code><strong>glm5.3-flash · variant low · config</strong><p>Búsqueda y contexto rápido. No edita por diseño.</p></div>
         <div class="flow-step"><code>build</code><strong>arranque por defecto, sin cambios</strong><p>Sigue siendo el agente con el que se abre OpenCode.</p></div>
@@ -254,9 +255,143 @@
       <div class="note"><p>La conexión entre orquestador y subagentes es la herramienta <code>subagent</code> decidida por el padre: no hay planificador que reparta trabajo solo, ni límite de concurrencia configurable.</p></div>
     </section>
 
+    <section id="runner">
+      <div class="section-head"><span class="section-num">04</span><h2 class="title">El runner</h2></div>
+      <p class="sub">La fase no la decide el agente. La decide un registro pequeño que vive en el proyecto y que el orquestador consulta antes de moverse: <code>~/.config/opencode/agents/orchestrator-runner.py</code>. El instalador lo deja junto a los agentes, y sirve en cualquier proyecto desde el que se invoque.</p>
+      <p>Sin argumentos muestra la fase actual, su lista operativa y la evidencia que se espera para dejarla. Para avanzar hay una sola puerta: <code>next</code>. Sin texto no avanza —sigue en la misma fase y pide la evidencia que toca—; con texto, lo registra en el historial y pasa a la siguiente. El texto va en un único argumento; los varios puntos de una misma evidencia se separan con punto y coma. Un texto vacío, uno que empiece por <code>--</code> o dos argumentos son error de uso y salen con código 1, para que <code>next --json</code> no avance por accidente. Los códigos de salida son dos: 0 para una consulta o un avance correctos, y 1 si el uso es incorrecto o no se pudo escribir el estado.</p>
+      <p>El recorrido tiene once fases, agrupadas en las tres etapas del flujo. <strong>1 Inicio de sesión</strong>, <strong>2 Clasificar el encargo</strong>, <strong>3 Tamaño y tablero</strong>, <strong>4 Explorar</strong> y <strong>5 Decidir</strong> preparan el encargo; <strong>6 Delegar</strong> es la ejecución; <strong>7 Verificar</strong>, <strong>8 Riesgo</strong>, <strong>9 Commit</strong>, <strong>10 Cierre de tarea</strong> y <strong>11 Memoria y sesión</strong> lo cierran. La evidencia que pide cada fase es concreta: la 3 espera la referencia de la tarea o la constancia de que el trabajo es pequeño y la persona lo autorizó sin tarea, la 8 la línea <code>Risk:</code> ya escrita y la 11 ninguna, porque es la última y no tiene transición que justificar.</p>
+      <figure class="diagram">
+        <svg viewBox="0 0 880 660" role="img" aria-label="Diagrama del runner: once fases agrupadas en encargo (1 a 5), ejecución (6) y cierre (7 a 11); la fase actual es la 6, Delegar, y next solo avanza cuando recibe la evidencia de la fase.">
+          <defs>
+            <linearGradient id="gArcRun" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#56c7ea"/>
+              <stop offset=".55" stop-color="#1779bd"/>
+              <stop offset="1" stop-color="#0b4f8f"/>
+            </linearGradient>
+            <filter id="shRun" x="-40%" y="-40%" width="180%" height="180%">
+              <feDropShadow dx="0" dy="4" stdDeviation="8" flood-opacity=".14"/>
+            </filter>
+          </defs>
+
+          <rect x="24" y="18" width="4" height="14" rx="2" fill="url(#gArcRun)"/>
+          <text x="36" y="29" font-size="11.5" font-weight="750" letter-spacing="1.3" fill="var(--muted)">ENCARGO · FASES 1–5</text>
+          <line x1="24" y1="40" x2="856" y2="40" stroke="var(--border)"/>
+
+          <g font-size="13" font-weight="650" fill="var(--text)">
+            <g>
+              <rect x="24" y="56" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="46" cy="82" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="46" y="87" text-anchor="middle" font-size="11.5" font-weight="800">01</text>
+              <text x="40" y="118">Inicio de</text>
+              <text x="40" y="136">sesión</text>
+            </g>
+            <g>
+              <rect x="194" y="56" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="216" cy="82" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="216" y="87" text-anchor="middle" font-size="11.5" font-weight="800">02</text>
+              <text x="210" y="118">Clasificar</text>
+              <text x="210" y="136">el encargo</text>
+            </g>
+            <g>
+              <rect x="364" y="56" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="386" cy="82" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="386" y="87" text-anchor="middle" font-size="11.5" font-weight="800">03</text>
+              <text x="380" y="118">Tamaño y</text>
+              <text x="380" y="136">tablero</text>
+            </g>
+            <g>
+              <rect x="534" y="56" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="556" cy="82" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="556" y="87" text-anchor="middle" font-size="11.5" font-weight="800">04</text>
+              <text x="550" y="127">Explorar</text>
+            </g>
+            <g>
+              <rect x="704" y="56" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="726" cy="82" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="726" y="87" text-anchor="middle" font-size="11.5" font-weight="800">05</text>
+              <text x="720" y="127">Decidir</text>
+            </g>
+          </g>
+
+          <path d="M432 168 L440 176 L448 168" fill="none" stroke="url(#gArcRun)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <rect x="24" y="190" width="4" height="14" rx="2" fill="url(#gArcRun)"/>
+          <text x="36" y="201" font-size="11.5" font-weight="750" letter-spacing="1.3" fill="var(--muted)">EJECUCIÓN · FASE 6</text>
+          <line x1="24" y1="212" x2="856" y2="212" stroke="var(--border)"/>
+          <rect x="24" y="226" width="832" height="136" rx="22" fill="var(--bg-elev)" stroke="url(#gArcRun)" stroke-width="2" filter="url(#shRun)"/>
+          <text x="52" y="260" font-size="11.5" font-weight="750" letter-spacing="1.3" fill="var(--muted)">FASE ACTUAL</text>
+          <circle cx="66" cy="300" r="18" fill="var(--text)"/>
+          <text x="66" y="305" text-anchor="middle" font-size="13" font-weight="800" fill="var(--bg-elev)">6</text>
+          <text x="96" y="306" font-size="22" font-weight="800" fill="var(--text)">Delegar</text>
+          <text x="96" y="330" font-size="11.5" fill="var(--muted)">cada subagente, con su encargo acotado</text>
+          <line x1="380" y1="248" x2="380" y2="340" stroke="var(--border)"/>
+          <text x="410" y="260" font-size="11.5" font-weight="750" letter-spacing="1.3" fill="var(--muted)">CONTRATO DE EVIDENCIA</text>
+          <text x="410" y="292" font-size="12.5" font-weight="700" fill="var(--text)">next <tspan font-weight="500" fill="var(--muted)">· sin texto no avanza: pide la evidencia de la fase.</tspan></text>
+          <text x="410" y="318" font-size="12.5" font-weight="700" fill="var(--text)">next «texto» <tspan font-weight="500" fill="var(--muted)">· la registra en el historial y avanza.</tspan></text>
+          <text x="410" y="344" font-size="12.5" font-weight="700" fill="var(--text)">reset <tspan font-weight="500" fill="var(--muted)">· borra la fase y el historial; vuelve a la 1.</tspan></text>
+
+          <path d="M432 374 L440 382 L448 374" fill="none" stroke="url(#gArcRun)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <rect x="24" y="396" width="4" height="14" rx="2" fill="url(#gArcRun)"/>
+          <text x="36" y="407" font-size="11.5" font-weight="750" letter-spacing="1.3" fill="var(--muted)">CIERRE · FASES 7–11</text>
+          <line x1="24" y1="418" x2="856" y2="418" stroke="var(--border)"/>
+
+          <g font-size="13" font-weight="650" fill="var(--text)">
+            <g>
+              <rect x="24" y="434" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="46" cy="460" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="46" y="465" text-anchor="middle" font-size="11.5" font-weight="800">07</text>
+              <text x="40" y="505">Verificar</text>
+            </g>
+            <g>
+              <rect x="194" y="434" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="216" cy="460" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="216" y="465" text-anchor="middle" font-size="11.5" font-weight="800">08</text>
+              <text x="210" y="505">Riesgo</text>
+            </g>
+            <g>
+              <rect x="364" y="434" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="386" cy="460" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="386" y="465" text-anchor="middle" font-size="11.5" font-weight="800">09</text>
+              <text x="380" y="505">Commit</text>
+            </g>
+            <g>
+              <rect x="534" y="434" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="556" cy="460" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="556" y="465" text-anchor="middle" font-size="11.5" font-weight="800">10</text>
+              <text x="550" y="496">Cierre de</text>
+              <text x="550" y="514">tarea</text>
+            </g>
+            <g>
+              <rect x="704" y="434" width="152" height="100" rx="16" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+              <circle cx="726" cy="460" r="13" fill="none" stroke="url(#gArcRun)" stroke-width="2"/>
+              <text x="726" y="465" text-anchor="middle" font-size="11.5" font-weight="800">11</text>
+              <text x="720" y="496">Memoria y</text>
+              <text x="720" y="514">sesión</text>
+            </g>
+          </g>
+
+          <path d="M432 548 L440 556 L448 548" fill="none" stroke="url(#gArcRun)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+
+          <rect x="24" y="570" width="832" height="72" rx="18" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
+          <text x="48" y="596" font-size="12" font-weight="700" fill="var(--text)">.run/orchestrator-runner.json</text>
+          <text x="48" y="618" font-size="11.5" fill="var(--muted)">el estado vive en el proyecto</text>
+          <text x="328" y="596" font-size="12" font-weight="700" fill="var(--text)">--json</text>
+          <text x="328" y="618" font-size="11.5" fill="var(--muted)">lee fases y estado sin escribir</text>
+          <text x="608" y="596" font-size="12" font-weight="700" fill="var(--text)">códigos 0 y 1</text>
+          <text x="608" y="618" font-size="11.5" fill="var(--muted)">consulta o avance; error de uso</text>
+        </svg>
+        <figcaption class="figcap">Figura 1 · El runner: once fases en tres etapas, con la fase actual y la evidencia que exige <code>next</code> para avanzar.</figcaption>
+      </figure>
+      <p>El estado vive en <code>.run/orchestrator-runner.json</code>, en el directorio del proyecto en el que trabajas, nunca junto al script instalado. Guarda la fase y el historial, con una entrada por fase dejada. Si falta, se empieza en la fase 1 y la primera invocación lo crea. Un fichero corrupto o con la fase fuera de rango vuelve a la fase 1 con un aviso por stderr; un historial que no es una lista se descarta conservando la fase. <code>reset</code> borra el fichero entero —fase e historial— sin tocar nada más.</p>
+      <p><code>--json</code> imprime un único objeto por la salida estándar con <code>version</code>, las once fases —número, nombre, cuándo, evidencia esperada, pasos y advertencias— y el estado: si existe el fichero, la fase actual, si el estado y el historial son válidos y la evidencia registrada. No crea ni modifica el estado y no emite avisos: su stdout es para un programa, no para una persona. Se acepta solo, sin otros argumentos.</p>
+      <p>Para que el agente no toque ese registro a mano, el paquete lleva un <code>.llmignore</code> con la regla. Se aplica con el plugin <code>opencode-ignore-file</code> instalado globalmente (<code>npm run install:plugin</code> desde su repositorio, y reiniciar opencode). Sin el plugin, la regla no bloquea: vale la convención.</p>
+      <div class="note"><p><strong>El runner no juzga el trabajo.</strong> Dice en qué fase estás y qué evidencia falta; no comprueba el mundo real. Los bloqueos siguen siendo los del tablero y los de la tarea.</p></div>
+    </section>
+
     <section id="contrato">
-      <div class="section-head"><span class="section-num">04</span><h2 class="title">El contrato de delegación</h2></div>
-      <p class="sub">Estas ocho reglas resumen el prompt del orquestador, que vive en <code>agents/orchestrator.md</code>. Vale leerlas antes de confiar en el reparto. Las reglas 2 y 4 desarrollan la metodología ODD de la <a href="#metodologia">sección siguiente</a>.</p>
+      <div class="section-head"><span class="section-num">05</span><h2 class="title">El contrato de delegación</h2></div>
+      <p class="sub">Estas ocho reglas resumen el prompt del orquestador, que vive en <code>agents/orchestrator.md</code>. Vale leerlas antes de confiar en el reparto. Las reglas 2 y 4 desarrollan la metodología ODD de <a href="#metodologia">la sección 06</a>.</p>
       <ol class="rules">
         <li><strong>Clasifica la petición</strong>: pregunta, revisión, plan o implementación. Investigar, explicar, revisar o proponer es solo lectura; se escribe solo con una petición explícita de implementar.</li>
         <li><strong>El camino cotidiano es orgánico</strong>: describir el resultado, explorar el sistema real, aclarar solo las decisiones que pertenecen al humano, implementar lo autorizado, verificar proporcionalmente y conservar evidencia. Formalizar más —un plan, una especificación formal— sigue siendo elección explícita de la persona; lo que ODD exige es registrar el trabajo grande en el tablero antes de la primera escritura. Distingue hecho (comprobado en el repo o con una herramienta), inferencia (razonada pero sin verificar: se contrasta con herramientas antes de actuar sobre ella) y decisión (elección de diseño: es del humano).</li>
@@ -270,7 +405,7 @@
     </section>
 
     <section id="metodologia">
-      <div class="section-head"><span class="section-num">05</span><h2 class="title">La metodología ODD</h2></div>
+      <div class="section-head"><span class="section-num">06</span><h2 class="title">La metodología ODD</h2></div>
       <p class="sub">ODD (<em>Organic Driven Development</em>) es la forma de trabajar de este paquete: se decide antes de escribir, el trabajo se registra en el tablero y nada se da por hecho hasta haberlo observado.</p>
       <p>ODD es una derivación de SDD (<em>Spec-Driven Development</em>): como en SDD, el resultado y su criterio se especifican antes de escribir. La diferencia es una regla: el tablero de tasks-ai es la única fuente de tareas. No hay documentos de tareas aparte ni listas paralelas; lo que otros flujos guardan en un documento de especificación vive en la propia tarea. El orquestador lee el tablero directamente por la CLI <code>tasks-ai</code> y delega en <code>tasks-agent</code> solo las escrituras, porque es la única puerta a las herramientas <code>tasks_*</code>; cada operación le llega con sus campos, etiquetas y referencias ya resueltas, y lo que falte lo obtiene él por CLI, nunca dentro del subagente.</p>
 
@@ -333,7 +468,7 @@
     </section>
 
     <section id="permisos">
-      <div class="section-head"><span class="section-num">06</span><h2 class="title">Los permisos</h2></div>
+      <div class="section-head"><span class="section-num">07</span><h2 class="title">Los permisos</h2></div>
       <p class="sub">La defensa es en profundidad: el prompt marca la intención y los permisos del frontmatter bloquean o limitan la herramienta de edición, pero no siempre el shell: solo <code>tasks-agent</code> cierra todo menos las herramientas <code>tasks_*</code>. La política base de OpenCode permite todo; por eso las listas que restringen empiezan por un <code>deny</code> que cierra el campo y después abren solo lo que se necesita. <code>review</code>, <code>docs</code> y <code>ui</code> pueden ejecutar comandos; lo que impide escribir por shell es el prompt. La de <code>ui</code> es la excepción deliberada en el navegador: no limita la edición, pide permiso antes de Playwright.</p>
       <div class="table-wrap">
         <table>
@@ -368,8 +503,8 @@
     </section>
 
     <section id="configuracion">
-      <div class="section-head"><span class="section-num">07</span><h2 class="title">La configuración</h2></div>
-      <p class="sub">El paquete lleva en <code>config/opencode.jsonc</code> la plantilla que el instalador copia en una máquina sin configuración global. Solo contiene lo que la delegación necesita: si tu fichero ya existe, el instalador funde en él únicamente <code>agents.explore</code>, <code>agents.general</code> y la regla global de <code>permissions</code>, conserva tus claves y agentes ajenos y te deja copia con fecha.</p>
+      <div class="section-head"><span class="section-num">08</span><h2 class="title">La configuración</h2></div>
+      <p class="sub">El paquete lleva en <code>config/opencode.jsonc</code> la plantilla que el instalador copia en una máquina sin configuración global. Solo contiene lo que la delegación necesita: si tu fichero ya existe, el instalador funde en él únicamente <code>agents.explore</code>, <code>agents.general</code> y la regla global de <code>permissions</code>, conserva tus claves y agentes ajenos y te deja copia con fecha. El fichero queda reescrito y normalizado: la fusión conserva lo que había, no el formato original que tenía.</p>
       <div class="code"><pre data-language="json"><code>{
   "$schema": "https://opencode.ai/config.json",
   "agents": {
@@ -385,7 +520,7 @@
     </section>
 
     <section id="modelos">
-      <div class="section-head"><span class="section-num">08</span><h2 class="title">El reparto de modelos</h2></div>
+      <div class="section-head"><span class="section-num">09</span><h2 class="title">El reparto de modelos</h2></div>
       <p class="sub">Ningún modelo se eligió a ciegas. El orquestador y la revisión llevan el modelo más capaz de los disponibles para su trabajo; el resto lleva variantes ajustadas a pasos concretos, porque un subagente acotado no necesita la variante más cara para hacer bien doce pasos.</p>
       <p>El frontmatter de <code>agents/</code> es la fuente canónica de modelos, pasos y permisos; la tabla es un resumen.</p>
       <div class="table-wrap">
@@ -397,7 +532,7 @@
             <tr><td><code>review</code></td><td>subagent</td><td><code>nan/glm5.3-flash</code></td><td>xhigh</td><td>12</td><td>La revisión gasta más razón por paso</td></tr>
             <tr><td><code>docs</code></td><td>subagent</td><td><code>nan/deepseek-v4-flash</code></td><td>medium</td><td>20</td><td>Prosa en su perímetro propio</td></tr>
             <tr><td><code>ui</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>medium</td><td>20</td><td>Recorre y relata lo que ve</td></tr>
-            <tr><td><code>tasks-agent</code></td><td>subagent</td><td><code>nan/mimo-v2.6-flash</code></td><td>low</td><td>16</td><td>Escribe en el tablero con las herramientas <code>tasks_*</code></td></tr>
+            <tr><td><code>tasks-agent</code></td><td>subagent</td><td><code>nan/deepseek-v4-flash</code></td><td>high</td><td>16</td><td>Escribe en el tablero con las herramientas <code>tasks_*</code></td></tr>
             <tr><td><code>explore</code></td><td>integrado</td><td><code>nan/glm5.3-flash</code></td><td>low</td><td>—</td><td>Contexto rápido, bajo coste</td></tr>
             <tr><td><code>general</code></td><td>integrado</td><td><code>nan/deepseek-v4-flash</code></td><td>high</td><td>—</td><td>El trabajador de los grandes encargos</td></tr>
           </tbody>
@@ -407,22 +542,20 @@
     </section>
 
     <section id="verificacion">
-      <div class="section-head"><span class="section-num">09</span><h2 class="title">La verificación</h2></div>
+      <div class="section-head"><span class="section-num">10</span><h2 class="title">La verificación</h2></div>
       <p class="sub">Dos órdenes cierran la instalación: una mira si la máquina ve los modelos del proveedor, la otra si los agentes están cargados en el servicio. Configurar no exige reiniciar: OpenCode recarga los agentes al guardar los ficheros, y un cambio que no aparece suele ser camino de fichero equivocado, no de caché.</p>
       <div class="code"><pre data-language="bash"><code>opencode models | grep 'nan/'
 opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-agent'</code></pre></div>
       <p>La primera orden lista los modelos disponibles de <code>nan/</code>. La segunda devuelve el JSON de agentes con su id, su modelo y sus permisos; los identificadores dependen de la cuenta y de lo que tenga cargado el servicio.</p>
       <p>La batería completa del paquete se ejecuta de una vez con <code>bash check-package.sh</code>: sintaxis del instalador, plantilla JSON, instalación limpia, fusión con claves ajenas, camino JSONC y <code>diff</code> contra los agentes y la herramienta ya instalados. No pide interacción y solo escribe en temporales.</p>
-      <p>La herramienta del flujo queda junto a los agentes: <code>~/.config/opencode/agents/orchestrator-runner.py</code> guía al orquestador por las once fases desde cualquier proyecto, con la fase actual, su lista operativa y solo <code>next</code> para avanzar — y <code>next</code> exige la evidencia de la fase completada: sin ella, pide la que toca y no avanza; con ella, la registra en el historial. Su estado vive en el <code>.run/</code> del proyecto en el que se trabaja.</p>
-      <p>Para que el agente no toque ese registro a mano, el paquete lleva un <code>.llmignore</code> con la regla; se aplica con el plugin <code>opencode-ignore-file</code> instalado globalmente (<code>npm run install:plugin</code> desde su repositorio, y reiniciar opencode). Sin el plugin, la regla no bloquea: vale la convención.</p>
       <p>Las conductas dependen del prompt y de los permisos: <code>verify</code> ejecuta y no edita; <code>review</code> tiene la edición denegada; <code>docs</code> la tiene limitada a Markdown, <code>docs/</code> y <code>CHANGELOG</code>; <code>ui</code> la tiene abierta y pide permiso antes de Playwright; <code>tasks-agent</code> no edita ni ejecuta comandos, solo usa las herramientas <code>tasks_*</code>, y si el encargo pide algo fuera de ellas —leer ficheros, consultar catálogos, usar la CLI o investigar el tablero— devuelve un fallo de una línea con la causa y para. El shell sigue abierto en <code>review</code>, <code>docs</code> y <code>ui</code>; lo que les impide escribir por esa vía es su prompt.</p>
       <p>La prueba funcional de <code>tasks-agent</code> —diez casos, los hallazgos que corrigieron su enunciado y la latencia de lectura por modelo— está en <a href="tasks-agent-verification.html">la verificación de tasks-agent</a>.</p>
     </section>
 
     <section id="estado">
-      <div class="section-head"><span class="section-num">10</span><h2 class="title">El estado en la TUI</h2></div>
-      <p class="sub">El runner dice en qué fase está el orquestador; el paquete añade la ventana para verlo sin salir de la sesión. El plugin <code>plugins/orchestrator-status</code> abre con <code>/orquestador</code> un diálogo modal, grande y centrado, con la fase actual, su operativa, sus advertencias y el historial de evidencias, con scroll cuando el contenido no cabe; <code>esc</code> cierra y <code>r</code> refresca.</p>
-      <p>El diálogo no guarda estado propio: invoca <code>python3 ~/.config/opencode/agents/orchestrator-runner.py --json</code> desde el directorio del proyecto y pinta lo que responde. Ese modo del runner imprime un único objeto JSON —<code>version</code>, las once fases con su número, nombre, cuándo, evidencia esperada, pasos y advertencias, y el <code>state</code> con si existe el fichero de estado, la fase actual, si es válida, si lo es el historial y la evidencia registrada— y no crea ni modifica el <code>.run/orchestrator-runner.json</code>. Abrir el diálogo o pulsar <code>r</code> para refrescar no cambia la fase: solo lee.</p>
+      <div class="section-head"><span class="section-num">11</span><h2 class="title">El estado en la TUI</h2></div>
+      <p class="sub">El runner ya sabe en qué fase está el orquestador; lo que añade el paquete es la ventana para verlo sin salir de la sesión. El plugin <code>plugins/orchestrator-status</code> abre con <code>/orquestador</code> un diálogo modal, grande y centrado, con la fase actual, su operativa, sus advertencias y el historial de evidencias, con scroll cuando el contenido no cabe; <code>esc</code> cierra y <code>r</code> refresca.</p>
+      <p>El diálogo no guarda estado propio: invoca <code>python3 ~/.config/opencode/agents/orchestrator-runner.py --json</code> desde el directorio del proyecto y pinta lo que responde. Ese modo solo lee, como se explicó en <a href="#runner">la sección 04</a>: abrir el diálogo o pulsar <code>r</code> para refrescar no cambia la fase ni crea el <code>.run/orchestrator-runner.json</code>.</p>
       <div class="code"><pre data-language="bash"><code>python3 ~/.config/opencode/agents/orchestrator-runner.py --json</code></pre></div>
       <div class="table-wrap">
         <table>
@@ -442,7 +575,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="errores">
-      <div class="section-head"><span class="section-num">11</span><h2 class="title">Errores y qué significan</h2></div>
+      <div class="section-head"><span class="section-num">12</span><h2 class="title">Errores y qué significan</h2></div>
       <div class="table-wrap wrap-cells">
         <table>
           <thead><tr><th>Síntoma</th><th>Suele ser</th><th>Qué mirar</th></tr></thead>
@@ -483,7 +616,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="limites">
-      <div class="section-head"><span class="section-num">12</span><h2 class="title">Lo que no hace</h2></div>
+      <div class="section-head"><span class="section-num">13</span><h2 class="title">Lo que no hace</h2></div>
       <div class="grid cols-3">
         <div class="card">
           <span class="mono">Delegación por prompt</span>
@@ -519,10 +652,10 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="preguntas">
-      <div class="section-head"><span class="section-num">13</span><h2 class="title">Preguntas cortas</h2></div>
+      <div class="section-head"><span class="section-num">14</span><h2 class="title">Preguntas cortas</h2></div>
       <dl class="qa">
         <dt>¿Puedo cambiar los modelos y las variantes?</dt>
-        <dd>Sí. Los de los agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agents</code> de la configuración. Recuerda la regla de la almohadilla de la sección 07.</dd>
+        <dd>Sí. Los de los agentes están en el frontmatter de su fichero; los de <code>explore</code> y <code>general</code>, en el bloque <code>agents</code> de la configuración. Recuerda la regla de la almohadilla de la sección 08.</dd>
         <dt>¿Cualquier máquina con OpenCode V2 vale?</dt>
         <dd>Cualquiera con OpenCode V2 y acceso a los modelos <code>nan</code>. Windows y Linux llevan su instalador; la ruta de configuración es la de tu usuario en ambas.</dd>
         <dt>¿Se puede desinstalar?</dt>
@@ -535,8 +668,8 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
     </section>
 
     <section id="diagrama-arquitectura">
-      <div class="section-head"><span class="section-num">14</span><h2 class="title">Diagrama de arquitectura</h2></div>
-      <p class="sub">La arquitectura de la sección 03, dibujada: el orquestador en el centro y los siete agentes de trabajo que toca — <code>verify</code>, <code>review</code>, <code>docs</code>, <code>ui</code> y <code>tasks-agent</code> como subagentes por la herramienta <code>subagent</code>, y <code>explore</code> y <code>general</code> como integrados que el paquete fija en la configuración. <code>tasks-agent</code> es la única puerta de las herramientas <code>tasks_*</code>: ningún otro agente las toca.</p>
+      <div class="section-head"><span class="section-num">15</span><h2 class="title">Diagrama de arquitectura</h2></div>
+      <p class="sub">La arquitectura de la sección 03, dibujada: el orquestador en el centro y los siete agentes de trabajo que toca: <code>verify</code>, <code>review</code>, <code>docs</code>, <code>ui</code> y <code>tasks-agent</code> como subagentes por la herramienta <code>subagent</code>, y <code>explore</code> y <code>general</code> como integrados que el paquete fija en la configuración. <code>tasks-agent</code> es la única puerta de las herramientas <code>tasks_*</code>: ningún otro agente las toca.</p>
       <figure class="diagram">
         <svg viewBox="0 0 880 760" role="img" aria-label="Diagrama de arquitectura: el orquestador, en el centro, conecta por la herramienta subagent con verify, review, docs, ui y tasks-agent, y por la configuración con explore y general. tasks-agent es la única puerta de las herramientas tasks_*.">
           <defs>
@@ -634,7 +767,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
                 <path d="M-4,-7 V7 M1,-7 V7"/>
               </g>
               <text x="522" y="472" font-size="16.5" font-weight="700" fill="var(--text)">tasks-agent</text>
-              <text x="522" y="494">subagente · nan/mimo-v2.6-flash · 16 pasos</text>
+              <text x="522" y="494">subagente · nan/deepseek-v4-flash · 16 pasos</text>
               <text x="522" y="513">Puerta de las herramientas tasks_*: solo tablero.</text>
               <rect x="756" y="450" width="82" height="22" rx="11" fill="url(#gArc12)"/>
               <text x="797" y="465" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" letter-spacing=".5">tasks_*</text>
@@ -665,13 +798,13 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
             </g>
           </g>
         </svg>
-        <figcaption class="figcap">Figura 1 · Un nodo y siete agentes: el anidamiento llega a un nivel y el orquestador junta los resultados.</figcaption>
+        <figcaption class="figcap">Figura 2 · Un nodo y siete agentes: el anidamiento llega a un nivel y el orquestador junta los resultados.</figcaption>
       </figure>
     </section>
 
     <section id="diagrama-flujo">
-      <div class="section-head"><span class="section-num">15</span><h2 class="title">Diagrama de flujo</h2></div>
-      <p class="sub">El contrato de la sección 04, del primer vistazo al cierre: cinco pasos que el orquestador recorre en cada encargo antes de dar nada por hecho. El registro es condicional —solo cuando el trabajo no cabe en la petición original más el <code>git diff</code>— y todo cambio de código termina con su línea <code>Risk:</code>.</p>
+      <div class="section-head"><span class="section-num">16</span><h2 class="title">Diagrama de flujo</h2></div>
+      <p class="sub">El contrato de la sección 05, del primer vistazo al cierre: cinco pasos que el orquestador recorre en cada encargo antes de dar nada por hecho. El registro es condicional —solo cuando el trabajo no cabe en la petición original más el <code>git diff</code>— y todo cambio de código termina con su línea <code>Risk:</code>.</p>
       <figure class="diagram">
         <svg viewBox="0 0 880 640" role="img" aria-label="Diagrama de flujo del contrato del orquestador: clasificar con el test de tamaño, registrar si es grande, delegar, verificar de forma proporcional y cerrar con informe y línea de riesgo.">
           <defs>
@@ -754,7 +887,7 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
             </g>
           </g>
         </svg>
-        <figcaption class="figcap">Figura 2 · El contrato del orquestador, de la clasificación al cierre: registro condicional, verificación proporcional y línea de riesgo.</figcaption>
+        <figcaption class="figcap">Figura 3 · El contrato del orquestador, de la clasificación al cierre: registro condicional, verificación proporcional y línea de riesgo.</figcaption>
       </figure>
     </section>
 

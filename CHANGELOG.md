@@ -8,6 +8,21 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- La guía web da al runner el peso de pieza core: sección propia «04 · El runner» con su
+  contrato —la fase la decide el registro, las once fases, `next` con la evidencia exigida,
+  `reset`, el estado en `.run/` del proyecto y `--json` sin efectos— y un diagrama de las once
+  fases agrupadas en las tres etapas del flujo (Figura 1), en el sistema visual de las
+  figuras existentes y con tema claro y oscuro. Las secciones posteriores se renumeran y la
+  del plugin TUI queda para lo suyo.
+
+### Corregido
+
+- El modelo de `tasks-agent` en la documentación: la guía, el README y la verificación de
+  tasks-agent declaraban `nan/mimo-v2.6-flash` (low/medium según la página) mientras el
+  frontmatter canónico y la configuración desplegada fijan `nan/deepseek-v4-flash#high`. La
+  documentación se sincroniza con el frontmatter, que manda; el registro histórico de las
+  mediciones se conserva con una nota de la decisión vigente.
+
 - Contrato de retorno y disciplina de delegación: el orquestador exige a cada subagente un
   resultado estructurado —`status` (`completed`, `partial` o `blocked`, o la pregunta al humano
   si el bloqueo es de decisión), `validation` con una línea `<comando>: <resultado observado>`
