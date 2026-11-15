@@ -17,6 +17,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Corregido
 
+- Instrucciones de reinicio del runner: la fase 1 ordenaba borrar a mano `.run/orchestrator-runner.json`,
+  lo que la regla `.llmignore` impide al agente; ahora ordena ejecutar su subcomando `reset` y deja claro
+  que el fichero no se toca. La fase 11 pedía el `reset` al terminar la sesión sin convertirlo en obligación:
+  ahora exige dejar el estado en fase 1 y sin historial antes de dar la sesión por cerrada.
+
 - El modelo de `tasks-agent` en la documentación: la guía, el README y la verificación de
   tasks-agent declaraban `nan/mimo-v2.6-flash` (low/medium según la página) mientras el
   frontmatter canónico y la configuración desplegada fijan `nan/deepseek-v4-flash#high`. La

@@ -22,7 +22,7 @@ PHASES = [
             "Recuperar el contexto con `mem_context`; `mem_search` si la petición toca algo ya trabajado.",
             "Leer el `AGENTS.md` del proyecto y su mapa de fuentes antes de decidir nada.",
             "Consultar el tablero (en curso y listas para empezar) con la CLI `tasks-ai` del proyecto, directamente: las lecturas del tablero no se delegan.",
-            "Comprobar la fase con `~/.config/opencode/agents/orchestrator-runner.py`; si la sesión anterior dejó otra y empiezas trabajo nuevo, borra `.run/orchestrator-runner.json` para volver a la fase 1.",
+            "Comprobar la fase con `~/.config/opencode/agents/orchestrator-runner.py`; si la sesión anterior dejó otra y empiezas trabajo nuevo, ejecuta su subcomando `reset` para volver a la fase 1. El fichero `.run/orchestrator-runner.json` no se borra a mano: el agente no puede tocarlo.",
         ],
         "warnings": [
             "Nada se lanza antes de leer la memoria de la sesión y el tablero.",
@@ -172,7 +172,7 @@ PHASES = [
         "steps": [
             "Guardar con `mem_save` tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema.",
             "Antes de decir «done» o cerrar la sesión, `mem_session_summary` con objetivo, hallazgos, lo hecho, siguiente paso y archivos relevantes.",
-            "Al terminar la sesión, `reset` devuelve el flujo a la fase 1; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.",
+            "Antes de dar la sesión por cerrada, `reset`: una vez cerrada la sesión el estado debe quedar en fase 1 y sin historial, nunca en la fase 11; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.",
         ],
         "warnings": [
             "Lo que no se guarda se pierde en la próxima sesión.",
