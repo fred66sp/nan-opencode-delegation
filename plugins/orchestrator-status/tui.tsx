@@ -10,6 +10,10 @@ import type { RGBA } from "@opentui/core"
 const RUNNER_SCRIPT = join(homedir(), ".config", "opencode", "agents", "orchestrator-runner.py")
 const QUERY_TIMEOUT_MS = 10_000
 
+/** Tablero del proyecto: primero el binario del PATH, y su copia del repo como respaldo. */
+const BOARD_BIN = "tasks-ai"
+const BOARD_LOCAL_BIN = join(".tasks-ai", "bin", "tasks-ai")
+
 const RUNNER_ERROR = "No se pudo consultar el runner. Comprueba que python3 y ~/.config/opencode/agents/orchestrator-runner.py estén disponibles."
 const MALFORMED_ERROR = "El runner respondió algo que no es el JSON esperado."
 
@@ -110,6 +114,52 @@ function parseRunnerData(raw: string): RunnerData | undefined {
   return { version, phases: parsedPhases, state: { exists, phase, valid, evidence_valid, evidence: parsedEvidence } }
 }
 
+/** Frontera del tablero: solo cuenta estados; un JSON que no es la lista de tareas es ausencia de señal. */
+function parseInProgress(raw: string): number | undefined {
+  let value: unknown
+  try {
+    value = JSON.parse(raw)
+  } catch {
+    return undefined
+  }
+  if (!Array.isArray(value)) return undefined
+  let count = 0
+  for (const item of value) {
+    if (!isRecord(item) || typeof item.status !== "string") return undefined
+    if (item.status === "in_progress") count += 1
+  }
+  return count
+}
+
+/** Tareas en curso según el tablero; cualquier fallo del CLI es 0 y el panel sigue igual. */
+function queryBoard(cwd: string): Promise<number> {
+  return new Promise((resolve) => {
+    const read = (bin: string, allowFallback: boolean) => {
+      execFile(bin, ["list"], { cwd, timeout: QUERY_TIMEOUT_MS }, (error, stdout) => {
+        if (error) {
+          // Solo se reintenta cuando el binario no existe: un fallo o un timeout ya son señal ausente.
+          if (allowFallback && error.code === "ENOENT") {
+            read(join(cwd, BOARD_LOCAL_BIN), false)
+            return
+          }
+          resolve(0)
+          return
+        }
+        resolve(parseInProgress(stdout) ?? 0)
+      })
+    }
+    read(BOARD_BIN, true)
+  })
+}
+
+/** Desajuste que hoy solo ve la persona: el runner en fase 1 sin evidencia y el tablero trabajando. */
+function mismatchNotice(data: RunnerData, inProgress: number): string | undefined {
+  const { exists, phase, evidence } = data.state
+  if (!exists || phase !== 1 || evidence.length > 0 || inProgress < 1) return undefined
+  const tasks = inProgress === 1 ? "1 tarea" : `${inProgress} tareas`
+  return `Desajuste: fase 1 sin evidencia mientras hay ${tasks} en curso — el runner no se está usando`
+}
+
 /** Consulta el runner sin escribir nada; cualquier fallo se convierte en un mensaje estable. */
 function queryRunner(cwd: string): Promise<Snapshot> {
   return new Promise((resolve) => {
@@ -171,7 +221,7 @@ function Wrapped(props: { readonly text: string; readonly width: number; readonl
   )
 }
 
-function StatusBody(props: { readonly data: RunnerData; readonly width: number }) {
+function StatusBody(props: { readonly data: RunnerData; readonly width: number; readonly inProgress: number }) {
   const context = usePlugin()
   const state = () => props.data.state
   const phase = () => props.data.phases.find((item) => item.number === state().phase)
@@ -179,6 +229,14 @@ function StatusBody(props: { readonly data: RunnerData; readonly width: number }
 
   return (
     <>
+      <Show when={mismatchNotice(props.data, props.inProgress)}>
+        {(notice) => (
+          <>
+            <Wrapped prefix="⚠ " text={notice()} width={props.width} fg={context.theme.text.feedback.error.base} />
+            <text fg={context.theme.text.base}> </text>
+          </>
+        )}
+      </Show>
       <text fg={context.theme.text.base}>
         {clip(`Fase ${state().phase}/${total()} · ${phase()?.name ?? "fase desconocida"}`, props.width)}
       </text>
@@ -247,6 +305,7 @@ function contentHeight(termHeight: number | undefined): number {
 function OrchestratorDialog() {
   const context = usePlugin()
   const [snapshot, setSnapshot] = createSignal<Snapshot>()
+  const [inProgress, setInProgress] = createSignal(0)
   const [busy, setBusy] = createSignal(false)
   const [dimensions, setDimensions] = createSignal(rendererDimensions(context.renderer))
   const width = () => contentWidth(dimensions().width)
@@ -262,8 +321,9 @@ function OrchestratorDialog() {
     if (busy()) return
     setBusy(true)
     const location = context.location ?? context.data.location.default()
-    void queryRunner(location.directory).then((next) => {
+    void Promise.all([queryRunner(location.directory), queryBoard(location.directory)]).then(([next, running]) => {
       setSnapshot(next)
+      setInProgress(running)
       setBusy(false)
     })
   }
@@ -323,7 +383,7 @@ function OrchestratorDialog() {
   return (
     <scrollbox focused stickyScroll={false} maxHeight={maxHeight()}>
       <box flexDirection="column" paddingLeft={1} paddingRight={1}>
-        <Show when={data()}>{(current) => <StatusBody data={current()} width={width()} />}</Show>
+        <Show when={data()}>{(current) => <StatusBody data={current()} width={width()} inProgress={inProgress()} />}</Show>
         <Show when={!data() && !error()}>
           <text fg={context.theme.text.muted}>Consultando el runner del orquestador…</text>
         </Show>
