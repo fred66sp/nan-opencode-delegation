@@ -8,6 +8,9 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- La fase 11 del runner incorpora la revisión dirigida de memorias: listar candidatas a
+  poda y presentarlas a la persona antes de tocar nada; ningún borrado de memoria sin
+  su autorización explícita.
 - El contrato de encargo distingue el obstáculo corriente —error, timeout, herramienta que
   falla—, que se diagnostica y se supera, del bloqueo deliberado —fichero intocable, acceso
   retirado a propósito—, que se respeta y se comunica; y exige el informe de retorno
