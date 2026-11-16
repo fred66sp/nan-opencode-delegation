@@ -94,6 +94,7 @@ PHASES = [
         "evidence": "los subagentes lanzados y la tarea de cada uno",
         "steps": [
             "Todo encargo lleva cuatro cosas: objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación; si hay tablero, la referencia de la tarea.",
+            "En el encargo, distinguir obstáculo corriente —error, timeout, herramienta que falla—, que se diagnostica y se supera, de bloqueo deliberado —fichero marcado para no tocar, acceso retirado a propósito—, que se respeta y se comunica buscando otra vía segura; el informe de retorno se entiende sin haber visto el trabajo.",
             "Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación, `verify` y `review` para verificación independiente, `tasks-agent` para escribir en el tablero; sus lecturas van directas por la CLI `tasks-ai`.",
             "Usar `background` solo para unidades independientes con archivos distintos, y esperar el aviso antes de integrar.",
             "Implementar en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor.",
@@ -111,7 +112,7 @@ PHASES = [
             "Elegir el escalón: trivial → comprobación localizada; funcional → tests afectados y prueba funcional; transversal → suite relevante e integración; crítico → `verify` y, si cambia comportamiento o contrato, `review`.",
             "`verify` es el mínimo tras cualquier cambio no trivial.",
             "Ejecutar la batería del repo (en este paquete, `bash check-package.sh`) o la suite que corresponda al cambio.",
-            "Contrastar el criterio de aceptación de la tarea con el resultado real, no con el informe del subagente.",
+            "Contrastar el criterio de aceptación de la tarea con el resultado real, no con el informe del subagente: el diff y el resumen se contrastan los dos, porque el resumen tiende a omitir cambios pequeños.",
         ],
         "warnings": [
             "La salida de un subagente no es evidencia: se revisa antes de integrarla.",
