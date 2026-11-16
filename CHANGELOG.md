@@ -8,6 +8,12 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- El contrato de encargo distingue el obstáculo corriente —error, timeout, herramienta que
+  falla—, que se diagnostica y se supera, del bloqueo deliberado —fichero intocable, acceso
+  retirado a propósito—, que se respeta y se comunica; y exige el informe de retorno
+  entendible sin haber visto el trabajo, con el diff y el resumen contrastados los dos
+  contra el criterio en la fase de verificación.
+
 - La guía web da al runner el peso de pieza core: sección propia «04 · El runner» con su
   contrato —la fase la decide el registro, las once fases, `next` con la evidencia exigida,
   `reset`, el estado en `.run/` del proyecto y `--json` sin efectos— y un diagrama de las once
