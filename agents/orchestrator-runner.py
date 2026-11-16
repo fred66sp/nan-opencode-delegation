@@ -172,11 +172,13 @@ PHASES = [
         "evidence": "ninguna: es la última fase y no hay transición que justificar; el reinicio lo hace `reset`",
         "steps": [
             "Guardar con `mem_save` tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema.",
+            "Dirigir la revisión de memorias cuando toque: listar candidatas a poda —cautelas sin razón vigente, absolutas reescribibles con alcance y motivo— y presentar el informe a la persona; ningún borrado de memoria sin su revisión explícita.",
             "Antes de decir «done» o cerrar la sesión, `mem_session_summary` con objetivo, hallazgos, lo hecho, siguiente paso y archivos relevantes.",
             "Antes de dar la sesión por cerrada, `reset`: una vez cerrada la sesión el estado debe quedar en fase 1 y sin historial, nunca en la fase 11; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.",
         ],
         "warnings": [
             "Lo que no se guarda se pierde en la próxima sesión.",
+            "La revisión de memorias dirige el podado, nunca lo ejecuta por su cuenta: la persona autoriza cada poda.",
         ],
     },
 ]
