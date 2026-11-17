@@ -128,6 +128,90 @@
   .status-strip span:not(.status-mark) { display: block; margin-top: 2px; color: var(--muted); font-size: 13px; }
 
 
+  /* La ilustración del hero viaja en los dos temas: las dos piezas están en
+     el DOM y el selector del tema altern cuál se muestra, como ya hace la
+     marca. En pantallas anchas se sienta a la derecha del texto; en estrechas,
+     debajo del bloque de estado. */
+  .hero-art { margin: 28px 0 0; }
+  .hero-art img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+  .hero-art .art-dark { display: none; }
+  :root[data-theme="dark"] .hero-art .art-light { display: none; }
+  :root[data-theme="dark"] .hero-art .art-dark { display: block; }
+  @media (min-width: 1080px) {
+    .hero-inner {
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(0, .95fr);
+      column-gap: clamp(24px, 4vw, 56px);
+      align-items: center;
+    }
+    .hero-art { grid-column: 2; grid-row: 1 / span 5; margin: 0; }
+  }
+  .hero-inner > *:nth-child(6) { animation-delay: .4s; }
+
+  /* El lightbox se construye una sola vez en el script del pie: overlay a
+     pantalla completa con la imagen a su tamaño real, centrada y limitada al
+     viewport. Cierra con Esc o pulsando el fondo. */
+  .hero-art .thumb { display: block; width: 100%; padding: 0; border: 0; background: none; cursor: zoom-in; }
+  .hero-art .thumb:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    z-index: 200;
+    display: none;
+    place-items: center;
+    background: rgb(0 0 0 / .72);
+    cursor: zoom-out;
+  }
+  .lightbox.open { display: grid; }
+  .lightbox img {
+    /* Un porcentaje dentro del grid se resuelve contra una fila que la
+       propia imagen dimensiona y no limita nada: el margen va en unidades
+       de viewport, 8% por lado. */
+    max-width: 92vw;
+    max-height: 92vh;
+    max-height: 92dvh;
+    width: auto;
+    height: auto;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  /* La luciérnaga: un resplandor que persigue al puntero con un retardo
+     suave. Decorativa y puramente visual: sin puntero propio, fuera del
+     alcance táctil y del motion reducido, y por debajo del lightbox. */
+  .firefly {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 150;
+    width: 160px;
+    height: 160px;
+    margin: -80px 0 0 -80px;
+    border-radius: 50%;
+    background: radial-gradient(
+      circle,
+      color-mix(in srgb, var(--accent) 40%, transparent),
+      color-mix(in srgb, var(--accent) 15%, transparent) 42%,
+      transparent 72%
+    );
+    opacity: 0;
+    pointer-events: none;
+    mix-blend-mode: screen;
+    will-change: transform;
+  }
+  :root[data-theme="light"] .firefly { opacity: .2; }
+  :root[data-theme="dark"] .firefly { opacity: .38; }
+  @media (hover: none) { .firefly { display: none; } }
+  @media (prefers-reduced-motion: reduce) { .firefly { display: none; } }
+
   .code .c { color: var(--syn-comment); }
   .code .ok { color: var(--ok); font-weight: 700; }
   ::highlight(comment), ::highlight(quote) { color: var(--syn-comment); }
@@ -177,6 +261,10 @@
       <span class="status-mark" aria-hidden="true">OK</span>
       <div><strong>Instalación probada en Linux y en Windows</strong><span>Las conductas dependen del prompt y de los permisos: verify ejecuta y no edita; review tiene la edición denegada; docs la limita a Markdown; ui pide permiso antes de Playwright. El shell sigue abierto en review, docs y ui.</span></div>
     </div>
+    <figure class="hero-art">
+      <button class="thumb" type="button" aria-label="Ampliar la ilustración de la orquestación"><img class="art-light" src="assets/img/orchestrator-light.webp" width="1536" height="1024" alt="Diagrama de la orquestación: un orquestador central conectado con las capacidades del sistema —explorar, código, revisión, documentación, interfaz y verificación— y el anillo de subagentes que cruza la puerta de permisos antes de escribir en el tablero."></button>
+      <button class="thumb" type="button" aria-label="Ampliar la ilustración de la orquestación"><img class="art-dark" src="assets/img/orchestrator-dark.webp" width="1536" height="1024" alt="Diagrama de la orquestación: un orquestador central conectado con las capacidades del sistema —explorar, código, revisión, documentación, interfaz y verificación— y el anillo de subagentes que cruza la puerta de permisos antes de escribir en el tablero."></button>
+    </figure>
   </div>
 </section>
 
@@ -970,6 +1058,70 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-
   showUpTo();
   window.addEventListener("pageshow", showUpTo);
   window.addEventListener("load", showUpTo);
+})();
+</script>
+<script>
+(function () {
+  /* Lightbox de la ilustración del hero: el overlay se construye aquí una vez
+     y las dos miniaturas —claro y oscuro, la visible decide— abren la suya. */
+  var lb = document.createElement("div");
+  lb.className = "lightbox";
+  lb.setAttribute("role", "dialog");
+  lb.setAttribute("aria-modal", "true");
+  lb.setAttribute("aria-label", "Ilustración de la orquestación a tamaño completo");
+  lb.hidden = true;
+  var full = document.createElement("img");
+  full.alt = "";
+  lb.appendChild(full);
+  document.body.appendChild(lb);
+
+  function openLightbox(thumb) {
+    full.src = thumb.currentSrc || thumb.src;
+    lb.hidden = false;
+    lb.classList.add("open");
+    document.body.style.overflow = "hidden";
+  }
+  function closeLightbox() {
+    lb.classList.remove("open");
+    lb.hidden = true;
+    full.removeAttribute("src");
+    document.body.style.overflow = "";
+  }
+
+  lb.addEventListener("click", closeLightbox);
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && !lb.hidden) closeLightbox();
+  });
+  document.querySelectorAll(".hero-art .thumb").forEach(function (btn) {
+    btn.addEventListener("click", function () {
+      openLightbox(btn.querySelector("img"));
+    });
+  });
+})();
+</script>
+<script>
+(function () {
+  /* La luciérnaga persigue al puntero: el punto avanza una fracción del
+     camino que le queda en cada fotograma. Fuera de táctil y del motion
+     reducido no hay elemento que mover. */
+  if (window.matchMedia("(hover: none), (prefers-reduced-motion: reduce)").matches) return;
+  var f = document.createElement("div");
+  f.className = "firefly";
+  f.setAttribute("aria-hidden", "true");
+  f.style.visibility = "hidden";
+  document.body.appendChild(f);
+  var x = 0, y = 0, tx = 0, ty = 0, seen = false;
+  document.addEventListener("mousemove", function (e) {
+    tx = e.clientX;
+    ty = e.clientY;
+    if (!seen) { seen = true; x = tx; y = ty; f.style.visibility = "visible"; }
+  });
+  (function loop() {
+    x += (tx - x) * .09;
+    y += (ty - y) * .09;
+    f.style.transform = "translate(" + x + "px," + y + "px)";
+    requestAnimationFrame(loop);
+  })();
 })();
 </script>
 </body>
