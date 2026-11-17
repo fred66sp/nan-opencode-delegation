@@ -8,6 +8,18 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Cuatro adopciones en el contrato de delegación. Un libro de encargos en disco:
+  `.run/delegations.jsonl` del proyecto, una línea JSON por encargo con `ts`, `phase`,
+  `task`, `fingerprint`, `agent` y `status` (`launched`, `completed` o `blocked`), que se
+  consulta antes de lanzar para no repetir la misma huella mientras sigue en `launched`.
+  Un comprobador determinista del retorno, `agents/delegation-report-checker.py`, que se
+  instala junto a los agentes y dice si el informe cumple su forma —`status`, una línea de
+  `validation` por comprobación esperada y ni una referencia indefinida—, con códigos
+  0/1/2 y `--json` para un programa. Una taxonomía de cuatro ejes —selección de fuente,
+  interpretación, estrategia de búsqueda y ejecución— para clasificar la causa antes de
+  re-encargar. Y el criterio de aceptación literal de la tarea al encargo, con la salida
+  observada en cada línea de `validation`. `check-package.sh` cubre el comprobador en
+  cinco pasos.
 - La fase 11 del runner incorpora la revisión dirigida de memorias: listar candidatas a
   poda y presentarlas a la persona antes de tocar nada; ningún borrado de memoria sin
   su autorización explícita.
@@ -42,7 +54,7 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   si el bloqueo es de decisión), `validation` con una línea `<comando>: <resultado observado>`
   por comprobación, riesgos y lo no verificado— y un retorno en prosa sin esa forma se vuelve a
   pedir; `tasks-agent` se rige por su contrato propio de una línea por operación. Antes de
-  lanzar comprueba los encargos ya lanzados en la sesión para no relanzar el mismo mientras
+  lanzar comprueba los encargos ya lanzados para no relanzar el mismo mientras
   sigue en curso, y los mapas de `explore` y la evidencia de `verify` vienen acotados a unos
   2k tokens con `path:line`; `verify`, además, no reproduce el texto del encargo. El README y la
   guía web narran el contrato: la regla del encargo y la de delegación de la sección de contrato

@@ -328,6 +328,59 @@ else
   sed 's/^/    /' "$tmp/plugin-merge.log"
 fi
 
+# n. El comprobador del retorno estructurado: sintaxis, contrato en la ayuda, un informe
+# conforme (código 0) y dos no conformes (código 1), con las fixtures en el temporal. El
+# bytecode va a $tmp: un __pycache__ en agents/ haría saltar el diff de f.
+checker="$here/agents/delegation-report-checker.py"
+dir_n="$tmp/checker"
+mkdir -p "$dir_n"
+printf '%s\n' 'python3 -m py_compile agents/orchestrator-runner.py' 'bash check-package.sh' >"$dir_n/checks.txt"
+cat >"$dir_n/conforme.txt" <<'REPORT'
+status: completed
+
+validation:
+  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
+  bash check-package.sh: Todo en verde., código 0
+REPORT
+cat >"$dir_n/sin-status.txt" <<'REPORT'
+validation:
+  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
+  bash check-package.sh: Todo en verde., código 0
+REPORT
+cat >"$dir_n/sin-comprobacion.txt" <<'REPORT'
+status: partial
+
+validation:
+  bash check-package.sh: rojo, 2 comprobaciones fallidas
+REPORT
+
+step "sintaxis de delegation-report-checker.py (py_compile)"
+if PYTHONPYCACHEPREFIX="$dir_n/pyc" python3 -m py_compile "$checker"; then ok; else ko; fi
+
+step "checker --help documenta --checks y los códigos de salida"
+if python3 "$checker" --help | grep -Fq -- "--checks" &&
+  python3 "$checker" --help | grep -Fq "Códigos de salida"; then ok; else ko; fi
+
+step "checker: informe conforme devuelve 0"
+if python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/conforme.txt" >"$dir_n/conforme.out" 2>&1 &&
+  grep -Fq "conforme: status completed" "$dir_n/conforme.out"; then ok; else ko; sed 's/^/    /' "$dir_n/conforme.out"; fi
+
+step "checker: informe sin status devuelve 1 y lo nombra"
+python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/sin-status.txt" >"$dir_n/sin-status.out" 2>&1
+rc_n=$?
+if [ "$rc_n" -eq 1 ] && grep -Fq 'falta la línea' "$dir_n/sin-status.out"; then ok; else ko; echo "    código $rc_n"; sed 's/^/    /' "$dir_n/sin-status.out"; fi
+
+step "checker: comprobación esperada ausente devuelve 1 y --json la nombra"
+python3 "$checker" --json --checks "$dir_n/checks.txt" <"$dir_n/sin-comprobacion.txt" >"$dir_n/sin-comprobacion.json" 2>&1
+rc_njson=$?
+if [ "$rc_njson" -eq 1 ] && python3 - "$dir_n/sin-comprobacion.json" <<'PY'
+import json, sys
+doc = json.load(open(sys.argv[1], encoding="utf-8"))
+assert doc["ok"] is False and doc["status"] == "partial", doc
+assert any("orchestrator-runner.py" in v for v in doc["violations"]), doc["violations"]
+PY
+then ok; else ko; echo "    código $rc_njson"; sed 's/^/    /' "$dir_n/sin-comprobacion.json"; fi
+
 echo ""
 if [ "$failures" -eq 0 ]; then
   printf '%sTodo en verde.%s\n' "$green" "$reset"

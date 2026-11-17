@@ -96,6 +96,7 @@ PHASES = [
             "Todo encargo lleva cuatro cosas: objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación; si hay tablero, la referencia de la tarea.",
             "En el encargo, distinguir obstáculo corriente —error, timeout, herramienta que falla—, que se diagnostica y se supera, de bloqueo deliberado —fichero marcado para no tocar, acceso retirado a propósito—, que se respeta y se comunica buscando otra vía segura; el informe de retorno se entiende sin haber visto el trabajo.",
             "Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación, `verify` y `review` para verificación independiente, `tasks-agent` para escribir en el tablero; sus lecturas van directas por la CLI `tasks-ai`.",
+            "Llevar el libro de delegaciones en `.run/delegations.jsonl`: consultarlo antes de lanzar —un lanzamiento con la misma huella que siga en `launched` no se repite, se espera su aviso—, añadir la línea al lanzar y actualizar su `status` al recibir el retorno.",
             "Usar `background` solo para unidades independientes con archivos distintos, y esperar el aviso antes de integrar.",
             "Implementar en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor.",
         ],
