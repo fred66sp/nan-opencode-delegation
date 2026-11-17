@@ -41,7 +41,8 @@ ser una introducción a la orquestación en general.
 ### No objetivos
 
 - No trae código ejecutable fuera de los dos instaladores, la puerta de verificación
-  `check-package.sh`, la herramienta del flujo `agents/orchestrator-runner.py` y el plugin
+  `check-package.sh`, la herramienta del flujo `agents/orchestrator-runner.py`, el
+  comprobador del retorno `agents/delegation-report-checker.py` y el plugin
   TUI `plugins/orchestrator-status`: fuentes que OpenCode carga en runtime, sin `node_modules`
   ni nada que compilar.
 - No orquesta nada por sí mismo: la delegación es un contrato por prompt que OpenCode
@@ -55,11 +56,12 @@ ser una introducción a la orquestación en general.
 
 ### Funcionales
 
-- R1. El instalador copia los agentes de `agents/` y la herramienta del flujo
-  `agents/orchestrator-runner.py` a `~/.config/opencode/agents/`, honrando
-  `XDG_CONFIG_HOME` si está definido. En Unix la herramienta queda con permiso de ejecución;
-  si ya existe una con el mismo nombre y contenido distinto, deja copia `.bak.<fecha>` antes
-  de reemplazarla, con la política de R7.
+- R1. El instalador copia los agentes de `agents/` y las dos herramientas del flujo
+  —`agents/orchestrator-runner.py` y `agents/delegation-report-checker.py`— a
+  `~/.config/opencode/agents/`, honrando
+  `XDG_CONFIG_HOME` si está definido. En Unix quedan con permiso de ejecución;
+  si ya existe un fichero con el mismo nombre y contenido distinto, deja copia `.bak.<fecha>` antes
+  de reemplazarlo, con la política de R7.
 - R2. Si la configuración global no existe, el instalador crea una desde su plantilla con
   el bloque `agents` de `explore` y `general` y la regla de `permissions` que deniega
   `tasks_*`.
@@ -103,6 +105,26 @@ ser una introducción a la orquestación en general.
   `python3 ~/.config/opencode/agents/orchestrator-runner.py --json` desde el directorio del
   proyecto y con `r` vuelve a consultar; sin estado muestra la fase 1 y lo dice.
   `check-package.sh` comprueba el contrato `--json` y la instalación del plugin.
+- R11. El orquestador lleva un libro de delegaciones en disco, el `.run/delegations.jsonl`
+  del proyecto en el que trabaja, con una línea JSON por encargo lanzado y seis campos:
+  `ts` (fecha ISO), `phase` (fase del runner), `task` (referencia del tablero o `null`),
+  `fingerprint` (una frase con objetivo y artefactos), `agent` (nombre del subagente) y
+  `status` (`launched`, `completed` o `blocked`). Antes de lanzar lo consulta: si los
+  últimos lanzamientos con la misma `fingerprint` siguen en `launched`, no relanza y
+  espera su aviso. Al lanzar añade la línea y, al recibir el retorno, actualiza el
+  `status` de esa línea. Rehacer con una corrección un encargo ya terminado no es
+  duplicado.
+- R12. `agents/delegation-report-checker.py` comprueba el retorno estructurado de un
+  subagente contra el contrato del encargo, sin dependencias y sin juicio del modelo.
+  Exige una línea `status: completed|partial|blocked`, una sección `validation` con una
+  línea `<comando>: <resultado observado>` por comprobación esperada y ninguna referencia
+  indefinida —una mención anafórica sin ruta, fichero o `path:line` en la misma línea—, y
+  rechaza una línea `pregunta:` en el informe. Lee el informe de un fichero o de la
+  entrada estándar y las comprobaciones esperadas de un fichero pasado con `--checks`.
+  Códigos de salida: 0 conforme, 1 no conforme con la lista de incumplimientos y 2 error
+  de uso; con `--json` imprime un único objeto con `ok`, `status`, `checks` y
+  `violations`. Se instala con el paquete junto a los agentes y `check-package.sh` cubre
+  su sintaxis, el contrato de `--help`, un informe conforme y los no conformes.
 
 ### Reglas de negocio
 
@@ -136,6 +158,16 @@ ser una introducción a la orquestación en general.
   creación —épica, subtareas, etiquetas, comentario— van en un único encargo ordenado, en
   segundo plano, y se comprueban por CLI antes de usar su resultado; el cierre y el
   comentario de bitácora del momento van en primer plano.
+- Ante un `partial`, un retorno malformado o un fallo que pida re-encargo, la causa se
+  clasifica con cuatro ejes antes de relanzar: selección de fuente (el subagente fue al
+  sitio equivocado), interpretación (datos correctos con el significado equivocado: leyó
+  mal el criterio), estrategia de búsqueda (se detuvo pronto o se desvió) y ejecución
+  (error en el cálculo o en la forma del retorno). El eje ajeno al subagente queda para el
+  bloqueo de decisión o del entorno. El re-encargo cita el eje diagnosticado y lo que lo
+  corrige, y no repite el encargo sin cambiar nada.
+- El criterio de aceptación viaja literal de la tarea al encargo, y cada línea de
+  `validation` cita la salida observada: la transcripción entre llamadas introduce errores,
+  así que el criterio no se resume ni se reescribe al delegar.
 - La prosa documental vive en castellano; los identificadores, rutas y comandos no se traducen.
 - La guía solo usa el verde donde algo se ha comprobado; los datos de medición nombran su
   método y su alcance.
@@ -158,8 +190,8 @@ ser una introducción a la orquestación en general.
 
 ## 5. Criterios de aceptación
 
-- Con `HOME` limpio, `bash install.sh` crea los agentes, la herramienta del flujo y una
-  configuración nueva desde la plantilla; salida por pantalla nombra ambos destinos.
+- Con `HOME` limpio, `bash install.sh` crea los agentes, las dos herramientas del flujo y una
+  configuración nueva desde la plantilla; la salida por pantalla nombra los destinos.
 - La herramienta queda en `~/.config/opencode/agents/orchestrator-runner.py` con permiso de
   ejecución y su contenido coincide con el del paquete. Reejecutar el instalador con el
   contenido idéntico no crea `.bak`; con contenido distinto, deja
@@ -184,7 +216,8 @@ ser una introducción a la orquestación en general.
   instalador lo reemplaza y deja `orchestrator.md.bak.<fecha>`; una segunda ejecución sin
   cambios no crea otra copia.
 - `diff -r` entre `agents/` del paquete y la configuración global de la máquina de origen
-  no reporta diferencias —incluida `agents/orchestrator-runner.py`—, excluidas las copias
+  no reporta diferencias —incluidas `agents/orchestrator-runner.py` y
+  `agents/delegation-report-checker.py`—, excluidas las copias
   `.bak` que el propio instalador deja (R7).
 - La plantilla `config/opencode.jsonc` carga como JSON estricto.
 - Ningún subagente abre el permiso de acción `skill` en `allow` ni `ask`, y los cuatro de
@@ -220,3 +253,10 @@ ser una introducción a la orquestación en general.
   scroll con la fase actual, su operativa, sus advertencias y el historial de evidencias; sin estado
   muestra la fase 1 y lo indica, un estado corrupto vuelve a la fase 1 con aviso, y sin
   `python3` o sin runner muestra un error de consulta.
+- El checker devuelve 0 sobre un informe con `status` válido y una línea por comprobación
+  esperada; devuelve 1, con los incumplimientos nombrados, cuando falta la línea `status:`
+  o una comprobación esperada. Con `--json` imprime un único objeto con `ok`, `status`,
+  `checks` y `violations`, y termina en 2 ante un error de uso.
+- Cada encargo lanzado deja una línea en el `.run/delegations.jsonl` del proyecto con sus
+  seis campos —`ts`, `phase`, `task`, `fingerprint`, `agent` y `status`—, y la misma huella
+  en `launched` se consulta antes de relanzar.

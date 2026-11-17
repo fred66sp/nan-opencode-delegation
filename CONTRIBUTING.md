@@ -71,6 +71,11 @@ diff -r -x '*.bak.*' agents "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/agents" 
 env -u XDG_CONFIG_HOME HOME=$(mktemp -d) bash install.sh   # instalación limpia
 ```
 
+La batería incluye el comprobador del retorno: su sintaxis (`python3 -m py_compile
+agents/delegation-report-checker.py`), el contrato de su `--help` y tres informes de prueba
+—uno conforme que sale con 0 y dos no conformes que salen con 1, el segundo con `--json`—.
+Un cambio en el checker o en el contrato del informe se cierra con `bash check-package.sh`.
+
 Y, cuando la fusión o el camino JSONC cambien: instalación sobre una configuración con
 claves ajenas (deben conservarse y nacer copia `.bak`) y sobre una con comentarios (el
 fichero debe quedar intacto y el bloque a mano impreso). `install.ps1` admite el mismo
