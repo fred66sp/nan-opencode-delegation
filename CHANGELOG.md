@@ -38,6 +38,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   fases agrupadas en las tres etapas del flujo (Figura 1), en el sistema visual de las
   figuras existentes y con tema claro y oscuro. Las secciones posteriores se renumeran y la
   del plugin TUI queda para lo suyo.
+- Un botón «Ver el código del runner» en la sección 04 de la guía web abre un diálogo modal
+  con el código fuente íntegro de `agents/orchestrator-runner.py` como bloque de código
+  resaltado, con el botón de copiar de la casa, cierre con Esc, clic en el fondo o su botón.
+  El código va embebido en la página y `check-package.sh` comprueba que la copia embebida
+  sigue coincidiendo con el fichero del paquete.
 
 ### Corregido
 

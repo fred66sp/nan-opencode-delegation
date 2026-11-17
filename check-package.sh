@@ -442,6 +442,30 @@ for n, line in enumerate(lines, 1):
 PY
 then ok; else ko; echo "    ledger inválido: $here/.run/delegations.jsonl"; fi
 
+# o. La guía no pide el runner por red: su copia viaja embebida en el HTML y la
+# deriva respecto al fichero del paquete se caza aquí, no al abrir.
+step "la copia embebida del runner en la guía coincide con agents/orchestrator-runner.py"
+if python3 - docs/web/index.html agents/orchestrator-runner.py >"$tmp/embed.out" 2>&1 <<'PY'
+import difflib, html, re, sys
+
+guide, runner = sys.argv[1], sys.argv[2]
+text = open(guide, encoding="utf-8").read()
+bodies = re.findall(r'<code id="runner-code">(.*?)</code>', text, re.S)
+assert len(bodies) == 1, "el code del runner aparece %d veces, no una" % len(bodies)
+assert "<!--" not in bodies[0], \
+    "hay un comentario dentro del code del runner: microlighter exige un solo nodo de texto"
+embedded = html.unescape(bodies[0]).encode("utf-8")
+expected = open(runner, "rb").read()
+if embedded != expected:
+    print("la copia embebida no coincide con %s" % runner)
+    sys.stdout.writelines(difflib.unified_diff(
+        expected.decode("utf-8").splitlines(True),
+        embedded.decode("utf-8").splitlines(True),
+        runner, "%s (copia embebida)" % guide, n=1))
+    raise SystemExit(1)
+PY
+then ok; else ko; sed 's/^/    /' "$tmp/embed.out"; fi
+
 echo ""
 if [ "$failures" -eq 0 ]; then
   printf '%sTodo en verde.%s\n' "$green" "$reset"

@@ -77,7 +77,9 @@ agents/delegation-report-checker.py`), el contrato de su `--help` y cinco inform
 que salen con 1: sin `status`, sin una comprobación esperada (con `--json`), con dos
 `status` contradictorios y con una anáfora sin ruta. Valida además mecánicamente el
 `.run/delegations.jsonl` del proyecto si existe —los seis campos y sus conjuntos por
-línea— y pasa si el proyecto no lo tiene.
+línea— y pasa si el proyecto no lo tiene, y comprueba que la copia embebida del runner
+en `docs/web/index.html` —el interior del `code` del modal— sigue
+coincidiendo byte a byte con `agents/orchestrator-runner.py`.
 Un cambio en el checker o en el contrato del informe se cierra con `bash check-package.sh`.
 
 Y, cuando la fusión o el camino JSONC cambien: instalación sobre una configuración con
