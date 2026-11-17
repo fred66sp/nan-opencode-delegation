@@ -113,10 +113,14 @@ ser una introducción a la orquestación en general.
   últimos lanzamientos con la misma `fingerprint` siguen en `launched`, no relanza y
   espera su aviso. Al lanzar añade la línea y, al recibir el retorno, actualiza el
   `status` de esa línea. Rehacer con una corrección un encargo ya terminado no es
-  duplicado.
+  duplicado. La batería `check-package.sh` valida mecánicamente el ledger si existe:
+  una línea JSON objeto con los seis campos, `phase` entero y `status` en conjunto;
+  si el proyecto no lo tiene, el paso pasa.
 - R12. `agents/delegation-report-checker.py` comprueba el retorno estructurado de un
   subagente contra el contrato del encargo, sin dependencias y sin juicio del modelo.
-  Exige una línea `status: completed|partial|blocked`, una sección `validation` con una
+  Exige una línea `status: completed|partial|blocked` —única: varias `status:` con
+  valores distintos se marcan contradictorias, repetir el mismo valor no incumple—, una
+  sección `validation` con una
   línea `<comando>: <resultado observado>` por comprobación esperada y ninguna referencia
   indefinida —una mención anafórica sin ruta, fichero o `path:line` en la misma línea—, y
   rechaza una línea `pregunta:` en el informe. Lee el informe de un fichero o de la
@@ -124,7 +128,8 @@ ser una introducción a la orquestación en general.
   Códigos de salida: 0 conforme, 1 no conforme con la lista de incumplimientos y 2 error
   de uso; con `--json` imprime un único objeto con `ok`, `status`, `checks` y
   `violations`. Se instala con el paquete junto a los agentes y `check-package.sh` cubre
-  su sintaxis, el contrato de `--help`, un informe conforme y los no conformes.
+  su sintaxis, el contrato de `--help`, un informe conforme y los no conformes —`status`
+  ausente, comprobación esperada ausente, `status` contradictorios y anáfora sin ruta—.
 
 ### Reglas de negocio
 

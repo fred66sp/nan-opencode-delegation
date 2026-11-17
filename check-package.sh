@@ -338,6 +338,8 @@ printf '%s\n' 'python3 -m py_compile agents/orchestrator-runner.py' 'bash check-
 cat >"$dir_n/conforme.txt" <<'REPORT'
 status: completed
 
+Se revisó el fichero agents/orchestrator-runner.py y compila.
+
 validation:
   python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
   bash check-package.sh: Todo en verde., código 0
@@ -352,6 +354,24 @@ status: partial
 
 validation:
   bash check-package.sh: rojo, 2 comprobaciones fallidas
+REPORT
+cat >"$dir_n/contradicho.txt" <<'REPORT'
+status: completed
+
+validation:
+  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
+  bash check-package.sh: Todo en verde., código 0
+
+status: partial
+REPORT
+cat >"$dir_n/anafora.txt" <<'REPORT'
+status: completed
+
+validation:
+  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
+  bash check-package.sh: Todo en verde., código 0
+
+Se revisó el fichero y quedó listo.
 REPORT
 
 step "sintaxis de delegation-report-checker.py (py_compile)"
@@ -380,6 +400,47 @@ assert doc["ok"] is False and doc["status"] == "partial", doc
 assert any("orchestrator-runner.py" in v for v in doc["violations"]), doc["violations"]
 PY
 then ok; else ko; echo "    código $rc_njson"; sed 's/^/    /' "$dir_n/sin-comprobacion.json"; fi
+
+step "checker: status contradictorios devuelve 1 y lo nombra"
+python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/contradicho.txt" >"$dir_n/contradicho.out" 2>&1
+rc_nc=$?
+if [ "$rc_nc" -eq 1 ] && grep -Fq "contradictorios" "$dir_n/contradicho.out"; then ok; else ko; echo "    código $rc_nc"; sed 's/^/    /' "$dir_n/contradicho.out"; fi
+
+step "checker: anáfora sin ruta devuelve 1 y la nombra"
+python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/anafora.txt" >"$dir_n/anafora.out" 2>&1
+rc_na=$?
+if [ "$rc_na" -eq 1 ] && grep -Fq "referencia indefinida" "$dir_n/anafora.out"; then ok; else ko; echo "    código $rc_na"; sed 's/^/    /' "$dir_n/anafora.out"; fi
+
+# n+1. Validación mecánica opcional del libro de delegaciones: si el proyecto tiene
+# .run/delegations.jsonl, cada línea es un objeto JSON con los seis campos de R11 y
+# valores en conjunto; si no lo tiene, el paso pasa.
+step "ledger .run/delegations.jsonl: validación mecánica opcional"
+if [ ! -f "$here/.run/delegations.jsonl" ]; then
+  ok
+elif python3 - "$here/.run/delegations.jsonl" <<'PY'
+import json, sys
+
+STATUSES = {"launched", "completed", "blocked"}
+FIELDS = ("ts", "phase", "task", "fingerprint", "agent", "status")
+lines = [l for l in open(sys.argv[1], encoding="utf-8").read().splitlines() if l.strip()]
+assert lines, "el ledger está vacío"
+for n, line in enumerate(lines, 1):
+    doc = json.loads(line)
+    assert isinstance(doc, dict), "la línea %d no es un objeto JSON" % n
+    missing = [f for f in FIELDS if f not in doc]
+    assert not missing, "a la línea %d le faltan %s" % (n, missing)
+    assert isinstance(doc["ts"], str) and doc["ts"].strip(), "ts vacío en la línea %d" % n
+    assert isinstance(doc["phase"], int) and not isinstance(doc["phase"], bool), \
+        "phase no es entero en la línea %d" % n
+    assert doc["task"] is None or (isinstance(doc["task"], str) and doc["task"].strip()), \
+        "task no es referencia o null en la línea %d" % n
+    assert isinstance(doc["fingerprint"], str) and doc["fingerprint"].strip(), \
+        "fingerprint vacío en la línea %d" % n
+    assert isinstance(doc["agent"], str) and doc["agent"].strip(), \
+        "agent vacío en la línea %d" % n
+    assert doc["status"] in STATUSES, "status fuera del conjunto en la línea %d" % n
+PY
+then ok; else ko; echo "    ledger inválido: $here/.run/delegations.jsonl"; fi
 
 echo ""
 if [ "$failures" -eq 0 ]; then

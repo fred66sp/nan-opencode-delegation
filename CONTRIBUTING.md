@@ -72,8 +72,12 @@ env -u XDG_CONFIG_HOME HOME=$(mktemp -d) bash install.sh   # instalación limpia
 ```
 
 La batería incluye el comprobador del retorno: su sintaxis (`python3 -m py_compile
-agents/delegation-report-checker.py`), el contrato de su `--help` y tres informes de prueba
-—uno conforme que sale con 0 y dos no conformes que salen con 1, el segundo con `--json`—.
+agents/delegation-report-checker.py`), el contrato de su `--help` y cinco informes de prueba
+—uno conforme que sale con 0, con una anáfora que su ruta resuelve, y cuatro no conformes
+que salen con 1: sin `status`, sin una comprobación esperada (con `--json`), con dos
+`status` contradictorios y con una anáfora sin ruta. Valida además mecánicamente el
+`.run/delegations.jsonl` del proyecto si existe —los seis campos y sus conjuntos por
+línea— y pasa si el proyecto no lo tiene.
 Un cambio en el checker o en el contrato del informe se cierra con `bash check-package.sh`.
 
 Y, cuando la fusión o el camino JSONC cambien: instalación sobre una configuración con
