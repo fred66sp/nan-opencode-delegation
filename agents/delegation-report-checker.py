@@ -42,7 +42,8 @@ tal como se pidió en el encargo—; las líneas vacías y las que empiezan por 
 
 Qué exige, en este orden:
   1. Una línea `status: completed`, `status: partial` o `status: blocked`. Sin ella, o con
-     otro valor, el informe se rechaza.
+     otro valor, el informe se rechaza. Varias líneas `status:` con valores distintos se
+     marcan como contradictorias; repetir el mismo valor no incumple.
   2. Ninguna línea `pregunta:` ni `question:`: un bloqueo de decisión no se devuelve como
      estado, se devuelve la pregunta al humano y el orquestador la eleva.
   3. Una sección `validation` (encabezado suelto `validation`, `validation:` o
@@ -139,6 +140,11 @@ def check(text, checks):
             violations.append(
                 "status fuera del conjunto: «%s»; se espera completed, partial o blocked" % value
             )
+    if len(set(values)) > 1:
+        violations.append(
+            "status contradictorios: %s; se espera un único completed, partial o blocked"
+            % ", ".join("«%s»" % v for v in values)
+        )
     if QUESTION_LINE.search(text):
         violations.append(
             "el informe declara una `pregunta:`: un bloqueo de decisión se devuelve como pregunta al humano, no como estado"

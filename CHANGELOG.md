@@ -13,13 +13,16 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   `task`, `fingerprint`, `agent` y `status` (`launched`, `completed` o `blocked`), que se
   consulta antes de lanzar para no repetir la misma huella mientras sigue en `launched`.
   Un comprobador determinista del retorno, `agents/delegation-report-checker.py`, que se
-  instala junto a los agentes y dice si el informe cumple su forma —`status`, una línea de
+  instala junto a los agentes y dice si el informe cumple su forma —`status` único sin
+  contradicciones entre líneas, una línea de
   `validation` por comprobación esperada y ni una referencia indefinida—, con códigos
   0/1/2 y `--json` para un programa. Una taxonomía de cuatro ejes —selección de fuente,
   interpretación, estrategia de búsqueda y ejecución— para clasificar la causa antes de
   re-encargar. Y el criterio de aceptación literal de la tarea al encargo, con la salida
   observada en cada línea de `validation`. `check-package.sh` cubre el comprobador en
-  cinco pasos.
+  siete pasos —incluidos el `status` contradictorio y la anáfora sin ruta— y valida
+  mecánicamente el `.run/delegations.jsonl` del proyecto si existe: una línea JSON objeto
+  con los seis campos, `phase` entero y `status` en conjunto.
 - La fase 11 del runner incorpora la revisión dirigida de memorias: listar candidatas a
   poda y presentarlas a la persona antes de tocar nada; ningún borrado de memoria sin
   su autorización explícita.
