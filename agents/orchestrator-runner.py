@@ -6,6 +6,8 @@ misma entrada produce la misma salida.
 
 import json
 import os
+import shutil
+import subprocess
 import sys
 
 # El estado vive en el .run/ del directorio actual, que es el proyecto en el que se trabaja.
@@ -191,6 +193,7 @@ Uso, desde la raíz del proyecto en el que se trabaja:
   ~/.config/opencode/agents/orchestrator-runner.py                muestra la fase actual sin cambiar el estado
   ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
   ~/.config/opencode/agents/orchestrator-runner.py next "texto"   registra el texto como evidencia, avanza y muestra la nueva fase
+  ~/.config/opencode/agents/orchestrator-runner.py boot           imprime el arranque de la fase 1: memoria, tablero, git y fase
   ~/.config/opencode/agents/orchestrator-runner.py reset          borra el estado: vuelve a la fase 1 sin historial
   ~/.config/opencode/agents/orchestrator-runner.py --json         imprime las fases y el estado en JSON, sin cambiar nada
   ~/.config/opencode/agents/orchestrator-runner.py --help         esta ayuda
@@ -210,6 +213,13 @@ fase 1 con `valid` en false y `exists` en true; historial que no es una lista: `
 en false con la evidencia descartada y la fase conservada. Sin fichero de estado: `exists` en
 false, fase 1 y `valid` en true.
 
+`boot` imprime en una invocación el arranque de la fase 1 en cuatro secciones de texto —memoria
+de la sesión (`engram context` con el nombre del directorio actual, acotada), tablero (en curso y
+listas para empezar, con ref y título), git (rama y resumen de `git status`) y la fase actual—.
+Es solo lectura: no escribe el estado ni llama a `save_state`. Cada fuente falla por su cuenta: su
+sección imprime «no disponible» con el motivo y el comando sigue con código 0. Solo un `boot` con
+argumentos de más es error de uso.
+
 Estado: .run/orchestrator-runner.json, en el directorio actual, con la forma
 {"phase": N, "evidence": [{"phase": N, "text": "..."}]}, donde cada entrada es la evidencia con
 la que se dejó esa fase. Un estado viejo con solo {"phase": N} se acepta como fase válida y
@@ -219,12 +229,12 @@ crea el fichero. Un fichero corrupto o con la fase fuera de rango vuelve a la fa
 aviso por stderr; una evidencia que no es una lista se descarta con aviso y la fase se conserva.
 Para reiniciar, `reset`: borra el fichero completo —fase e historial— sin tocar nada más.
 
-Códigos de salida: 0 consulta o avance correctos; 1 error de uso o no se pudo escribir el estado.
+Códigos de salida: 0 consulta, avance o `boot` correctos; 1 error de uso o no se pudo escribir el estado.
 
 Fases:
 """ + "".join("  %2d  %s\n" % (i, p["name"]) for i, p in enumerate(PHASES, 1))
 
-USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | reset | --json | --help]'
+USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | boot | reset | --json | --help]'
 
 
 def load_state():
@@ -272,6 +282,105 @@ def render_evidence(phase):
     ])
 
 
+def locate(name, *fallbacks):
+    """Primer ejecutable disponible: el del PATH o una ruta concreta de las de reserva."""
+    for candidate in (name,) + fallbacks:
+        if shutil.which(candidate) or os.path.isfile(candidate):
+            return candidate
+    return None
+
+
+def capture(cmd):
+    """Ejecuta una lectura externa. Devuelve (stdout, motivo del fallo o None)."""
+    try:
+        done = subprocess.run(cmd, capture_output=True, encoding="utf-8", errors="replace", timeout=15)
+    except subprocess.TimeoutExpired:
+        return None, "sin respuesta en 15 s"
+    except OSError:
+        return None, "no se pudo ejecutar"
+    if done.returncode != 0:
+        detail = (done.stderr or done.stdout).strip().splitlines()
+        return None, detail[0] if detail else "salió con código %d" % done.returncode
+    return done.stdout, None
+
+
+def head(text, limit=30):
+    """Recorta una salida larga a sus primeras líneas, con la cuenta de las que quedan."""
+    lines = text.strip().splitlines()
+    if len(lines) <= limit:
+        return lines or ["(sin contenido)"]
+    return lines[:limit] + ["… %d líneas más" % (len(lines) - limit)]
+
+
+def boot_memory():
+    lines = ["## Memoria"]
+    engram = locate("engram", os.path.expanduser(os.path.join("~", ".local", "bin", "engram")))
+    if not engram:
+        return lines + ["no disponible: engram no está instalado ni en el PATH"]
+    output, error = capture([engram, "context", os.path.basename(os.getcwd())])
+    if error:
+        return lines + ["no disponible: %s" % error]
+    return lines + head(output)
+
+
+def task_lines(tasks):
+    return ["  - %s · %s" % (t["ref"], t["title"]) for t in tasks] or ["  - ninguna"]
+
+
+def boot_board():
+    lines = ["## Tablero"]
+    board = locate(".tasks-ai/bin/tasks-ai", "tasks-ai")
+    if not board:
+        return lines + ["no disponible: no hay CLI tasks-ai, ni .tasks-ai/bin ni en el PATH"]
+    output, error = capture([board, "list"])
+    if error:
+        return lines + ["no disponible: tasks-ai list %s" % error]
+    try:
+        tasks = json.loads(output)
+    except ValueError:
+        return lines + ["no disponible: la salida de tasks-ai list no es JSON"]
+    if not isinstance(tasks, list):
+        return lines + ["no disponible: la salida de tasks-ai list no es una lista de tareas"]
+    lines.append("En curso:")
+    lines += task_lines([t for t in tasks if isinstance(t, dict) and t.get("status") == "in_progress"])
+    lines.append("Listas para empezar:")
+    lines += task_lines([t for t in tasks if isinstance(t, dict) and t.get("status") == "open"])
+    return lines
+
+
+def boot_git():
+    lines = ["## Git"]
+    if not locate("git"):
+        return lines + ["no disponible: git no está instalado"]
+    branch, error = capture(["git", "branch", "--show-current"])
+    if error:
+        return lines + ["no disponible: git branch %s" % error]
+    changed, error = capture(["git", "status", "--porcelain"])
+    if error:
+        return lines + ["no disponible: git status %s" % error]
+    count = len(changed.strip().splitlines())
+    lines.append("Rama: %s" % (branch.strip() or "(sin rama, HEAD desacoplado)"))
+    lines.append("Estado: %s" % ("%d fichero(s) cambiado(s)" % count if count else "limpio"))
+    return lines
+
+
+def boot_phase():
+    lines = ["## Fase"]
+    phase, _, corrupt, _ = load_state()
+    if corrupt:
+        print("aviso: estado inválido en %s; se vuelve a la fase 1" % STATE, file=sys.stderr)
+        return lines + ["estado corrupto en %s: se vuelve a la fase 1" % STATE]
+    if not os.path.exists(STATE):
+        return lines + ["sin estado: la primera invocación empieza en la fase 1"]
+    return lines + ["Fase %d/%d · %s" % (phase, len(PHASES), PHASES[phase - 1]["name"])]
+
+
+def render_boot():
+    """El arranque de la fase 1 en cuatro secciones. Solo lectura: no escribe el estado."""
+    sections = [boot_memory(), boot_board(), boot_git(), boot_phase()]
+    return "\n\n".join("\n".join(section) for section in sections)
+
+
 def render_json():
     """Devuelve el flujo y el estado como JSON, con la misma lectura que una consulta."""
     phase, evidence, corrupt, bad_evidence = load_state()
@@ -312,6 +421,11 @@ def main(argv):
             print("estado borrado: la próxima invocación empieza en la fase 1 sin historial")
         else:
             print("sin estado: sigues en la fase 1")
+        return 0
+    if args and args[0] == "boot":
+        if len(args) > 1:
+            return usage_error(args)
+        print(render_boot())
         return 0
     if args and args[0] != "next":
         return usage_error(args)
