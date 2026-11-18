@@ -60,6 +60,14 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   El código va embebido en la página y `check-package.sh` comprueba que la copia embebida
   sigue coincidiendo con el fichero del paquete.
 
+### Cambiado
+
+- Umbral de creación de tarea en el contrato del orquestador: no crear tarea queda
+  reservado a cambios muy triviales —uno o dos archivos como máximo, p. ej. una entrada en
+  `.gitignore`—; todo lo demás lleva tarea o épica según su importancia, aunque pase el test
+  de la sesión interrumpida. La regla 2 de `agents/orchestrator.md` y la fase «Tamaño y
+  tablero» del runner quedan alineadas.
+
 ### Corregido
 
 - Instrucciones de reinicio del runner: la fase 1 ordenaba borrar a mano `.run/orchestrator-runner.json`,

@@ -49,10 +49,10 @@ PHASES = [
     {
         "name": "Tamaño y tablero",
         "when": "tras clasificar como implementación y antes de la primera escritura",
-        "evidence": "la referencia de la tarea (`tk-n`) o «pequeño sin tarea, con autorización de la persona»",
+        "evidence": "la referencia de la tarea (`tk-n`), «trivial sin tarea, con autorización de la persona» o «tarea creada, sin épica»",
         "steps": [
             "Aplicar el test de la sesión interrumpida: si la sesión se parara ahora, ¿alguien podría terminar el trabajo con la petición original y `git diff`?",
-            "Respuesta sí: trabajo pequeño. No se crea tarea nueva, salvo que la persona la quiera.",
+            "Respuesta sí: si el cambio es muy trivial —uno o dos archivos como máximo, p. ej. una entrada en `.gitignore`—, no se crea tarea nueva, salvo que la persona la quiera; en otro caso, lanza a `tasks-agent` el registro de una tarea (`task` + `ODD` + tipo) —o una épica si el trabajo reviste importancia— con su criterio observable y la petición original en un comentario, y comprueba por CLI que quedó con su criterio antes de la primera edición.",
             "Respuesta no: trabajo grande. Lanza a `tasks-agent` en background un único encargo con la secuencia ordenada de registro: una épica (`epic` + `ODD` + tipo), sus subtareas (`task` + `ODD` + tipo), el criterio observable de cada una y la petición original en un comentario. Continúa con tu proceso y, antes de la primera edición, comprueba por CLI que la épica quedó con su criterio.",
             "Comprobar el catálogo con `tasks-ai tags`: las etiquetas nacen ahí antes de usarse.",
         ],
