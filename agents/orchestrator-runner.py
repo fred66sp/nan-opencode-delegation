@@ -167,6 +167,7 @@ PHASES = [
         "warnings": [
             "La bitácora va en términos del producto, sin estados vivos ni estados de Git: ni hashes, ni ramas, ni «mergeado».",
             "`done` no sustituye la revisión: sin ella, la tarea sigue abierta.",
+            "Una tarea ya cerrada con `done` no se vuelve a cerrar: reabrirla exige una justificación importante y la autorización explícita de la persona, siempre vía `tasks-agent`.",
         ],
     },
     {
@@ -182,6 +183,7 @@ PHASES = [
         "warnings": [
             "Lo que no se guarda se pierde en la próxima sesión.",
             "La revisión de memorias dirige el podado, nunca lo ejecuta por su cuenta: la persona autoriza cada poda.",
+            "«Podemos cerrar» de la persona apunta a la sesión, no a la tarea: no repitas el cierre de la fase 10 ni reabras una tarea cerrada sin autorización explícita.",
         ],
     },
 ]

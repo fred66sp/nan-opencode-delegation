@@ -67,6 +67,10 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   `.gitignore`—; todo lo demás lleva tarea o épica según su importancia, aunque pase el test
   de la sesión interrumpida. La regla 2 de `agents/orchestrator.md` y la fase «Tamaño y
   tablero» del runner quedan alineadas.
+- Advertencias nuevas en las fases 10 y 11 del runner contra el doble cierre y la reapertura
+  sin autorización: una tarea ya cerrada con `done` no se vuelve a cerrar, reabrirla exige
+  una justificación importante y la autorización explícita de la persona, y «podemos cerrar»
+  apunta a la sesión, no a la tarea, así que no se repite el cierre ni se reabre sin permiso.
 
 ### Corregido
 
