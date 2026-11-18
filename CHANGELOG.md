@@ -8,6 +8,15 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Control en vuelo sobre subagentes en el contrato del orquestador: nueva regla 10 de
+  `agents/orchestrator.md` que incorpora el plugin `opencode-subagent-intervene` al ciclo
+  de delegación — inspección (`subagents.list`/`subagents.inspect`) para comprobar
+  «lanzado no es hecho» y recuperar el árbol de subagentes tras una compactación,
+  redirección en caliente (`subagent_send`) para corregir un encargo en marcha sin
+  re-lanzarlo, y parada quirúrgica (`subagent_stop`) con motivo y actualización del libro
+  `.run/delegations.jsonl`. La regla fija que un subagente parado solo se continúa
+  deliberadamente, que los prompts de permiso los responde la persona y que la parada no
+  sustituye al re-encargo de la regla 6.
 - El runner gana el subcomando `boot`: imprime en una sola invocación el arranque de la
   fase 1 en cuatro secciones de texto —memoria reciente de la sesión (`engram context`),
   tablero con lo que está en curso y lo que está listo para empezar, rama y estado de git, y
