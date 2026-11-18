@@ -132,6 +132,7 @@ El visor de escritorio vive en [`tasks-viewer/`](tasks-viewer/): la misma interf
 - El checker juzga la forma del informe, no si el trabajo está bien: un informe conforme puede describir un trabajo roto, y una prosa legítima puede quedar marcada por una anáfora sin ruta en la misma línea. El veredicto no sustituye a la evidencia.
 - El libro `.run/delegations.jsonl` es un contrato para el modelo, no una herramienta: el runner no lo lee ni lo valida, así que nada detecta una huella repetida en `launched` salvo el propio orquestador al consultarlo.
 - Las instrucciones `AGENTS.md` global y de proyecto siguen llegando a todos los agentes: el reparto de skills no las sustituye.
+- Desde OpenCode v2.3.1, cuando un directorio no tiene `AGENTS.md` se lee su `CLAUDE.md`, y si falta el `AGENTS.md` global se cae a `~/.claude/CLAUDE.md`. Si llevas reglas ajenas en alguno de esos ficheros, llegan igualmente a los agentes de este paquete; para saltarse todos los `CLAUDE.md` exporta `OPENCODE_DISABLE_CLAUDE_CODE` (o `OPENCODE_DISABLE_CLAUDE_CODE_PROMPT` si solo quieres excluirlos de las instrucciones inyectadas).
 - El instalador reescribe `agents.explore` y `agents.general` enteros: cualquier clave propia dentro de esos dos agentes se pierde al instalar.
 - Las herramientas de extensiones (MCP) aplican el permiso que ellas mismas declaran: la prohibición de escribir en sistemas externos vive en el prompt del orquestador, no en la configuración de permisos.
 
