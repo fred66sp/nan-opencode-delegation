@@ -162,14 +162,20 @@ ser una introducción a la orquestación en general.
    fallo de una línea y para. Los lotes de
   creación —épica, subtareas, etiquetas, comentario— van en un único encargo ordenado, en
   segundo plano, y se comprueban por CLI antes de usar su resultado; el cierre y el
-  comentario de bitácora del momento van en primer plano.
+  comentario de bitácora del momento van en primer plano. Las escrituras sin herramienta
+  `tasks_*` —los ADR y el catálogo de etiquetas— van directas por la CLI como las lecturas;
+  solo las operaciones ejecutables con `tasks_*` se delegan a `tasks-agent`, y asignar
+  etiquetas en `create`/`update` viaja en su encargo.
 - Ante un `partial`, un retorno malformado o un fallo que pida re-encargo, la causa se
   clasifica con cuatro ejes antes de relanzar: selección de fuente (el subagente fue al
   sitio equivocado), interpretación (datos correctos con el significado equivocado: leyó
   mal el criterio), estrategia de búsqueda (se detuvo pronto o se desvió) y ejecución
   (error en el cálculo o en la forma del retorno). El eje ajeno al subagente queda para el
   bloqueo de decisión o del entorno. El re-encargo cita el eje diagnosticado y lo que lo
-  corrige, y no repite el encargo sin cambiar nada.
+  corrige, y no repite el encargo sin cambiar nada. Cuando el eje es el entorno —una
+  denegación que bloqueó una comprobación al subagente—, el orquestador conserva el informe
+  `partial`, completa él la comprobación pendiente desde la raíz y presenta el resultado
+  consolidado, sin re-encargo idéntico.
 - El criterio de aceptación viaja literal de la tarea al encargo, y cada línea de
   `validation` cita la salida observada: la transcripción entre llamadas introduce errores,
   así que el criterio no se resume ni se reescribe al delegar.
@@ -233,8 +239,10 @@ ser una introducción a la orquestación en general.
   `{"action": "skill", "resource": "*", "effect": "deny"}`; la fusión sobre claves ajenas
   deja la misma regla.
 - Toda skill citada por el paquete existe en una raíz de descubrimiento
-  (`~/.config/opencode/skills`, `~/.agents/skills` o `~/.claude/skills`); si la máquina no
-  tiene ninguna, `check-package.sh` avisa y no falla.
+  (`~/.config/opencode/skills`, `~/.agents/skills` o `~/.claude/skills`) o en el
+  paquete de plugin que la aporta; la batería solo puede comprobar las raíces de
+  descubrimiento. Si la máquina no tiene ninguna raíz, `check-package.sh` avisa y
+  no falla.
 - La guía parsea como HTML con etiquetas balanceadas y sus enlaces internos resuelven a
   secciones existentes.
 - Los datos de la tabla de modelos coinciden con los frontmatter declarados en `agents/`.

@@ -12,4 +12,4 @@ permissions:
     effect: deny
 ---
 
-Revisa el cambio contra el criterio de la tarea. Devuelve los hallazgos por gravedad, cada uno con archivo y línea. No arregles nada ni modifiques archivos.
+Revisa el cambio contra el criterio de la tarea. Devuelve los hallazgos por gravedad, cada uno con archivo y línea. No arregles nada ni modifiques archivos. Si el encargo adjunta una skill por su ruta absoluta, léela antes de revisar y contrasta tus hallazgos con su criterio; tu salida mantiene la forma del retorno estructurado del encargo, no la de la skill.

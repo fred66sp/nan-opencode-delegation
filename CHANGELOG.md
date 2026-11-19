@@ -62,6 +62,7 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- Contratos alineados en tres puntos: las escrituras del tablero sin herramienta `tasks_*` —ADR (`adr create/edit/import/export`) y catálogo de etiquetas (`tag create/edit/delete`)— van directas por la CLI `tasks-ai` y no se delegan a `tasks-agent` (asignar etiquetas al crear o actualizar una tarea sí viaja en su encargo); un `partial` de `verify` causado por una denegación del entorno no se re-encarga idéntico —el orquestador conserva el informe, completa desde la raíz lo que faltó y presenta el resultado consolidado—; y la regla de skills del orquestador adjunta `ponytail-review` a los encargos de `review` y guía la planificación de pruebas con `software-testing`. La allowlist de `verify` abre `gofmt -l *` —listado de formato, nada que escriba— y `verify` nombra el comando exacto bloqueado cuando el límite es del entorno.
 - Umbral de creación de tarea en el contrato del orquestador: no crear tarea queda
   reservado a cambios muy triviales —uno o dos archivos como máximo, p. ej. una entrada en
   `.gitignore`—; todo lo demás lleva tarea o épica según su importancia, aunque pase el test

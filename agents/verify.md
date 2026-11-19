@@ -58,10 +58,16 @@ permissions:
   - action: shell
     resource: "bash check-package.sh"
     effect: allow
+  - action: shell
+    resource: "gofmt -l *"
+    effect: allow
+  - action: shell
+    resource: "gofmt -l -*w*"
+    effect: deny
 ---
 
 Ejecuta las comprobaciones del proyecto. Descubre cuáles son antes de correrlas: lee `Makefile`, `package.json`, `go.mod`, `pyproject.toml` y la configuración de integración continua. No lleves una lista fija.
 
 Lanza cada comando de uno en uno y desde el directorio de trabajo de la herramienta, sin encadenar con `&&`, `;` ni `cd`: cada subcomando se comprueba por separado y un `cd` encadenado carece de permiso.
 
-Devuelve un informe acotado, unos 2k tokens como máximo: `status` (`completed`, `partial` o `blocked`), `validation` con una línea `<comando>: <resultado observado>` por cada comprobación, lo que no pudiste probar y los riesgos detectados; no reproduzcas salidas sin cambios ni el texto del encargo. Cuando el informe salga `partial`, indica además cuál de los cuatro ejes de fallo lo explica —selección de fuente, interpretación, estrategia de búsqueda o ejecución—, o que fue ajeno al subagente si lo que lo detuvo fue el límite del entorno. No arregles nada ni edites archivos.
+Devuelve un informe acotado, unos 2k tokens como máximo: `status` (`completed`, `partial` o `blocked`), `validation` con una línea `<comando>: <resultado observado>` por cada comprobación, lo que no pudiste probar y los riesgos detectados; no reproduzcas salidas sin cambios ni el texto del encargo. Cuando el informe salga `partial`, indica además cuál de los cuatro ejes de fallo lo explica —selección de fuente, interpretación, estrategia de búsqueda o ejecución—, o que fue ajeno al subagente si lo que lo detuvo fue el límite del entorno. No arregles nada ni edites archivos. Si una denegación de permiso del entorno bloquea una comprobación, nómbrala con el comando exacto y declárala ajena a ti: no la contornees ni la sustituyas por inferencia.
