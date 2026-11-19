@@ -194,7 +194,7 @@ fi
 # i. Toda skill requerida por el paquete existe en una raíz de descubrimiento.
 # Si la máquina no tiene ninguna raíz, se avisa: el paquete no posee la skill.
 step "las skills requeridas existen en una raíz de descubrimiento"
-required_skills="playwright-cli-usage"
+required_skills="playwright-cli-usage software-testing"
 roots_i=""
 for root in "${XDG_CONFIG_HOME:-$HOME/.config}/opencode/skills" "$HOME/.agents/skills" "$HOME/.claude/skills"; do
   [ -d "$root" ] && roots_i="$roots_i $root"

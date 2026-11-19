@@ -55,6 +55,7 @@ PHASES = [
             "Respuesta sí: si el cambio es muy trivial —uno o dos archivos como máximo, p. ej. una entrada en `.gitignore`—, no se crea tarea nueva, salvo que la persona la quiera; en otro caso, lanza a `tasks-agent` el registro de una tarea (`task` + `ODD` + tipo) —o una épica si el trabajo reviste importancia— con su criterio observable y la petición original en un comentario, y comprueba por CLI que quedó con su criterio antes de la primera edición.",
             "Respuesta no: trabajo grande. Lanza a `tasks-agent` en background un único encargo con la secuencia ordenada de registro: una épica (`epic` + `ODD` + tipo), sus subtareas (`task` + `ODD` + tipo), el criterio observable de cada una y la petición original en un comentario. Continúa con tu proceso y, antes de la primera edición, comprueba por CLI que la épica quedó con su criterio.",
             "Comprobar el catálogo con `tasks-ai tags`: las etiquetas nacen ahí antes de usarse.",
+            "Las escrituras sin herramienta `tasks_*` —ADR (`adr create/edit/import/export`) y catálogo de etiquetas (`tag create/edit/delete`)— van por la CLI `tasks-ai` directa, nunca a `tasks-agent`; asignar etiquetas en `create`/`update` sí viaja en el encargo.",
         ],
         "warnings": [
             "Una tarea sin criterio no se empieza: el criterio es lo que después se contrasta con el resultado real.",
