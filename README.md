@@ -29,10 +29,11 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 | `agents/tasks-agent.md` | `~/.config/opencode/agents/tasks-agent.md` | Escritor del tablero tasks-ai; única puerta para las herramientas `tasks_*` |
 | `agents/orchestrator-runner.py` | `~/.config/opencode/agents/orchestrator-runner.py` | Guía determinista del flujo: fase actual, lista operativa y `next` con la evidencia de la fase para avanzar; `boot` imprime en una invocación el arranque de la fase 1 —memoria, tablero, git y fase— sin escribir nada; `--json` imprime las fases y el estado para un programa |
 | `agents/delegation-report-checker.py` | `~/.config/opencode/agents/delegation-report-checker.py` | Comprueba la forma del informe de retorno —`status` único sin contradicciones, una línea de `validation` por comprobación esperada y ni una referencia indefinida—; códigos 0/1/2 y `--json` con el veredicto |
+| `plugins/orchestrator-phase.ts` | `~/.config/opencode/plugins/orchestrator-phase.ts` | Plugin de servidor: inyecta en el system prompt de cada petición la fase actual del runner, su nombre y la evidencia que pide `next` para avanzar; sin registro en `cli.json` |
 | `plugins/orchestrator-status/` | `~/.config/opencode/cli-plugins/orchestrator-status/` registrado en `cli.json` | Plugin TUI: diálogo modal con scroll y la fase del orquestador, su operativa, sus advertencias y el historial de evidencias; se abre con `/orquestador` y se cierra con `esc` |
 | `config/opencode.jsonc` | `~/.config/opencode/opencode.jsonc` | Plantilla de configuración con los modelos de `explore` y `general`, su permiso `skill` denegado y la regla que deniega `tasks_*` |
 
-El plugin no se compila ni se instala con npm: el instalador copia sus fuentes y OpenCode resuelve sus dependencias en runtime. El panel no guarda estado propio: invoca `orchestrator-runner.py --json` desde el directorio del proyecto y pinta lo que responde, así que abrirlo o pulsar `r` para refrescar no cambia la fase. Sin estado muestra la fase 1 y lo dice.
+Los plugins no se compilan ni se instalan con npm: el instalador copia sus fuentes y OpenCode resuelve sus dependencias en runtime. El de servidor vive en `plugins/` y lo carga el servidor; el TUI va en `cli-plugins/` y se registra en `cli.json`, porque un paquete solo-TUI en `plugins/` colisiona con el OpenTUI interno. El panel no guarda estado propio: invoca `orchestrator-runner.py --json` desde el directorio del proyecto y pinta lo que responde, así que abrirlo o pulsar `r` para refrescar no cambia la fase. Sin estado muestra la fase 1 y lo dice. El panel, de la fase 2 a la 8, avisa cuando `git status --porcelain` encuentra ficheros sin commit —trabajo en el árbol que aún no ha pasado por Riesgo y Commit—, y ese aviso tiene preferencia sobre el de la fase 1 sin evidencia. El plugin de servidor es tolerante: sin estado, sin runner o con una consulta que excede los 3 s no inyecta nada y la petición sigue.
 
 ## Requisitos
 
@@ -59,7 +60,7 @@ El instalador resuelve todo desde su propia carpeta y el destino queda en el usu
 
 ### A mano
 
-Son tres pasos: copia los ficheros de `agents/` a `~/.config/opencode/agents/`, copia `plugins/orchestrator-status/` a `~/.config/opencode/cli-plugins/orchestrator-status/` y añade esa ruta a la clave `plugins` de tu `cli.json`. Después añade a tu `opencode.jsonc`, dentro del objeto raíz, estos bloques:
+Son cuatro pasos: copia los ficheros de `agents/` a `~/.config/opencode/agents/`, copia `plugins/orchestrator-phase.ts` a `~/.config/opencode/plugins/` —lo carga el servidor, así que no va en `cli.json`—, copia `plugins/orchestrator-status/` a `~/.config/opencode/cli-plugins/orchestrator-status/` y añade esa ruta a la clave `plugins` de tu `cli.json`. Después añade a tu `opencode.jsonc`, dentro del objeto raíz, estos bloques:
 
 ```jsonc
 "agents": {
@@ -128,7 +129,7 @@ El visor de escritorio vive en [`tasks-viewer/`](tasks-viewer/): la misma interf
 - `ui` con permiso `ask` bloquea su sesión hasta que alguien aprueba: no lo lances en segundo plano si no estás delante.
 - `verify` solo permite los prefijos de comprobación declarados en su frontmatter; un comando compuesto (`cd x && make test`) se rechaza.
 - El reparto de skills depende del orquestador: ningún subagente salvo `tasks-agent` lleva catálogo —tiene el permiso `skill` denegado (`action: skill`, `resource: "*"`, `effect: deny`)— y no puede cargar ninguna. Si el orquestador no adjunta la skill que el encargo necesita, el subagente trabaja sin ella y nada lo detecta automáticamente.
-- El runner queda junto a los agentes: `~/.config/opencode/agents/orchestrator-runner.py`. El panel del plugin lo busca en esa ruta; si instalaste con otro `XDG_CONFIG_HOME`, no lo encuentra y muestra un error de consulta.
+- El runner queda junto a los agentes: `~/.config/opencode/agents/orchestrator-runner.py`. El panel y el plugin de servidor lo buscan en esa ruta; si instalaste con otro `XDG_CONFIG_HOME`, no lo encuentran y el panel muestra un error de consulta mientras el plugin de servidor no inyecta nada. El plugin de servidor tolera además la ausencia de estado, el runner ausente o una consulta de más de 3 s: la petición sigue sin la fase.
 - El checker juzga la forma del informe, no si el trabajo está bien: un informe conforme puede describir un trabajo roto, y una prosa legítima puede quedar marcada por una anáfora sin ruta en la misma línea. El veredicto no sustituye a la evidencia.
 - El libro `.run/delegations.jsonl` es un contrato para el modelo, no una herramienta: el runner no lo lee ni lo valida, así que nada detecta una huella repetida en `launched` salvo el propio orquestador al consultarlo.
 - Las instrucciones `AGENTS.md` global y de proyecto siguen llegando a todos los agentes: el reparto de skills no las sustituye.

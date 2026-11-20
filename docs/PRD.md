@@ -42,9 +42,12 @@ ser una introducción a la orquestación en general.
 
 - No trae código ejecutable fuera de los dos instaladores, la puerta de verificación
   `check-package.sh`, la herramienta del flujo `agents/orchestrator-runner.py`, el
-  comprobador del retorno `agents/delegation-report-checker.py` y el plugin
-  TUI `plugins/orchestrator-status`: fuentes que OpenCode carga en runtime, sin `node_modules`
-  ni nada que compilar.
+  comprobador del retorno `agents/delegation-report-checker.py`, el plugin de servidor
+  `plugins/orchestrator-phase.ts` y el plugin TUI `plugins/orchestrator-status`: fuentes que
+  OpenCode carga en runtime, sin `node_modules` ni nada que compilar.
+- No inyecta la fase por agente ni por subagente: el plugin de servidor escribe en el system
+  prompt del host y no distingue quién responde, de modo que la fase alcanza cada petición de
+  chat y no se restringe el alcance a los subagentes.
 - No orquesta nada por sí mismo: la delegación es un contrato por prompt que OpenCode
   carga con los agentes; sin OpenCode el paquete es papel.
 - No gestiona el acceso al proveedor `nan`: la API key se configura con
@@ -61,7 +64,10 @@ ser una introducción a la orquestación en general.
   `~/.config/opencode/agents/`, honrando
   `XDG_CONFIG_HOME` si está definido. En Unix quedan con permiso de ejecución;
   si ya existe un fichero con el mismo nombre y contenido distinto, deja copia `.bak.<fecha>` antes
-  de reemplazarlo, con la política de R7.
+  de reemplazarlo, con la política de R7. Después copia el plugin de servidor
+  `plugins/orchestrator-phase.ts` a `~/.config/opencode/plugins/`, con la misma copia
+  `.bak.<fecha>` si reemplaza una versión distinta y sin registrarlo en `cli.json`: lo carga
+  el servidor, no la TUI.
 - R2. Si la configuración global no existe, el instalador crea una desde su plantilla con
   el bloque `agents` de `explore` y `general` y la regla de `permissions` que deniega
   `tasks_*`.
@@ -130,6 +136,15 @@ ser una introducción a la orquestación en general.
   `violations`. Se instala con el paquete junto a los agentes y `check-package.sh` cubre
   su sintaxis, el contrato de `--help`, un informe conforme y los no conformes —`status`
   ausente, comprobación esperada ausente, `status` contradictorios y anáfora sin ruta—.
+- R13. El plugin de servidor `plugins/orchestrator-phase.ts` inyecta en el system prompt de
+  cada petición de chat la fase actual del runner —número, nombre y la evidencia que pide
+  `next` para avanzar, más la última evidencia registrada cuando es válida—, para que el
+  modelo no la olvide al alargarse la sesión. Consulta
+  `python3 ~/.config/opencode/agents/orchestrator-runner.py --json` desde el directorio del
+  proyecto con un límite de tres segundos y su tolerancia es total: sin estado, con el runner
+  ausente o no ejecutable, pasado el tiempo o con una respuesta fuera del contrato `--json`,
+  no inyecta nada y la petición sigue su curso. Solo lee, y una sola copia sirve a los dos
+  hosts (V1 y V2). `check-package.sh` comprueba su instalación y que no figura en `cli.json`.
 
 ### Reglas de negocio
 
@@ -262,6 +277,14 @@ ser una introducción a la orquestación en general.
   `tsconfig.json` y `types/opencode-plugin.d.ts`, sin `node_modules`.
 - Un plugin previo de contenido distinto se reemplaza tras dejar `tui.tsx.bak.<fecha>`; una
   segunda pasada con el contenido idéntico no crea otra copia.
+- Con `HOME` limpio, los dos instaladores dejan
+  `~/.config/opencode/plugins/orchestrator-phase.ts` y no lo registran en `cli.json`; un plugin
+  previo de contenido distinto se reemplaza tras dejar `orchestrator-phase.ts.bak.<fecha>`, y
+  una segunda pasada con el contenido idéntico no crea otra copia.
+- Con un estado válido, cada petición de chat recibe en su system prompt la fase actual, su
+  nombre y la evidencia que pide `next`, y la última evidencia registrada cuando la hay. Sin
+  estado, sin runner, pasado el límite de tres segundos o con una respuesta fuera del contrato
+  `--json`, no se inyecta nada y la petición sigue su curso.
 - En una sesión de OpenCode con el paquete instalado, `/orquestador` abre el diálogo modal con
   scroll con la fase actual, su operativa, sus advertencias y el historial de evidencias; sin estado
   muestra la fase 1 y lo indica, un estado corrupto vuelve a la fase 1 con aviso, y sin

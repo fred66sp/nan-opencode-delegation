@@ -71,6 +71,17 @@ else
   sed 's/^/    /' "$tmp/clean.log"
 fi
 
+# c2. El plugin de servidor de la fase viaja en la instalación limpia de c: vive en
+# plugins/ y NO se registra en cli.json —lo carga el servidor, no la TUI—.
+step "instalación limpia: plugin de servidor orchestrator-phase en plugins/"
+server_plugin_c="$home_c/.config/opencode/plugins/orchestrator-phase.ts"
+if [ -f "$server_plugin_c" ] &&
+  cmp -s plugins/orchestrator-phase.ts "$server_plugin_c" &&
+  grep -Fq "experimental.chat.system.transform" "$server_plugin_c" &&
+  grep -Fq "orchestrator-runner.py" "$server_plugin_c" &&
+  python3 -c "import json, sys; assert not any('orchestrator-phase' in p for p in json.load(open(sys.argv[1], encoding='utf-8')).get('plugins') or [])" "$home_c/.config/opencode/cli.json"
+then ok; else ko; echo "    falta $server_plugin_c, difiere del paquete, no cita el hook y el runner, o cli.json lo registra"; fi
+
 # d. Fusión sobre una configuración con claves ajenas.
 step "fusión con claves ajenas (share, mcp) y copia .bak"
 home_d="$tmp/home-merge"
@@ -327,6 +338,18 @@ else
   ko
   sed 's/^/    /' "$tmp/plugin-merge.log"
 fi
+
+# m2. Instalación sobre un plugin de servidor previo distinto: copia .bak.<fecha> y
+# el contenido nuevo. Sin registro en cli.json, así que no hay nada que deduplicar.
+step "plugin de servidor sobre instalación previa: copia .bak y contenido nuevo"
+home_p="$tmp/home-phase-merge"
+server_plugin_p="$home_p/.config/opencode/plugins/orchestrator-phase.ts"
+mkdir -p "$home_p/.config/opencode/plugins"
+printf '%s\n' '// versión anterior del plugin de fase' >"$server_plugin_p"
+if env -u XDG_CONFIG_HOME HOME="$home_p" bash install.sh >"$tmp/phase-merge.log" 2>&1 &&
+  cmp -s plugins/orchestrator-phase.ts "$server_plugin_p" &&
+  grep -qx '// versión anterior del plugin de fase' "$server_plugin_p".bak.*
+then ok; else ko; sed 's/^/    /' "$tmp/phase-merge.log"; fi
 
 # n. El comprobador del retorno estructurado: sintaxis, contrato en la ayuda, un informe
 # conforme (código 0) y dos no conformes (código 1), con las fixtures en el temporal. El

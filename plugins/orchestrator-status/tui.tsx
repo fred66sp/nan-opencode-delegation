@@ -152,10 +152,33 @@ function queryBoard(cwd: string): Promise<number> {
   })
 }
 
-/** Desajuste que hoy solo ve la persona: el runner en fase 1 sin evidencia y el tablero trabajando. */
-function mismatchNotice(data: RunnerData, inProgress: number): string | undefined {
+/** Ficheros sin commit según git; sin repositorio o sin git, 0 y el panel sigue igual. */
+function queryGitDirty(cwd: string): Promise<number> {
+  return new Promise((resolve) => {
+    execFile("git", ["status", "--porcelain"], { cwd, timeout: QUERY_TIMEOUT_MS }, (error, stdout) => {
+      if (error) {
+        resolve(0)
+        return
+      }
+      resolve(stdout.split("\n").filter((line) => line.trim() !== "").length)
+    })
+  })
+}
+
+/**
+ * Desajustes que hoy solo ve la persona: una fase avanzada con trabajo sin commit
+ * —el caso grave, el árbol se ha adelantado al flujo— y la fase 1 sin evidencia
+ * mientras el tablero trabaja.
+ */
+function mismatchNotice(data: RunnerData, inProgress: number, dirty: number): string | undefined {
   const { exists, phase, evidence } = data.state
-  if (!exists || phase !== 1 || evidence.length > 0 || inProgress < 1) return undefined
+  if (!exists) return undefined
+  if (phase >= 2 && phase <= 8 && dirty > 0) {
+    const name = data.phases.find((item) => item.number === phase)?.name ?? "fase desconocida"
+    const files = dirty === 1 ? "1 fichero" : `${dirty} ficheros`
+    return `Desajuste: fase ${phase} (${name}) con ${files} sin commit — hay trabajo en el árbol que el flujo aún no ha llevado a Riesgo y Commit`
+  }
+  if (phase !== 1 || evidence.length > 0 || inProgress < 1) return undefined
   const tasks = inProgress === 1 ? "1 tarea" : `${inProgress} tareas`
   return `Desajuste: fase 1 sin evidencia mientras hay ${tasks} en curso — el runner no se está usando`
 }
@@ -221,7 +244,12 @@ function Wrapped(props: { readonly text: string; readonly width: number; readonl
   )
 }
 
-function StatusBody(props: { readonly data: RunnerData; readonly width: number; readonly inProgress: number }) {
+function StatusBody(props: {
+  readonly data: RunnerData
+  readonly width: number
+  readonly inProgress: number
+  readonly dirtyFiles: number
+}) {
   const context = usePlugin()
   const state = () => props.data.state
   const phase = () => props.data.phases.find((item) => item.number === state().phase)
@@ -229,7 +257,7 @@ function StatusBody(props: { readonly data: RunnerData; readonly width: number; 
 
   return (
     <>
-      <Show when={mismatchNotice(props.data, props.inProgress)}>
+      <Show when={mismatchNotice(props.data, props.inProgress, props.dirtyFiles)}>
         {(notice) => (
           <>
             <Wrapped prefix="⚠ " text={notice()} width={props.width} fg={context.theme.text.feedback.error.base} />
@@ -306,6 +334,7 @@ function OrchestratorDialog() {
   const context = usePlugin()
   const [snapshot, setSnapshot] = createSignal<Snapshot>()
   const [inProgress, setInProgress] = createSignal(0)
+  const [dirtyFiles, setDirtyFiles] = createSignal(0)
   const [busy, setBusy] = createSignal(false)
   const [dimensions, setDimensions] = createSignal(rendererDimensions(context.renderer))
   const width = () => contentWidth(dimensions().width)
@@ -321,11 +350,14 @@ function OrchestratorDialog() {
     if (busy()) return
     setBusy(true)
     const location = context.location ?? context.data.location.default()
-    void Promise.all([queryRunner(location.directory), queryBoard(location.directory)]).then(([next, running]) => {
-      setSnapshot(next)
-      setInProgress(running)
-      setBusy(false)
-    })
+    void Promise.all([queryRunner(location.directory), queryBoard(location.directory), queryGitDirty(location.directory)]).then(
+      ([next, running, dirty]) => {
+        setSnapshot(next)
+        setInProgress(running)
+        setDirtyFiles(dirty)
+        setBusy(false)
+      },
+    )
   }
 
   context.keymap.layer(() => ({
@@ -383,7 +415,11 @@ function OrchestratorDialog() {
   return (
     <scrollbox focused stickyScroll={false} maxHeight={maxHeight()}>
       <box flexDirection="column" paddingLeft={1} paddingRight={1}>
-        <Show when={data()}>{(current) => <StatusBody data={current()} width={width()} inProgress={inProgress()} />}</Show>
+        <Show when={data()}>
+          {(current) => (
+            <StatusBody data={current()} width={width()} inProgress={inProgress()} dirtyFiles={dirtyFiles()} />
+          )}
+        </Show>
         <Show when={!data() && !error()}>
           <text fg={context.theme.text.muted}>Consultando el runner del orquestador…</text>
         </Show>

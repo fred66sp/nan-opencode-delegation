@@ -28,7 +28,24 @@ Get-ChildItem (Join-Path $here 'agents\*') -File | ForEach-Object {
 Write-Host "Agentes copiados en $agentsDir :"
 Get-ChildItem $agentsDir -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
 
-# 2. El plugin TUI del estado de orquestacion, con sus fuentes. Sin node_modules:
+# 2. El plugin de servidor que inyecta la fase del orquestador en el system prompt.
+# Vive en plugins/ y no se registra en cli.json: lo carga el servidor, no la TUI.
+$serverPluginSrc = Join-Path $here 'plugins\orchestrator-phase.ts'
+if (-not (Test-Path $serverPluginSrc)) {
+    Write-Host "error: no existe $serverPluginSrc : el paquete esta incompleto"
+    exit 1
+}
+$serverPluginDir = Join-Path $configRoot 'plugins'
+New-Item -ItemType Directory -Force -Path $serverPluginDir | Out-Null
+$serverPluginTarget = Join-Path $serverPluginDir 'orchestrator-phase.ts'
+if ((Test-Path $serverPluginTarget) -and ((Get-FileHash $serverPluginSrc).Hash -ne (Get-FileHash $serverPluginTarget).Hash)) {
+    Copy-Item $serverPluginTarget ($serverPluginTarget + '.bak.' + $stamp)
+    Write-Host "Copia previa del plugin de servidor: $serverPluginTarget.bak.$stamp"
+}
+Copy-Item -Force $serverPluginSrc $serverPluginTarget
+Write-Host "Plugin de servidor copiado en $serverPluginTarget"
+
+# 3. El plugin TUI del estado de orquestacion, con sus fuentes. Sin node_modules:
 # OpenCode resuelve sus dependencias en runtime. Va en cli-plugins y se registra en
 # cli.json: un paquete solo-TUI no puede vivir en plugins/ (el servidor lo cargaria
 # y colisiona con su OpenTUI interno) y solo la TUI debe importarlo.
@@ -72,7 +89,7 @@ try {
     Write-Host "  \"plugins\": [ \"$pluginDir\", ... ]"
 }
 
-# 3. Modelos de explore y general, y la regla global que deniega tasks_*.
+# 4. Modelos de explore y general, y la regla global que deniega tasks_*.
 $dest = @('opencode.jsonc', 'opencode.json') |
     ForEach-Object { Join-Path $configRoot $_ } |
     Where-Object { Test-Path $_ } |
