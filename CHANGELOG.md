@@ -8,6 +8,16 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Plugin de servidor `plugins/orchestrator-phase.ts`: inyecta en el system prompt de cada
+  petición de chat la fase actual del runner —su número, su nombre y la evidencia que pide
+  `next` para avanzar, más la última registrada— para que el modelo no la olvide al alargarse
+  la sesión. Consulta `orchestrator-runner.py --json` en el directorio del proyecto con un
+  límite de tres segundos y falla en silencio: sin estado, sin runner, pasado el tiempo o con
+  una respuesta fuera de contrato no inyecta nada y la petición sigue su curso. La instalación
+  gana un paso: los instaladores lo copian a `~/.config/opencode/plugins/`, con copia
+  `.bak.<fecha>` si reemplaza una versión distinta, y no lo registran en `cli.json`, porque lo
+  carga el servidor y no la TUI. `check-package.sh` comprueba la copia en la instalación
+  limpia y la fusión sobre una copia previa distinta.
 - Control en vuelo sobre subagentes en el contrato del orquestador: nueva regla 10 de
   `agents/orchestrator.md` que incorpora el plugin `opencode-subagent-intervene` al ciclo
   de delegación — inspección (`subagents.list`/`subagents.inspect`) para comprobar
@@ -82,6 +92,10 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   sin autorización: una tarea ya cerrada con `done` no se vuelve a cerrar, reabrirla exige
   una justificación importante y la autorización explícita de la persona, y «podemos cerrar»
   apunta a la sesión, no a la tarea, así que no se repite el cierre ni se reabre sin permiso.
+- El panel `/orquestador` avisa del desajuste entre la fase y el árbol de trabajo: de la fase 2
+  a la 8, con ficheros sin commit, nombra cuántos hay y avisa de que el flujo aún no los ha
+  llevado a «Riesgo y Commit»; se evalúa antes que el aviso de fase 1 con tareas en curso y
+  ninguna evidencia, que sigue igual.
 
 ### Corregido
 
