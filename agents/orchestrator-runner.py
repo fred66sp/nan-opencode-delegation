@@ -196,7 +196,7 @@ Uso, desde la raíz del proyecto en el que se trabaja:
   ~/.config/opencode/agents/orchestrator-runner.py                muestra la fase actual sin cambiar el estado
   ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
   ~/.config/opencode/agents/orchestrator-runner.py next "texto"   registra el texto como evidencia, avanza y muestra la nueva fase
-  ~/.config/opencode/agents/orchestrator-runner.py boot           imprime el arranque de la fase 1: memoria, tablero, git y fase
+  ~/.config/opencode/agents/orchestrator-runner.py boot           imprime el arranque de la fase 1: memoria, tablero, git, últimos commits y fase
   ~/.config/opencode/agents/orchestrator-runner.py reset          borra el estado: vuelve a la fase 1 sin historial
   ~/.config/opencode/agents/orchestrator-runner.py --json         imprime las fases y el estado en JSON, sin cambiar nada
   ~/.config/opencode/agents/orchestrator-runner.py --help         esta ayuda
@@ -218,7 +218,7 @@ false, fase 1 y `valid` en true.
 
 `boot` imprime en una invocación el arranque de la fase 1 en cuatro secciones de texto —memoria
 de la sesión (`engram context` con el nombre del directorio actual, acotada), tablero (en curso y
-listas para empezar, con ref y título), git (rama y resumen de `git status`) y la fase actual—.
+listas para empezar, con ref y título), git (rama, resumen de `git status` y los tres últimos commits) y la fase actual—.
 Es solo lectura: no escribe el estado ni llama a `save_state`. Cada fuente falla por su cuenta: su
 sección imprime «no disponible» con el motivo y el comando sigue con código 0. Solo un `boot` con
 argumentos de más es error de uso.
@@ -364,7 +364,17 @@ def boot_git():
     count = len(changed.strip().splitlines())
     lines.append("Rama: %s" % (branch.strip() or "(sin rama, HEAD desacoplado)"))
     lines.append("Estado: %s" % ("%d fichero(s) cambiado(s)" % count if count else "limpio"))
+    lines.append("Últimos commits:")
+    lines += boot_commits()
     return lines
+
+
+def boot_commits():
+    """Los tres últimos commits, uno por línea, o su degradación."""
+    log, error = capture(["git", "log", "-3", "--pretty=format:%h %s"])
+    if error:
+        return ["no disponible: git log %s" % error]
+    return ["  - %s" % line for line in log.strip().splitlines() if line] or ["  - (sin commits)"]
 
 
 def boot_phase():

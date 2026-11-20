@@ -29,8 +29,8 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   sustituye al re-encargo de la regla 6.
 - El runner gana el subcomando `boot`: imprime en una sola invocación el arranque de la
   fase 1 en cuatro secciones de texto —memoria reciente de la sesión (`engram context`),
-  tablero con lo que está en curso y lo que está listo para empezar, rama y estado de git, y
-  la fase actual— para que un agente lo lea de un vistazo al empezar. Es solo lectura: no
+  tablero con lo que está en curso y lo que está listo para empezar, rama, estado y tres últimos
+  commits de git, y la fase actual— para que un agente lo lea de un vistazo al empezar. Es solo lectura: no
   crea ni modifica `.run/orchestrator-runner.json`. Cada fuente falla por su cuenta y su
   sección responde «no disponible» con el motivo, de modo que un proyecto sin tablero, sin
   git o sin estado del runner sigue dando el resto del arranque con código 0.
