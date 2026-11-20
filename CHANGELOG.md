@@ -62,6 +62,16 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- Dimensionado de encargos contra el presupuesto de pasos: la regla 3 de
+  `agents/orchestrator.md` obliga a estimar las llamadas que exige un encargo (lecturas,
+  ediciones y validación) contra el `steps` del agente elegido —público en su
+  frontmatter— antes de lanzarlo, y a dividir por fichero o paquete pequeño cuando no cabe
+  con margen. Un parcial por presupuesto agotado queda clasificado como fallo de
+  dimensionamiento del orquestador, no de ejecución del subagente. La regla 6 añade la
+  pre-masticación: el encargo nace con el contexto adjunto —informe previo, rutas exactas y
+  decisiones ya tomadas—, y si esa preparación exige explorar mucho, `explore` produce ese
+  mapa por adelantado; cada lectura que el subagente evita es un paso que va a la escritura.
+  La guía web (`docs/web/index.html`) incorpora ambos puntos en sus resúmenes del contrato.
 - Contratos alineados en tres puntos: las escrituras del tablero sin herramienta `tasks_*` —ADR (`adr create/edit/import/export`) y catálogo de etiquetas (`tag create/edit/delete`)— van directas por la CLI `tasks-ai` y no se delegan a `tasks-agent` (asignar etiquetas al crear o actualizar una tarea sí viaja en su encargo); un `partial` de `verify` causado por una denegación del entorno no se re-encarga idéntico —el orquestador conserva el informe, completa desde la raíz lo que faltó y presenta el resultado consolidado—; y la regla de skills del orquestador adjunta `ponytail-review` a los encargos de `review` y guía la planificación de pruebas con `software-testing`. La allowlist de `verify` abre `gofmt -l *` —listado de formato, nada que escriba— y `verify` nombra el comando exacto bloqueado cuando el límite es del entorno.
 - Umbral de creación de tarea en el contrato del orquestador: no crear tarea queda
   reservado a cambios muy triviales —uno o dos archivos como máximo, p. ej. una entrada en
