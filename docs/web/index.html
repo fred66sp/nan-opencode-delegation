@@ -526,7 +526,7 @@
       </figure>
       <p>El estado vive en <code>.run/orchestrator-runner.json</code>, en el directorio del proyecto en el que trabajas, nunca junto al script instalado. Guarda la fase y el historial, con una entrada por fase dejada. Si falta, se empieza en la fase 1 y la primera invocación lo crea. Un fichero corrupto o con la fase fuera de rango vuelve a la fase 1 con un aviso por stderr; un historial que no es una lista se descarta conservando la fase. <code>reset</code> borra el fichero entero —fase e historial— sin tocar nada más.</p>
       <p><code>--json</code> imprime un único objeto por la salida estándar con <code>version</code>, las once fases —número, nombre, cuándo, evidencia esperada, pasos y advertencias— y el estado: si existe el fichero, la fase actual, si el estado y el historial son válidos y la evidencia registrada. No crea ni modifica el estado y no emite avisos: su stdout es para un programa, no para una persona. Se acepta solo, sin otros argumentos.</p>
-      <p><code>boot</code> reúne en una invocación el arranque de la fase 1 en secciones de texto: la memoria reciente de la sesión (<code>engram context</code>), el tablero con lo que está en curso y lo que está listo para empezar, la rama y el estado de git, y la fase actual del runner. Es solo lectura: no crea ni modifica el estado. Cada fuente falla por su cuenta y su sección dice «no disponible» con el motivo, así que un proyecto sin tablero, sin git o sin estado sigue dando el resto del arranque.</p>
+      <p><code>boot</code> reúne en una invocación el arranque de la fase 1 en secciones de texto: la memoria reciente de la sesión (<code>engram context</code>), el tablero con lo que está en curso y lo que está listo para empezar, la rama, el estado y los tres últimos commits de git, y la fase actual del runner. Es solo lectura: no crea ni modifica el estado. Cada fuente falla por su cuenta y su sección dice «no disponible» con el motivo, así que un proyecto sin tablero, sin git o sin estado sigue dando el resto del arranque.</p>
       <p>Para que el agente no toque ese registro a mano, el paquete lleva un <code>.llmignore</code> con la regla. Se aplica con el plugin <code>opencode-ignore-file</code> instalado globalmente (<code>npm run install:plugin</code> desde su repositorio, y reiniciar opencode). Sin el plugin, la regla no bloquea: vale la convención.</p>
       <div class="note"><p><strong>El runner no juzga el trabajo.</strong> Dice en qué fase estás y qué evidencia falta; no comprueba el mundo real. Los bloqueos siguen siendo los del tablero y los de la tarea.</p></div>
       <p><button class="btn btn-ghost" type="button" id="runner-code-button">Ver el código del runner</button></p>
@@ -1257,7 +1257,7 @@ Uso, desde la raíz del proyecto en el que se trabaja:
   ~/.config/opencode/agents/orchestrator-runner.py                muestra la fase actual sin cambiar el estado
   ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
   ~/.config/opencode/agents/orchestrator-runner.py next "texto"   registra el texto como evidencia, avanza y muestra la nueva fase
-  ~/.config/opencode/agents/orchestrator-runner.py boot           imprime el arranque de la fase 1: memoria, tablero, git y fase
+  ~/.config/opencode/agents/orchestrator-runner.py boot           imprime el arranque de la fase 1: memoria, tablero, git, últimos commits y fase
   ~/.config/opencode/agents/orchestrator-runner.py reset          borra el estado: vuelve a la fase 1 sin historial
   ~/.config/opencode/agents/orchestrator-runner.py --json         imprime las fases y el estado en JSON, sin cambiar nada
   ~/.config/opencode/agents/orchestrator-runner.py --help         esta ayuda
@@ -1279,7 +1279,7 @@ false, fase 1 y `valid` en true.
 
 `boot` imprime en una invocación el arranque de la fase 1 en cuatro secciones de texto —memoria
 de la sesión (`engram context` con el nombre del directorio actual, acotada), tablero (en curso y
-listas para empezar, con ref y título), git (rama y resumen de `git status`) y la fase actual—.
+listas para empezar, con ref y título), git (rama, resumen de `git status` y los tres últimos commits) y la fase actual—.
 Es solo lectura: no escribe el estado ni llama a `save_state`. Cada fuente falla por su cuenta: su
 sección imprime «no disponible» con el motivo y el comando sigue con código 0. Solo un `boot` con
 argumentos de más es error de uso.
@@ -1425,7 +1425,17 @@ def boot_git():
     count = len(changed.strip().splitlines())
     lines.append("Rama: %s" % (branch.strip() or "(sin rama, HEAD desacoplado)"))
     lines.append("Estado: %s" % ("%d fichero(s) cambiado(s)" % count if count else "limpio"))
+    lines.append("Últimos commits:")
+    lines += boot_commits()
     return lines
+
+
+def boot_commits():
+    """Los tres últimos commits, uno por línea, o su degradación."""
+    log, error = capture(["git", "log", "-3", "--pretty=format:%h %s"])
+    if error:
+        return ["no disponible: git log %s" % error]
+    return ["  - %s" % line for line in log.strip().splitlines() if line] or ["  - (sin commits)"]
 
 
 def boot_phase():
