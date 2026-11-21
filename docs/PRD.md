@@ -35,6 +35,8 @@ ser una introducción a la orquestación en general.
   del tablero que concentra las herramientas `tasks_*`.
 - Un instalador por familia de sistema: `install.sh` para Linux, macOS y WSL, e
   `install.ps1` para Windows, con el mismo comportamiento observable.
+- Un comando nativo `commands/odd-fix.md`, instalado junto a los agentes, que abre el flujo
+  del orquestador con la descripción de un defecto y no define herramientas ni pasos propios.
 - Documentación viva completa: guía HTML, README, PRD, CONTRIBUTING, CHANGELOG, AGENTS y
   llms.txt, en castellano y sin prose que mienta sobre los artefactos.
 
@@ -54,6 +56,8 @@ ser una introducción a la orquestación en general.
   `opencode auth login` y el paquete solo la menciona en la comprobación.
 - No incluye la skill `playwright-cli-usage`: el agente `ui` la necesita, el orquestador la
   adjunta por ruta al delegar y su instalación queda fuera por venir de otro catálogo.
+- No hay `/odd-status`: se descartó porque `boot` puede escribir —`git status` y
+  `engram context`— y su `--json` se solapa con el panel `/orquestador`.
 
 ## 4. Requisitos aprobados
 
@@ -88,7 +92,8 @@ ser una introducción a la orquestación en general.
 - R9. `check-package.sh` ejecuta de una vez la batería de verificación: sintaxis de
   `install.sh`, plantilla JSON estricta, instalación limpia en un `HOME` temporal, fusión
   con claves ajenas y copia `.bak`, camino JSONC con el fichero intacto y el bloque manual
-  impreso, `diff` contra los agentes y la herramienta instalados, y las guardas de skills
+  impreso, `diff` contra los agentes y la herramienta instalados, la instalación limpia del
+  comando nativo y su reemplazo con `.bak` en una segunda pasada, y las guardas de skills
   —los cuatro subagentes (verify, review, docs y ui) con el permiso `skill` denegado,
   `tasks-agent` conservando el catálogo, ningún agente que lo abra en
   `allow` o `ask` y las skills citadas presentes en una raíz de descubrimiento—. No pide interacción,
@@ -156,6 +161,11 @@ ser una introducción a la orquestación en general.
   ausente o no ejecutable, pasado el tiempo o con una respuesta fuera del contrato `--json`,
   no inyecta nada y la petición sigue su curso. Solo lee, y una sola copia sirve a los dos
   hosts (V1 y V2). `check-package.sh` comprueba su instalación y que no figura en `cli.json`.
+- R15. Los instaladores copian `commands/odd-fix.md` a `~/.config/opencode/commands/`,
+  respetando `XDG_CONFIG_HOME`; si el destino difiere, guardan una copia `.bak.<fecha>`.
+  El comando selecciona `orchestrator` en la sesión actual, recibe `$ARGUMENTS` y solicita
+  una descripción si falta; no sustituye el contrato ni concede autorizaciones de Git.
+  Reinstalar el mismo contenido no crea otra copia previa.
 
 ### Reglas de negocio
 
@@ -227,6 +237,9 @@ ser una introducción a la orquestación en general.
 
 ## 5. Criterios de aceptación
 
+- Con `HOME` limpio, la instalación copia `commands/odd-fix.md` sin diferencias; al
+  reemplazar un comando distinto deja una copia previa y la siguiente instalación idéntica
+  no crea otra.
 - Con `HOME` limpio, `bash install.sh` crea los agentes, las dos herramientas del flujo y una
   configuración nueva desde la plantilla; la salida por pantalla nombra los destinos.
 - La herramienta queda en `~/.config/opencode/agents/orchestrator-runner.py` con permiso de

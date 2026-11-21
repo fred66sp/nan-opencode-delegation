@@ -28,7 +28,21 @@ Get-ChildItem (Join-Path $here 'agents\*') -File | ForEach-Object {
 Write-Host "Agentes copiados en $agentsDir :"
 Get-ChildItem $agentsDir -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
 
-# 2. El plugin de servidor que inyecta la fase del orquestador en el system prompt.
+# 2. Los comandos nativos, en commands/ del mismo directorio de configuracion.
+$commandsDir = Join-Path $configRoot 'commands'
+New-Item -ItemType Directory -Force -Path $commandsDir | Out-Null
+Get-ChildItem (Join-Path $here 'commands\*') -File | ForEach-Object {
+    $target = Join-Path $commandsDir $_.Name
+    if ((Test-Path $target) -and ((Get-FileHash $_.FullName).Hash -ne (Get-FileHash $target).Hash)) {
+        Copy-Item $target ($target + '.bak.' + $stamp)
+        Write-Host "Copia previa del comando: $target.bak.$stamp"
+    }
+    Copy-Item -Force $_.FullName $commandsDir
+}
+Write-Host "Comandos copiados en $commandsDir :"
+Get-ChildItem $commandsDir -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
+
+# 3. El plugin de servidor que inyecta la fase del orquestador en el system prompt.
 # Vive en plugins/ y no se registra en cli.json: lo carga el servidor, no la TUI.
 $serverPluginSrc = Join-Path $here 'plugins\orchestrator-phase.ts'
 if (-not (Test-Path $serverPluginSrc)) {
@@ -45,7 +59,7 @@ if ((Test-Path $serverPluginTarget) -and ((Get-FileHash $serverPluginSrc).Hash -
 Copy-Item -Force $serverPluginSrc $serverPluginTarget
 Write-Host "Plugin de servidor copiado en $serverPluginTarget"
 
-# 3. El plugin TUI del estado de orquestacion, con sus fuentes. Sin node_modules:
+# 4. El plugin TUI del estado de orquestacion, con sus fuentes. Sin node_modules:
 # OpenCode resuelve sus dependencias en runtime. Va en cli-plugins y se registra en
 # cli.json: un paquete solo-TUI no puede vivir en plugins/ (el servidor lo cargaria
 # y colisiona con su OpenTUI interno) y solo la TUI debe importarlo.
@@ -89,7 +103,7 @@ try {
     Write-Host "  \"plugins\": [ \"$pluginDir\", ... ]"
 }
 
-# 4. Modelos de explore y general, y la regla global que deniega tasks_*.
+# 5. Modelos de explore y general, y la regla global que deniega tasks_*.
 $dest = @('opencode.jsonc', 'opencode.json') |
     ForEach-Object { Join-Path $configRoot $_ } |
     Where-Object { Test-Path $_ } |

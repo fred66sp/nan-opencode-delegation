@@ -29,7 +29,22 @@ done
 echo "Agentes copiados en $agents_dir:"
 ls -1 "$agents_dir"/*.md "$agents_dir"/orchestrator-runner.py
 
-# 2. El plugin de servidor que inyecta la fase del orquestador en el system prompt.
+# 2. Los comandos nativos, en commands/ del mismo directorio de configuración.
+commands_dir="$config_root/commands"
+mkdir -p "$commands_dir"
+for src in "$here"/commands/*; do
+  [ -f "$src" ] || continue
+  target="$commands_dir/$(basename "$src")"
+  if [ -f "$target" ] && ! cmp -s "$src" "$target"; then
+    cp "$target" "$target.bak.$stamp"
+    echo "Copia previa del comando: $target.bak.$stamp"
+  fi
+  cp "$src" "$target"
+done
+echo "Comandos copiados en $commands_dir:"
+ls -1 "$commands_dir"/*.md
+
+# 3. El plugin de servidor que inyecta la fase del orquestador en el system prompt.
 # Vive en plugins/ y no se registra en cli.json: lo carga el servidor, no la TUI.
 server_plugin_src="$here/plugins/orchestrator-phase.ts"
 server_plugin_dir="$config_root/plugins"
@@ -46,7 +61,7 @@ fi
 cp "$server_plugin_src" "$server_plugin_target"
 echo "Plugin de servidor copiado en $server_plugin_target"
 
-# 3. El plugin TUI del estado de orquestación, con sus fuentes. Sin node_modules:
+# 4. El plugin TUI del estado de orquestación, con sus fuentes. Sin node_modules:
 # OpenCode resuelve sus dependencias en runtime. Va en cli-plugins y se registra en
 # cli.json: un paquete solo-TUI no puede vivir en plugins/ (el servidor lo cargaría
 # y colisiona con su OpenTUI interno) y solo la TUI debe importarlo.
@@ -100,7 +115,7 @@ else
   echo "  \"plugins\": [ \"$plugin_dir\", ... ]"
 fi
 
-# 4. Modelos de explore y general, y la regla global que deniega tasks_*.
+# 5. Modelos de explore y general, y la regla global que deniega tasks_*.
 dest=""
 for cand in "$config_root/opencode.jsonc" "$config_root/opencode.json"; do
   if [ -f "$cand" ]; then dest="$cand"; break; fi
