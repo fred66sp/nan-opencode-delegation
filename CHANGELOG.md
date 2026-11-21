@@ -83,6 +83,17 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- Contrato del orquestador consolidado: `agents/orchestrator.md` baja de 2.567 a unas
+  1.250 palabras al dejar de repetir la operativa de cada fase que ya imprime el runner. La
+  delegación deja de ser universal —el trabajo sustancial va a `general` y lo trivial,
+  inequívoco y de bajo riesgo se resuelve en línea—; el retorno conserva los estados y la
+  evidencia pero no repite el criterio ni el encargo; la verificación, el riesgo y las
+  autorizaciones se expresan una sola vez. Se conservan las garantías: solo lectura en
+  consulta o planificación, confirmación de la persona para commit, push, merge y etiqueta,
+  límites de permisos por agente, verificación independiente cuando el riesgo lo exige,
+  libro de delegaciones, puerta del tablero y control de subagentes en vuelo. La guía web
+  alinea su resumen del contrato.
+
 - Verificación más barata y proporcional. `agents/verify.md` recibe del encargo los comandos
   y el alcance y deja de descubrir la infraestructura de pruebas: ejecuta solo lo pedido,
   devuelve `partial` si el encargo llega sin comandos y conserva su presupuesto de 12 pasos.
