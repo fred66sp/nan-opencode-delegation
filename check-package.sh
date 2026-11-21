@@ -82,6 +82,25 @@ if [ -f "$server_plugin_c" ] &&
   python3 -c "import json, sys; assert not any('orchestrator-phase' in p for p in json.load(open(sys.argv[1], encoding='utf-8')).get('plugins') or [])" "$home_c/.config/opencode/cli.json"
 then ok; else ko; echo "    falta $server_plugin_c, difiere del paquete, no cita el hook y el runner, o cli.json lo registra"; fi
 
+# c3. El comando nativo /odd-fix viaja en la instalación limpia de c y su contrato se
+# limita a lo pedido: selecciona al orquestador, usa $ARGUMENTS y no autoriza commits.
+step "instalación limpia: comando odd-fix en commands/ con su contrato"
+cmd_c="$home_c/.config/opencode/commands/odd-fix.md"
+if [ -f "$cmd_c" ] && cmp -s commands/odd-fix.md "$cmd_c" &&
+  python3 - "$cmd_c" <<'PY'
+import re, sys
+text = open(sys.argv[1], encoding="utf-8").read()
+m = re.match(r"^---\n(.*?)\n---\n", text, re.S)
+assert m, "sin frontmatter"
+fm = m.group(1)
+assert re.search(r"(?m)^agent:\s*orchestrator\s*$", fm), "agent distinto de orchestrator"
+assert re.search(r"(?m)^subagent:\s*false\s*$", fm), "subagent distinto de false"
+assert re.search(r"(?m)^description:\s*\S", fm), "sin descripción"
+assert "$ARGUMENTS" in text, "no usa $ARGUMENTS"
+assert re.search(r"(?i)confirmaci[oó]n expl[ií]cita", text), "no exige confirmación explícita"
+PY
+then ok; else ko; echo "    falta $cmd_c, difiere del paquete o incumple frontmatter/argumentos/confirmación"; fi
+
 # d. Fusión sobre una configuración con claves ajenas.
 step "fusión con claves ajenas (share, mcp) y copia .bak"
 home_d="$tmp/home-merge"
@@ -429,6 +448,31 @@ if env -u XDG_CONFIG_HOME HOME="$home_p" bash install.sh >"$tmp/phase-merge.log"
   cmp -s plugins/orchestrator-phase.ts "$server_plugin_p" &&
   grep -qx '// versión anterior del plugin de fase' "$server_plugin_p".bak.*
 then ok; else ko; sed 's/^/    /' "$tmp/phase-merge.log"; fi
+
+# m3. Instalación sobre un comando previo distinto: copia .bak.<fecha>, reemplazo y
+# segunda pasada idempotente que no crea otra copia.
+step "comando sobre instalación previa: copia .bak y segunda pasada idempotente"
+home_cmd="$tmp/home-command-merge"
+cmd_m="$home_cmd/.config/opencode/commands/odd-fix.md"
+mkdir -p "$(dirname "$cmd_m")"
+printf '%s\n' '--- versión anterior del comando' >"$cmd_m"
+if env -u XDG_CONFIG_HOME HOME="$home_cmd" bash install.sh >"$tmp/command-merge.log" 2>&1 &&
+  cmp -s commands/odd-fix.md "$cmd_m" &&
+  grep -qx -- '--- versión anterior del comando' "$cmd_m".bak.*
+then
+  copias_cmd="$(ls "$cmd_m".bak.* | wc -l)"
+  if env -u XDG_CONFIG_HOME HOME="$home_cmd" bash install.sh >>"$tmp/command-merge.log" 2>&1 &&
+    [ "$(ls "$cmd_m".bak.* | wc -l)" -eq "$copias_cmd" ]; then
+    ok
+  else
+    ko
+    echo "    la segunda pasada creó otra copia .bak"
+    sed 's/^/    /' "$tmp/command-merge.log"
+  fi
+else
+  ko
+  sed 's/^/    /' "$tmp/command-merge.log"
+fi
 
 # n. El comprobador del retorno estructurado: sintaxis, contrato en la ayuda, un informe
 # conforme (código 0) y dos no conformes (código 1), con las fixtures en el temporal. El
