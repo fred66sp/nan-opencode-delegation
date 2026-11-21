@@ -136,6 +136,17 @@ ser una introducción a la orquestación en general.
   `violations`. Se instala con el paquete junto a los agentes y `check-package.sh` cubre
   su sintaxis, el contrato de `--help`, un informe conforme y los no conformes —`status`
   ausente, comprobación esperada ausente, `status` contradictorios y anáfora sin ruta—.
+- R14. El runner permite recorrer solo las fases que aportan, con `skip <fase> "motivo"`:
+  solo hacia una fase posterior, con al menos una fase de por medio, y con el motivo
+  obligatorio. Conserva el historial anterior y registra el salto como una entrada de
+  evidencia con su fase de partida, su motivo y su destino (`skip`), así que las fases
+  omitidas quedan visibles en el panel y en `--json`. Retroceso, salto a la fase actual o a
+  la siguiente, destino fuera de rango, motivo vacío y motivo que empieza por `--` salen
+  con código 1 sin tocar el estado. Un salto no sustituye ninguna autorización humana: si
+  omite Commit, lo advierte y la confirmación de la persona sigue pendiente. `check-package.sh`
+  cubre el salto válido, los inválidos, la evidencia conservada, el salto sobre Commit, la
+  consulta de solo lectura y la lectura de un estado anterior sin saltos. El contrato del
+  orquestador decide el recorrido con evidencia, sin convertirlo en un procedimiento.
 - R13. El plugin de servidor `plugins/orchestrator-phase.ts` inyecta en el system prompt de
   cada petición de chat la fase actual del runner —número, nombre y la evidencia que pide
   `next` para avanzar, más la última evidencia registrada cuando es válida—, para que el
@@ -228,6 +239,11 @@ ser una introducción a la orquestación en general.
 - `next` sin evidencia no avanza: pide la evidencia esperada para la fase actual y se
   queda donde está; con evidencia (`next "texto"`), la registra en el historial del
   estado y avanza. Un registro viejo con solo la fase sigue aceptándose.
+- `skip <fase> "motivo"` avanza a una fase posterior, exige motivo y conserva la evidencia
+  previa; un salto inválido —retroceso, fase actual, siguiente, fuera de rango, sin motivo
+  o con motivo que empieza por `--`— sale con código 1 sin escribir el estado. La entrada
+  del historial nombra la fase de partida y el destino, y `--json` la expone sin cambiar
+  `version` ni la forma de `state`; un estado anterior sin saltos se sigue leyendo.
 - Con una configuración JSON preexistente con claves ajenas (`share`, `mcp`), la fusión
   conserva esas claves y crea la copia `.bak` con fecha.
 - Con una configuración JSONC con comentarios, el instalador termina con código 0, imprime
@@ -286,7 +302,8 @@ ser una introducción a la orquestación en general.
   estado, sin runner, pasado el límite de tres segundos o con una respuesta fuera del contrato
   `--json`, no se inyecta nada y la petición sigue su curso.
 - En una sesión de OpenCode con el paquete instalado, `/orquestador` abre el diálogo modal con
-  scroll con la fase actual, su operativa, sus advertencias y el historial de evidencias; sin estado
+  scroll con la fase actual, su operativa, sus advertencias y el historial de evidencias —con
+  los saltos marcados por su fase de partida y su destino—; sin estado
   muestra la fase 1 y lo indica, un estado corrupto vuelve a la fase 1 con aviso, y sin
   `python3` o sin runner muestra un error de consulta.
 - El checker devuelve 0 sobre un informe con `status` válido y una línea por comprobación

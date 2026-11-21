@@ -8,6 +8,17 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Recorrido proporcional en el runner: `orchestrator-runner.py skip <fase> "motivo"` omite
+  las fases intermedias que no aportan al encargo. Solo avanza a una fase posterior, con al
+  menos una fase de por medio y con el motivo obligatorio; conserva el historial anterior y
+  registra el salto con su fase de partida y su destino, así que las fases omitidas y su
+  motivo se ven en el panel y en `--json` sin cambiar `version` ni la forma de `state`.
+  Retroceso, salto a la fase actual o a la siguiente, destino fuera de rango y motivo vacío
+  o que empieza por `--` salen con código 1 sin tocar el estado. Un salto no autoriza nada:
+  si omite Commit, lo advierte y la confirmación de la persona sigue pendiente. El contrato
+  del orquestador elige el recorrido con evidencia —una consulta de solo lectura termina sin
+  pasar por implementación, tablero ni commit— y `check-package.sh` cubre los escenarios del
+  salto y la lectura de un estado anterior.
 - Plugin de servidor `plugins/orchestrator-phase.ts`: inyecta en el system prompt de cada
   petición de chat la fase actual del runner —su número, su nombre y la evidencia que pide
   `next` para avanzar, más la última registrada— para que el modelo no la olvide al alargarse

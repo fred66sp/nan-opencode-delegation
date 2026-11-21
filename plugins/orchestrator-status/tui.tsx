@@ -29,6 +29,8 @@ type Phase = {
 type Evidence = {
   readonly phase: number
   readonly text: string
+  /** Fase de destino cuando la entrada es un salto justificado. */
+  readonly skip?: number
 }
 
 type RunnerState = {
@@ -69,9 +71,11 @@ function parsePhase(value: unknown): Phase | undefined {
 
 function parseEvidence(value: unknown): Evidence | undefined {
   if (!isRecord(value)) return undefined
-  const { phase, text } = value
+  const { phase, text, skip } = value
   if (typeof phase !== "number" || typeof text !== "string") return undefined
-  return { phase, text }
+  // Un salto solo es posterior y omite al menos una fase, como el del runner; otro valor se ignora.
+  const jump = typeof skip === "number" && Number.isInteger(skip) && skip > phase + 1 ? skip : undefined
+  return jump === undefined ? { phase, text } : { phase, text, skip: jump }
 }
 
 /** Frontera del contrato: JSON ajeno se valida antes de tocar la TUI. */
@@ -303,7 +307,14 @@ function StatusBody(props: {
         fallback={<text fg={context.theme.text.faint}>Sin evidencias registradas.</text>}
       >
         <For each={state().evidence}>
-          {(entry) => <Wrapped prefix={`Fase ${entry.phase} · `} text={entry.text} width={props.width} fg={context.theme.text.muted} />}
+          {(entry) => (
+            <Wrapped
+              prefix={entry.skip === undefined ? `Fase ${entry.phase} · ` : `Fase ${entry.phase} → ${entry.skip} · `}
+              text={entry.text}
+              width={props.width}
+              fg={context.theme.text.muted}
+            />
+          )}
         </For>
       </Show>
     </>
