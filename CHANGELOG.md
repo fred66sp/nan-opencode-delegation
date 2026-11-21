@@ -83,6 +83,17 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- Recuperación proporcionada de subagentes en el contrato del orquestador: la regla 3 exige,
+  antes de delegar trabajo sustancial, objetivo concreto, alcance delimitado, resultado
+  verificable y volumen razonable —los `steps` son una restricción operativa, no una medida
+  del esfuerzo cognitivo—, divide por responsabilidades independientes y no por un número de
+  archivos o llamadas, y deja las síntesis generales en el orquestador. La regla 10 diagnostica
+  antes de repetir cuando un subagente no progresa o repite operaciones: separa lo observado
+  de lo supuesto, identifica el trabajo realmente pendiente y elige la intervención mínima;
+  una ejecución lenta, por sí sola, no se interrumpe —solo un fallo observable justifica
+  intervenir—, un nuevo lanzamiento exige un cambio de alcance, estrategia o condiciones, y la
+  evidencia ya obtenida se conserva sin repetir pruebas válidas.
+
 - Contrato del orquestador consolidado: `agents/orchestrator.md` baja de 2.567 a unas
   1.250 palabras al dejar de repetir la operativa de cada fase que ya imprime el runner. La
   delegación deja de ser universal —el trabajo sustancial va a `general` y lo trivial,
