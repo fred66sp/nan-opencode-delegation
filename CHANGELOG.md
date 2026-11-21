@@ -83,6 +83,16 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- Verificación proporcional al impacto en el contrato del orquestador: la regla 5 pide
+  acotar antes de implementar el comportamiento que debe cambiar, lo que alcanza —archivos,
+  interfaces, datos—, sus consumidores y la comprobación que lo demostraría; en un cambio
+  trivial basta la comprobación localizada y una dependencia no demostrada es no verificada.
+  Después, el `git diff` se contrasta con esa previsión y un impacto relevante no previsto
+  amplía las comprobaciones solo en esa dirección, sin cargar la batería completa porque
+  hayan cambiado más archivos. La evidencia ya ejecutada se reutiliza, ejecutar no equivale a
+  validar el criterio y la aceptación en destino se declara pendiente cuando falta acceso,
+  sin estados nuevos. El escalón de profundidad queda en la fase Verificar del runner, que
+  ya lo enumeraba, y la guía web mantiene el resumen alineado.
 - Recuperación proporcionada de subagentes en el contrato del orquestador: la regla 3 exige,
   antes de delegar trabajo sustancial, objetivo concreto, alcance delimitado, resultado
   verificable y volumen razonable —los `steps` son una restricción operativa, no una medida
