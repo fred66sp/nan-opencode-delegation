@@ -196,6 +196,7 @@ Uso, desde la raíz del proyecto en el que se trabaja:
   ~/.config/opencode/agents/orchestrator-runner.py                muestra la fase actual sin cambiar el estado
   ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
   ~/.config/opencode/agents/orchestrator-runner.py next "texto"   registra el texto como evidencia, avanza y muestra la nueva fase
+  ~/.config/opencode/agents/orchestrator-runner.py skip <fase> "motivo"  salta a una fase posterior: registra el motivo y las fases omitidas
   ~/.config/opencode/agents/orchestrator-runner.py boot           imprime el arranque de la fase 1: memoria, tablero, git, últimos commits y fase
   ~/.config/opencode/agents/orchestrator-runner.py reset          borra el estado: vuelve a la fase 1 sin historial
   ~/.config/opencode/agents/orchestrator-runner.py --json         imprime las fases y el estado en JSON, sin cambiar nada
@@ -207,10 +208,20 @@ la fase actual. Un único argumento de texto; varios puntos van en el mismo text
 de uso (código 1): así `next --json` no avanza por accidente. En la fase 11 no hay transición:
 `next`, con o sin evidencia, avisa de que es la última y no avanza.
 
+`skip` solo va hacia delante y omite al menos una fase: para la inmediatamente siguiente está
+`next`. El motivo es obligatorio —vacío, solo espacios o con `--` al principio es error de uso,
+igual que un destino que no sea un número entero— y queda en el historial junto a la fase de
+partida y la de destino; la evidencia anterior no se toca y las fases omitidas se muestran, con
+su motivo, en cada render. Un salto no sustituye ninguna autorización humana: si omite Commit, el
+render lo advierte y la confirmación explícita de la persona sigue pendiente. Retroceder, saltar
+a la fase actual o a la siguiente, salir del flujo o saltar desde la fase 11 son error (código 1)
+y el estado no se toca.
+
 `--json` se acepta solo y sin otros argumentos: imprime por stdout un único objeto JSON con
 `version` (1), `phases` (las 11 fases en orden, con número, nombre, cuándo, evidencia esperada,
 pasos y advertencias) y `state` (si existe el fichero de estado con `exists`, fase actual, si el
-estado es válido, si el historial lo es y la evidencia registrada). No crea ni modifica el
+estado es válido, si el historial lo es y la evidencia registrada). Una entrada de `evidence`
+puede traer además `skip` con la fase de destino de un salto. No crea ni modifica el
 estado y no emite avisos: su stdout es para un programa, no para una persona. Estado corrupto:
 fase 1 con `valid` en false y `exists` en true; historial que no es una lista: `evidence_valid`
 en false con la evidencia descartada y la fase conservada. Sin fichero de estado: `exists` en
@@ -237,7 +248,7 @@ Códigos de salida: 0 consulta, avance o `boot` correctos; 1 error de uso o no s
 Fases:
 """ + "".join("  %2d  %s\n" % (i, p["name"]) for i, p in enumerate(PHASES, 1))
 
-USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | boot | reset | --json | --help]'
+USAGE = 'uso: orchestrator-runner.py [next ["texto de evidencia"] | skip <fase> "motivo" | boot | reset | --json | --help]'
 
 
 def load_state():
@@ -265,11 +276,35 @@ def save_state(phase, evidence):
         f.write("\n")
 
 
-def render(phase):
+def warn_state(corrupt, bad_evidence):
+    """Los mismos avisos por stderr para cualquiera que cargue y reescriba el estado."""
+    if corrupt:
+        print("aviso: estado inválido en %s; se vuelve a la fase 1" % STATE, file=sys.stderr)
+    if bad_evidence:
+        print("aviso: historial de evidencia inválido en %s; se descarta" % STATE, file=sys.stderr)
+
+
+def render(phase, evidence=None):
     p = PHASES[phase - 1]
     lines = ["Fase %d/%d · %s" % (phase, len(PHASES), p["name"]), "Cuándo: %s." % p["when"], "", "Operativa:"]
     lines += ["  %d. %s" % (i, s) for i, s in enumerate(p["steps"], 1)]
     lines += ["", "Advertencias:"] + ["  - %s" % w for w in p["warnings"]]
+    skipped = []
+    for entry in evidence or []:
+        if not isinstance(entry, dict):
+            continue
+        start, dest, text = entry.get("phase"), entry.get("skip"), entry.get("text")
+        if type(start) is not int or type(dest) is not int or dest <= start + 1:
+            continue
+        if dest - start == 2:
+            line = "Omitidas: fase %d (salto de la %d a la %d) · %s" % (start + 1, start, dest, text)
+        else:
+            line = "Omitidas: fases %d-%d (salto de la %d a la %d) · %s" % (start + 1, dest - 1, start, dest, text)
+        if start <= 9 < dest:
+            line += " — Commit omitido: la confirmación explícita de la persona sigue pendiente."
+        skipped.append(line)
+    if skipped:
+        lines += [""] + skipped
     return "\n".join(lines)
 
 
@@ -410,6 +445,51 @@ def render_json():
     }, ensure_ascii=False, indent=2)
 
 
+def skip(args):
+    """Salta a una fase posterior registrando el motivo y las fases omitidas."""
+    if len(args) != 3:
+        return usage_error(args)
+    dest_arg, text = args[1], args[2]
+    # `isdigit` acepta superíndices que `int` rechaza: solo los dígitos ASCII son un número entero.
+    if not (dest_arg.isascii() and dest_arg.isdigit()):
+        print("error: la fase de destino no es un número entero: %s" % dest_arg, file=sys.stderr)
+        print(USAGE, file=sys.stderr)
+        return 1
+    if not text.strip():
+        print("error: el motivo del salto no puede estar vacío ni ser solo espacios", file=sys.stderr)
+        print(USAGE, file=sys.stderr)
+        return 1
+    if text.startswith("--"):
+        print("error: el motivo del salto no puede empezar por --", file=sys.stderr)
+        print(USAGE, file=sys.stderr)
+        return 1
+
+    phase, evidence, corrupt, bad_evidence = load_state()
+    dest = int(dest_arg)
+    if phase == len(PHASES):
+        print("error: la fase %d es la última: no hay transición" % len(PHASES), file=sys.stderr)
+        return 1
+    if dest > len(PHASES):
+        print("error: la fase de destino %d no existe: el flujo tiene %d fases" % (dest, len(PHASES)), file=sys.stderr)
+        return 1
+    if dest <= phase:
+        print("error: no se retrocede: la fase actual es %d; el salto solo va a una fase posterior" % phase, file=sys.stderr)
+        return 1
+    if dest == phase + 1:
+        print("error: el salto no omitiría ninguna fase (la siguiente es %d); usa next" % (phase + 1), file=sys.stderr)
+        return 1
+
+    warn_state(corrupt, bad_evidence)
+    evidence.append({"phase": phase, "text": text, "skip": dest})
+    try:
+        save_state(dest, evidence)
+    except OSError as e:
+        print("error: no se pudo escribir %s: %s" % (STATE, e), file=sys.stderr)
+        return 1
+    print(render(dest, evidence))
+    return 0
+
+
 def main(argv):
     args = argv[1:]
     if args and args[0] == "--json":
@@ -440,6 +520,8 @@ def main(argv):
             return usage_error(args)
         print(render_boot())
         return 0
+    if args and args[0] == "skip":
+        return skip(args)
     if args and args[0] != "next":
         return usage_error(args)
     if len(args) > 2:
@@ -455,10 +537,7 @@ def main(argv):
         return 1
 
     phase, evidence, corrupt, bad_evidence = load_state()
-    if corrupt:
-        print("aviso: estado inválido en %s; se vuelve a la fase 1" % STATE, file=sys.stderr)
-    if bad_evidence:
-        print("aviso: historial de evidencia inválido en %s; se descarta" % STATE, file=sys.stderr)
+    warn_state(corrupt, bad_evidence)
 
     # La fase 11 no tiene transición: solo informa, con evidencia o sin ella.
     advances = text is not None and phase < len(PHASES)
@@ -472,7 +551,7 @@ def main(argv):
             print("error: no se pudo escribir %s: %s" % (STATE, e), file=sys.stderr)
             return 1
 
-    print(render(phase))
+    print(render(phase, evidence))
     if phase == len(PHASES):
         print("")
         print("Última fase (%d/%d): el runner no avanza más." % (phase, len(PHASES)))

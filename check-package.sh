@@ -291,6 +291,85 @@ if (cd "$dir_l" && python3 "$runner") >/dev/null 2>&1 &&
   [ ! -e "$dir_l/.run/orchestrator-runner.json" ]
 then ok; else ko; echo "    un uso existente cambió de comportamiento"; fi
 
+# j2. El subcomando skip: omite fases hacia delante con motivo y la evidencia previa intacta,
+# y rechaza sin escribir el estado todo lo que no sea un salto válido.
+step "runner skip: salta a una fase posterior y conserva la evidencia previa"
+dir_m="$tmp/runner-skip"
+mkdir -p "$dir_m"
+if (cd "$dir_m" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
+  (cd "$dir_m" && python3 "$runner" skip 6 "sin decisiones ni delegación: cambio trivial") >"$tmp/runner-skip.out" 2>&1 &&
+  python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['phase'] == 6, d; assert d['evidence'] == [{'phase': 1, 'text': 'leído'}, {'phase': 2, 'text': 'sin decisiones ni delegación: cambio trivial', 'skip': 6}], d['evidence']" "$dir_m/.run/orchestrator-runner.json" &&
+  grep -Fq "Omitidas: fases 3-5" "$tmp/runner-skip.out" &&
+  grep -Fq "(salto de la 2 a la 6)" "$tmp/runner-skip.out"
+then ok; else ko; sed 's/^/    /' "$tmp/runner-skip.out"; fi
+
+step "runner skip inválido sale con 1 sin tocar el estado"
+dir_o="$tmp/runner-skip-invalido"
+mkdir -p "$dir_o/.run"
+printf '%s\n' '{"phase": 6, "evidence": [{"phase": 5, "text": "decidido"}]}' >"$dir_o/.run/orchestrator-runner.json"
+cp "$dir_o/.run/orchestrator-runner.json" "$tmp/runner-skip-invalido-antes"
+skip_fails() { (cd "$dir_o" && python3 "$runner" skip "$@") >/dev/null 2>&1; [ $? -eq 1 ]; }
+if skip_fails 1 "x" && skip_fails 6 "x" && skip_fails 7 "x" && skip_fails 12 "x" &&
+  skip_fails 8 "" && skip_fails 8 " " && skip_fails 8 --x && skip_fails ocho "x" &&
+  skip_fails ² "x" && skip_fails && skip_fails 8 &&
+  cmp -s "$tmp/runner-skip-invalido-antes" "$dir_o/.run/orchestrator-runner.json"
+then ok; else ko; echo "    algún salto inválido no salió con 1 o el estado cambió"; fi
+
+step "runner skip: un destino no ASCII es error de uso, no un traceback"
+(cd "$dir_o" && python3 "$runner" skip ² "x") >/dev/null 2>"$tmp/runner-skip-unicode.err"
+rc_u=$?
+if [ "$rc_u" -eq 1 ] && grep -Fq "no es un número entero" "$tmp/runner-skip-unicode.err" &&
+  ! grep -Fq "Traceback" "$tmp/runner-skip-unicode.err"
+then ok; else ko; sed 's/^/    /' "$tmp/runner-skip-unicode.err"; fi
+
+step "runner skip sobre Commit advierte de la confirmación pendiente"
+dir_p="$tmp/runner-skip-commit"
+mkdir -p "$dir_p"
+if (cd "$dir_p" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
+  (cd "$dir_p" && python3 "$runner" skip 10 "consulta de solo lectura") >"$tmp/runner-skip-commit.out" 2>&1 &&
+  grep -Fq "Commit omitido" "$tmp/runner-skip-commit.out" &&
+  grep -Fq "confirmación explícita" "$tmp/runner-skip-commit.out"
+then ok; else ko; sed 's/^/    /' "$tmp/runner-skip-commit.out"; fi
+
+step "runner skip desde Commit también advierte de la confirmación pendiente"
+dir_u="$tmp/runner-skip-desde-commit"
+mkdir -p "$dir_u/.run"
+printf '%s\n' '{"phase": 9, "evidence": []}' >"$dir_u/.run/orchestrator-runner.json"
+if (cd "$dir_u" && python3 "$runner" skip 11 "sin commit: no hay cambios que integrar") >"$tmp/runner-skip-desde-commit.out" 2>&1 &&
+  grep -Fq "Commit omitido" "$tmp/runner-skip-desde-commit.out" &&
+  grep -Fq "Omitidas: fase 10" "$tmp/runner-skip-desde-commit.out"
+then ok; else ko; sed 's/^/    /' "$tmp/runner-skip-desde-commit.out"; fi
+
+step "runner: next avanza tras un salto intermedio"
+dir_v="$tmp/runner-skip-next"
+mkdir -p "$dir_v"
+if (cd "$dir_v" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
+  (cd "$dir_v" && python3 "$runner" skip 6 "sin decisiones ni delegación") >/dev/null 2>&1 &&
+  (cd "$dir_v" && python3 "$runner" next "ejecución terminada") >/dev/null 2>&1 &&
+  python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['phase'] == 7, d['phase']; assert d['evidence'][-1] == {'phase': 6, 'text': 'ejecución terminada'}, d['evidence']" "$dir_v/.run/orchestrator-runner.json"
+then ok; else ko; fi
+
+step "runner skip a la fase 11: next ya no avanza y el salto queda registrado"
+dir_q="$tmp/runner-skip-ultima"
+mkdir -p "$dir_q"
+if (cd "$dir_q" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
+  (cd "$dir_q" && python3 "$runner" skip 11 "pregunta de solo lectura: no hay implementación") >/dev/null 2>&1 &&
+  (cd "$dir_q" && python3 "$runner" next "texto") >/dev/null 2>&1 &&
+  (cd "$dir_q" && python3 "$runner" --json) >"$tmp/runner-skip-ultima.json" 2>&1 &&
+  python3 -c "import json, sys; s = json.load(open(sys.argv[1]))['state']; assert s['phase'] == 11, s; assert s['evidence'][-1] == {'phase': 2, 'text': 'pregunta de solo lectura: no hay implementación', 'skip': 11}, s['evidence']" "$tmp/runner-skip-ultima.json"
+then ok; else ko; fi
+
+step "runner --json lee un estado anterior sin saltos sin cambios"
+dir_r="$tmp/runner-skip-estado-viejo"
+mkdir -p "$dir_r/.run"
+printf '%s\n' '{"phase": 4, "evidence": [{"phase": 3, "text": "explorado"}]}' >"$dir_r/.run/orchestrator-runner.json"
+if (cd "$dir_r" && python3 "$runner" --json) >"$tmp/runner-skip-viejo.json" 2>&1 &&
+  python3 -c "import json, sys; s = json.load(open(sys.argv[1]))['state']; assert s['valid'] is True and s['phase'] == 4, s; assert s['evidence'] == [{'phase': 3, 'text': 'explorado'}], s['evidence']" "$tmp/runner-skip-viejo.json"
+then ok; else ko; fi
+
+step "runner --help documenta skip"
+if python3 "$runner" --help | grep -Fq "skip <fase>"; then ok; else ko; fi
+
 # k. El plugin TUI viaja en la instalación limpia de c: sus fuentes, sus tipos y su
 # registro en cli.json (un paquete solo-TUI no va en plugins/, el servidor colisiona).
 step "instalación limpia: plugin orchestrator-status con sus fuentes"

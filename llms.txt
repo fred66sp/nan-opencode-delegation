@@ -19,7 +19,7 @@
 - [`agents/docs.md`](agents/docs.md)
 - [`agents/ui.md`](agents/ui.md)
 - [`agents/tasks-agent.md`](agents/tasks-agent.md)
-- [`agents/orchestrator-runner.py`](agents/orchestrator-runner.py) — guía determinista del flujo del orquestador: fase actual, lista operativa, `next` y `--json` con las fases y el estado para un programa
+- [`agents/orchestrator-runner.py`](agents/orchestrator-runner.py) — guía determinista del flujo del orquestador: fase actual, lista operativa, `next`, `skip` con motivo para las fases que no aportan, y `--json` con las fases y el estado para un programa
 - [`agents/delegation-report-checker.py`](agents/delegation-report-checker.py) — comprobador determinista del retorno estructurado de un subagente: `--checks` con el informe y la lista de comprobaciones esperadas, veredicto por stdout, `--json` y códigos de salida 0/1/2
 - [`plugins/orchestrator-status/tui.tsx`](plugins/orchestrator-status/tui.tsx) — plugin TUI de OpenCode: diálogo modal con scroll y la fase del orquestador, su operativa, advertencias e historial de evidencias; se abre con `/orquestador` y solo lee
 
