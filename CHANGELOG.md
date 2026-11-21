@@ -72,6 +72,21 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- Verificación más barata y proporcional. `agents/verify.md` recibe del encargo los comandos
+  y el alcance y deja de descubrir la infraestructura de pruebas: ejecuta solo lo pedido,
+  devuelve `partial` si el encargo llega sin comandos y conserva su presupuesto de 12 pasos.
+  `agents/review.md` no repite comprobaciones que el encargo ya trae como ejecutadas. Las
+  reglas 3, 4, 5 y 6 de `agents/orchestrator.md` aprovechan la evidencia del implementador,
+  piden la batería completa solo cuando el cambio no permita acotar qué puede romper, lanzan
+  `verify` cuando falte una comprobación, la independencia o el riesgo lo justifiquen, y
+  reservan `review` para contratos, seguridad, datos, concurrencia o criterio ambiguo;
+  `ponytail-review` deja de acompañar todo encargo de `review` y solo va cuando aporta
+  criterio. Los estados quedan definidos: `completed` informa el alcance acordado aunque una
+  prueba falle, siempre con el fallo en `validation`; `partial` nombra lo que quedó sin
+  comprobar y el agotamiento de pasos no invalida lo hecho; `blocked` queda para el
+  impedimento deliberado. Un `partial` se re-encarga solo en la parte que faltó. La fase
+  «Verificar» de `agents/orchestrator-runner.py` y su copia embebida en la guía dicen lo
+  mismo. La guía web refleja las mismas reglas en su resumen del contrato.
 - Dimensionado de encargos contra el presupuesto de pasos: la regla 3 de
   `agents/orchestrator.md` obliga a estimar las llamadas que exige un encargo (lecturas,
   ediciones y validación) contra el `steps` del agente elegido —público en su
