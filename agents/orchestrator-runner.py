@@ -228,7 +228,7 @@ en false con la evidencia descartada y la fase conservada. Sin fichero de estado
 false, fase 1 y `valid` en true.
 
 `boot` imprime en una invocación el arranque de la fase 1 en cuatro secciones de texto —memoria
-de la sesión (`engram context` con el nombre del directorio actual, acotada), tablero (en curso y
+de la sesión (`acm start` sobre el montaje del proyecto, con la sesión del entorno, acotada), tablero (en curso y
 listas para empezar, con ref y título), git (rama, resumen de `git status` y los tres últimos commits) y la fase actual—.
 Es solo lectura: no escribe el estado ni llama a `save_state`. Cada fuente falla por su cuenta: su
 sección imprime «no disponible» con el motivo y el comando sigue con código 0. Solo un `boot` con
@@ -352,10 +352,10 @@ def head(text, limit=30):
 
 def boot_memory():
     lines = ["## Memoria"]
-    engram = locate("engram", os.path.expanduser(os.path.join("~", ".local", "bin", "engram")))
-    if not engram:
-        return lines + ["no disponible: engram no está instalado ni en el PATH"]
-    output, error = capture([engram, "context", os.path.basename(os.getcwd())])
+    acm = locate("acm", os.path.expanduser(os.path.join("~", ".local", "bin", "acm")))
+    if not acm:
+        return lines + ["no disponible: acm no está instalado ni en el PATH"]
+    output, error = capture([acm, "start"])
     if error:
         return lines + ["no disponible: %s" % error]
     return lines + head(output)

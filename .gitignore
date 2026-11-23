@@ -23,8 +23,8 @@ Desktop.ini
 
 # --- Estado local de herramientas de IA ---------------------------------------
 .atl/
+.agent-memory/
 .codegraph/
-.engram/
 .explanations/
 .impeccable/
 .pi/

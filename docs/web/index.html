@@ -376,7 +376,7 @@
       <p class="cmdcap">Windows (PowerShell)</p>
       <div class="code"><pre data-language="bash"><code>powershell -ExecutionPolicy Bypass -File install.ps1</code></pre></div>
       <p>Lo que hace: copia los agentes de <code>agents/</code> a <code>~/.config/opencode/agents/</code> —las dos herramientas del flujo, <code>orchestrator-runner.py</code> y <code>delegation-report-checker.py</code>, viajan con ellos—, copia el comando <code>commands/odd-fix.md</code> a <code>~/.config/opencode/commands/</code> —el único del paquete, sin herramientas ni flujo propios—, copia el plugin de servidor <code>plugins/orchestrator-phase.ts</code> a <code>~/.config/opencode/plugins/</code> —lo carga el servidor, así que no se registra en <code>cli.json</code>—, copia el plugin del estado a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code> con sus fuentes y sin <code>node_modules</code>, lo registra en la clave <code>plugins</code> de <code>cli.json</code> —un paquete solo-TUI no puede vivir en <code>plugins/</code>, el servidor lo cargaría y colisiona con su OpenTUI interno—, y deja el bloque <code>agents</code> de <code>explore</code> y <code>general</code> y la regla <code>permissions</code> que deniega <code>tasks_*</code> en la configuración global. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si un agente o fichero del plugin existente difiere, guarda también una copia <code>.bak</code> con fecha antes de reemplazarlo; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime los bloques para pegarlos a mano. Deposita además las dos herramientas junto a los agentes, en <code>~/.config/opencode/agents/</code>: el runner <code>orchestrator-runner.py</code>, ejecutable en Linux y macOS, que dice en qué fase va el flujo y qué evidencia pide para avanzar, y el comprobador <code>delegation-report-checker.py</code>, que dice si el informe de un delegado cumple la forma del contrato.</p>
-      <p>El comando <code>/odd-fix</code> abre la sesión con <code>orchestrator</code> y le pasa la descripción del defecto en <code>$ARGUMENTS</code>; si falta o no describe un defecto observable, el agente la pide y no toca archivos. No añade herramientas ni pasos propios: el trabajo sigue el contrato y el tablero del orquestador. No hay <code>/odd-status</code>: se descartó porque <code>boot</code> puede escribir —<code>git status</code> y <code>engram context</code>— y su <code>--json</code> se solapa con el panel <code>/orquestador</code>.</p>
+      <p>El comando <code>/odd-fix</code> abre la sesión con <code>orchestrator</code> y le pasa la descripción del defecto en <code>$ARGUMENTS</code>; si falta o no describe un defecto observable, el agente la pide y no toca archivos. No añade herramientas ni pasos propios: el trabajo sigue el contrato y el tablero del orquestador. No hay <code>/odd-status</code>: se descartó porque <code>boot</code> puede escribir —<code>git status</code> y <code>acm start</code>— y su <code>--json</code> se solapa con el panel <code>/orquestador</code>.</p>
       <div class="note"><p><strong>A mano en cinco pasos.</strong> Copia los ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code>, copia <code>commands/odd-fix.md</code> a <code>~/.config/opencode/commands/</code>, copia <code>plugins/orchestrator-phase.ts</code> a <code>~/.config/opencode/plugins/</code>, copia <code>plugins/orchestrator-status/</code> a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code>, añade esa ruta a la clave <code>plugins</code> de tu <code>cli.json</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
     </section>
 
@@ -528,7 +528,7 @@
       </figure>
       <p>El estado vive en <code>.run/orchestrator-runner.json</code>, en el directorio del proyecto en el que trabajas, nunca junto al script instalado. Guarda la fase y el historial, con una entrada por fase dejada; cuando se omitieron fases, esa entrada lleva además el motivo y la fase de destino. Si falta, se empieza en la fase 1 y la primera invocación lo crea. Un fichero corrupto o con la fase fuera de rango vuelve a la fase 1 con un aviso por stderr; un historial que no es una lista se descarta conservando la fase. <code>reset</code> borra el fichero entero —fase e historial— sin tocar nada más.</p>
       <p><code>--json</code> imprime un único objeto por la salida estándar con <code>version</code>, las once fases —número, nombre, cuándo, evidencia esperada, pasos y advertencias— y el estado: si existe el fichero, la fase actual, si el estado y el historial son válidos y la evidencia registrada, donde una entrada puede traer el destino de un salto. No crea ni modifica el estado y no emite avisos: su stdout es para un programa, no para una persona. Se acepta solo, sin otros argumentos.</p>
-      <p><code>boot</code> reúne en una invocación el arranque de la fase 1 en secciones de texto: la memoria reciente de la sesión (<code>engram context</code>), el tablero con lo que está en curso y lo que está listo para empezar, la rama, el estado y los tres últimos commits de git, y la fase actual del runner. No escribe el estado del runner: no crea ni modifica el estado. Cada fuente falla por su cuenta y su sección dice «no disponible» con el motivo, así que un proyecto sin tablero, sin git o sin estado sigue dando el resto del arranque.</p>
+      <p><code>boot</code> reúne en una invocación el arranque de la fase 1 en secciones de texto: la memoria reciente de la sesión (<code>acm start</code>), el tablero con lo que está en curso y lo que está listo para empezar, la rama, el estado y los tres últimos commits de git, y la fase actual del runner. No escribe el estado del runner: no crea ni modifica el estado. Cada fuente falla por su cuenta y su sección dice «no disponible» con el motivo, así que un proyecto sin tablero, sin git o sin estado sigue dando el resto del arranque.</p>
       <p>Para que el agente no toque ese registro a mano, el paquete lleva un <code>.llmignore</code> con la regla. Se aplica con el plugin <code>opencode-ignore-file</code> instalado globalmente (<code>npm run install:plugin</code> desde su repositorio, y reiniciar opencode). Sin el plugin, la regla no bloquea: vale la convención.</p>
       <div class="note"><p><strong>El runner no juzga el trabajo.</strong> Dice en qué fase estás y qué evidencia falta; no comprueba el mundo real. Los bloqueos siguen siendo los del tablero y los de la tarea.</p></div>
       <p><button class="btn btn-ghost" type="button" id="runner-code-button">Ver el código del runner</button></p>
@@ -1291,7 +1291,7 @@ en false con la evidencia descartada y la fase conservada. Sin fichero de estado
 false, fase 1 y `valid` en true.
 
 `boot` imprime en una invocación el arranque de la fase 1 en cuatro secciones de texto —memoria
-de la sesión (`engram context` con el nombre del directorio actual, acotada), tablero (en curso y
+de la sesión (`acm start` sobre el montaje del proyecto, con la sesión del entorno, acotada), tablero (en curso y
 listas para empezar, con ref y título), git (rama, resumen de `git status` y los tres últimos commits) y la fase actual—.
 Es solo lectura: no escribe el estado ni llama a `save_state`. Cada fuente falla por su cuenta: su
 sección imprime «no disponible» con el motivo y el comando sigue con código 0. Solo un `boot` con
@@ -1415,10 +1415,10 @@ def head(text, limit=30):
 
 def boot_memory():
     lines = ["## Memoria"]
-    engram = locate("engram", os.path.expanduser(os.path.join("~", ".local", "bin", "engram")))
-    if not engram:
-        return lines + ["no disponible: engram no está instalado ni en el PATH"]
-    output, error = capture([engram, "context", os.path.basename(os.getcwd())])
+    acm = locate("acm", os.path.expanduser(os.path.join("~", ".local", "bin", "acm")))
+    if not acm:
+        return lines + ["no disponible: acm no está instalado ni en el PATH"]
+    output, error = capture([acm, "start"])
     if error:
         return lines + ["no disponible: %s" % error]
     return lines + head(output)

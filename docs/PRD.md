@@ -57,7 +57,7 @@ ser una introducción a la orquestación en general.
 - No incluye la skill `playwright-cli-usage`: el agente `ui` la necesita, el orquestador la
   adjunta por ruta al delegar y su instalación queda fuera por venir de otro catálogo.
 - No hay `/odd-status`: se descartó porque `boot` puede escribir —`git status` y
-  `engram context`— y su `--json` se solapa con el panel `/orquestador`.
+  `acm start`— y su `--json` se solapa con el panel `/orquestador`.
 
 ## 4. Requisitos aprobados
 
