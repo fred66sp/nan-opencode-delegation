@@ -21,7 +21,7 @@ PHASES = [
         "when": "al empezar cualquier sesión, antes de lanzar subagentes o tocar archivos",
         "evidence": "qué se leyó (memoria de la sesión, tablero y `AGENTS.md` del proyecto)",
         "steps": [
-            "Recuperar el contexto con `acm start` en la raíz del proyecto; `acm recall` si la petición toca algo ya trabajado.",
+            "Recuperar el contexto con `acm start` en la raíz del proyecto; `acm aif` es la interfaz autodescriptiva del resto de operaciones de la memoria: el envelope de descubrimiento ({\"aif\":\"0.2\"}) por stdin devuelve su lista.",
             "Leer el `AGENTS.md` del proyecto y su mapa de fuentes antes de decidir nada.",
             "Consultar el tablero (en curso y listas para empezar) con la CLI `tasks-ai` del proyecto, directamente: las lecturas del tablero no se delegan.",
             "Comprobar la fase con `~/.config/opencode/agents/orchestrator-runner.py`; si la sesión anterior dejó otra y empiezas trabajo nuevo, ejecuta su subcomando `reset` para volver a la fase 1. El fichero `.run/orchestrator-runner.json` no se borra a mano: el agente no puede tocarlo.",
@@ -176,9 +176,9 @@ PHASES = [
         "when": "tras cada decisión, bugfix o hallazgo, y antes de decir «done»",
         "evidence": "ninguna: es la última fase y no hay transición que justificar; el reinicio lo hace `reset`",
         "steps": [
-            "Guardar con `acm decision|learning|discovery|bugfix` tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema; las preferencias y restricciones de la persona con `acm preference`.",
-            "Dejar trabajo a medias: `acm checkpoint` con estado y siguientes pasos.",
-            "Antes de decir «done» o cerrar la sesión, `acm close` con el resumen del cierre; el cierre del tablero (si el proyecto usa tasks-ai) manda sobre el de memoria.",
+            "Guardar con `acm aif` las operaciones de memoria (decision, learning, discovery, bugfix) tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema; las preferencias de la persona, su operación `preference`.",
+            "Dejar trabajo a medias: `acm aif` con su operación `checkpoint` y el estado con los siguientes pasos.",
+            "Antes de decir «done» o cerrar la sesión, `acm aif` con su operación `close` y el resumen del cierre; el cierre del tablero (si el proyecto usa tasks-ai) manda sobre el de memoria.",
             "Antes de dar la sesión por cerrada, `reset`: una vez cerrada la sesión el estado debe quedar en fase 1 y sin historial, nunca en la fase 11; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.",
         ],
         "warnings": [
