@@ -17,6 +17,9 @@ type OrchestratorColor = {
   readonly a: number
 }
 
+/** Global de Node que usa el plugin para leer variables de entorno. */
+declare const process: { readonly env: Record<string, string | undefined> }
+
 /** Resultado de componer JSX; el host lo materializa. */
 type OrchestratorElement = { readonly __orchestratorElement: never }
 
@@ -28,9 +31,13 @@ declare module "node:child_process" {
   export function execFile(
     file: string,
     args: readonly string[],
-    options: { readonly cwd?: string; readonly timeout?: number },
+    options: { readonly cwd?: string; readonly timeout?: number; readonly env?: Record<string, string | undefined> },
     callback: (error: ExecFileError | null, stdout: string, stderr: string) => void,
   ): void
+}
+
+declare module "node:fs" {
+  export function existsSync(path: string): boolean
 }
 
 declare module "node:os" {
@@ -171,6 +178,7 @@ declare module "@opencode/plugin/tui" {
 
   export interface UI {
     readonly dialog: Dialog
+    readonly router: { current(): { readonly type: "session"; readonly sessionID: string } | { readonly type: "home" | "plugin" } }
   }
 
   export interface Context {

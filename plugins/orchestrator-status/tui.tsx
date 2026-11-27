@@ -48,8 +48,6 @@ type RunnerState = {
   readonly valid: boolean
   readonly evidence_valid: boolean
   readonly evidence: readonly Evidence[]
-  /** La sesión que más recientemente avanzó, cuando --latest la resolvió. */
-  readonly session?: string
 }
 
 type RunnerData = {
@@ -118,8 +116,6 @@ function parseRunnerData(raw: string): RunnerData | undefined {
   ) {
     return undefined
   }
-  // Identidad opcional del estado --latest: presente solo cuando la resolvió.
-  const session = typeof state.session === "string" ? state.session : undefined
   const parsedEvidence: Evidence[] = []
   for (const item of evidence) {
     const entry = parseEvidence(item)
@@ -128,7 +124,7 @@ function parseRunnerData(raw: string): RunnerData | undefined {
   }
   if (parsedPhases.length === 0) return undefined
 
-  return { version, phases: parsedPhases, state: { exists, phase, valid, evidence_valid, evidence: parsedEvidence, session } }
+  return { version, phases: parsedPhases, state: { exists, phase, valid, evidence_valid, evidence: parsedEvidence } }
 }
 
 /** Frontera del tablero: solo cuenta estados; un JSON que no es la lista de tareas es ausencia de señal. */
@@ -201,12 +197,9 @@ function mismatchNotice(data: RunnerData, inProgress: number, dirty: number): st
 }
 
 /** Consulta el runner sin escribir nada; cualquier fallo se convierte en un mensaje estable. */
-function queryRunner(cwd: string): Promise<Snapshot> {
+function queryRunner(cwd: string, sessionID: string): Promise<Snapshot> {
   return new Promise((resolve) => {
-    // --latest: el proceso TUI no lleva la identidad de sesión del orquestador,
-    // y el contrato sin sesión solo da el estado vacío; la respuesta nombra la
-    // sesión que más recientemente avanzó, o el estado queda vacío.
-    execFile(runnerBinary(), ["--json", "--latest"], { cwd, timeout: QUERY_TIMEOUT_MS }, (error, stdout) => {
+    execFile(runnerBinary(), ["--json"], { cwd, timeout: QUERY_TIMEOUT_MS, env: { ...process.env, OPENCODE_SESSION_ID: sessionID } }, (error, stdout) => {
       const at = Date.now()
       if (error) {
         resolve({ kind: "error", message: RUNNER_ERROR, at })
@@ -294,10 +287,11 @@ function StatusBody(props: {
           <text fg={context.theme.text.feedback.warning.muted}>
             {state().exists
               ? clip("Estado corrupto: no se muestra fase hasta correr `runner recover`", props.width)
-              : clip("Sin estado del orquestador: ninguna sesión ha registrado fase en este proyecto", props.width)}
+              : clip("Sin estado del orquestador para esta sesión", props.width)}
           </text>
         }
       >
+        <>
         <text fg={context.theme.text.base}>
           {clip(`Fase ${state().phase}/${total()} · ${phase()?.name ?? "fase desconocida"}`, props.width)}
         </text>
@@ -328,6 +322,7 @@ function StatusBody(props: {
             )}
           </For>
         </Show>
+        </>
       </Show>
 
       <text fg={context.theme.text.base}> </text>
@@ -371,7 +366,7 @@ function contentHeight(termHeight: number | undefined): number {
   return Math.max(8, Math.min(25, Math.floor(((termHeight ?? 30) * 4) / 5) - 4))
 }
 
-function OrchestratorDialog() {
+function OrchestratorDialog(props: { readonly sessionID: string }) {
   const context = usePlugin()
   const [snapshot, setSnapshot] = createSignal<Snapshot>()
   const [inProgress, setInProgress] = createSignal(0)
@@ -391,7 +386,7 @@ function OrchestratorDialog() {
     if (busy()) return
     setBusy(true)
     const location = context.location ?? context.data.location.default()
-    void Promise.all([queryRunner(location.directory), queryBoard(location.directory), queryGitDirty(location.directory)]).then(
+    void Promise.all([queryRunner(location.directory, props.sessionID), queryBoard(location.directory), queryGitDirty(location.directory)]).then(
       ([next, running, dirty]) => {
         setSnapshot(next)
         setInProgress(running)
@@ -433,7 +428,7 @@ function OrchestratorDialog() {
     if (!data.state.valid) return `Estado corrupto: no se muestra fase hasta correr \`runner recover\` · ${at}`
     if (!data.state.evidence_valid) return `Historial inválido: el runner no registra evidencias · ${at}`
     if (!data.state.exists) return `Sin estado identificado: no se muestra fase por defecto · ${at}`
-    const session = data.state.session ? ` · sesión ${data.state.session}` : ""
+    const session = props.sessionID ? ` · sesión ${props.sessionID}` : ""
     return `${session} ${at}`.trimStart()
   }
 
@@ -487,8 +482,10 @@ export default Plugin.define({
           palette: true,
           slash: { name: "orquestador" },
           run: () => {
+            const route = context.ui.router.current()
+            const sessionID = route.type === "session" ? route.sessionID : ""
             context.ui.dialog.set({ size: "xlarge", centered: true })
-            context.ui.dialog.show(() => <OrchestratorDialog />)
+            context.ui.dialog.show(() => <OrchestratorDialog sessionID={sessionID} />)
           },
         },
         {
