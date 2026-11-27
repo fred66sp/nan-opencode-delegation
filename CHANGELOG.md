@@ -6,6 +6,27 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ## [Sin publicar]
 
+### Cambiado
+
+- Retirado `tasks-agent`: con Tasks-AI v0.2.0 las herramientas `tasks_*` de OpenCode
+  desaparecieron y el tablero va directo. El orquestador ejecuta él mismo las operaciones
+  deterministas del tablero por AIF (`tasks-ai aif`), el subcomando autodescriptivo cuya
+  regla vive en `.tasks-ai/AGENTS.md` del proyecto; lo que AIF no cubre —los ADR y el
+  catálogo de etiquetas— y las lecturas siguen por la CLI `tasks-ai` convencional. El
+  contrato pierde su permiso de subagente, la regla 9 se acorta sin duplicar el contrato de
+  AIF y el runner ajusta los mensajes de sus fases 3, 5 y 9 sin cambiar su estructura. La
+  plantilla `config/opencode.jsonc` no lleva ya la regla global que denegaba `tasks_*` y
+  los instaladores, además de retirar un `tasks-agent.md` previo —con copia `.bak.<fecha>`
+  siempre antes de borrar, porque el paquete ya no distribuye el fichero—, retiran esa
+  regla de configuraciones anteriores solo
+  cuando coincide exactamente con la entrada conocida; si difiere, la conservan e informan.
+  Ningún subagente escribe en el tablero.
+- Documentación alineada al nuevo reparto: cuatro subagentes propios y dos integrados,
+  seis en total, con el tablero gestionado directamente por el orquestador; README, guía
+  web (con la copia embebida del runner regenerada), PRD, llms.txt y el checker de
+  evaluaciones, cuyo arnés de `tasks-agent` —hoy sin agente que medir— queda identificado
+  como retirado y conservado como registro histórico.
+
 ### Añadido
 
 - Comando nativo `commands/odd-fix.md`: `/odd-fix <descripción>` selecciona en la sesión actual al agente

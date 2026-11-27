@@ -9,8 +9,5 @@
       "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" },
       "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ]
     }
-  },
-  "permissions": [
-    { "action": "tasks_*", "resource": "*", "effect": "deny" }
-  ]
+  }
 }

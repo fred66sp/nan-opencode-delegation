@@ -28,6 +28,18 @@ Get-ChildItem (Join-Path $here 'agents\*') -File | ForEach-Object {
 Write-Host "Agentes copiados en $agentsDir :"
 Get-ChildItem $agentsDir -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
 
+# 1b. Retirada de tasks-agent: AIF cubre sus operaciones y el tablero va directo.
+# Copia .bak siempre antes de borrar: el paquete ya no distribuye el fichero y una
+# version personalizada se conservaria solo con la copia. La segunda pasada no
+# crea otra porque el fichero ya no existe.
+$legacyAgent = Join-Path $agentsDir 'tasks-agent.md'
+if (Test-Path $legacyAgent) {
+    Copy-Item $legacyAgent ($legacyAgent + '.bak.' + $stamp)
+    Write-Host "Copia previa de tasks-agent.md: $legacyAgent.bak.$stamp"
+    Remove-Item $legacyAgent
+    Write-Host "tasks-agent.md retirado de $agentsDir (el tablero va directo por AIF)"
+}
+
 # 2. Los comandos nativos, en commands/ del mismo directorio de configuracion.
 $commandsDir = Join-Path $configRoot 'commands'
 New-Item -ItemType Directory -Force -Path $commandsDir | Out-Null
@@ -103,7 +115,9 @@ try {
     Write-Host "  \"plugins\": [ \"$pluginDir\", ... ]"
 }
 
-# 5. Modelos de explore y general, y la regla global que deniega tasks_*.
+# 5. Modelos de explore y general. La regla global que deniega tasks_* vive en
+# configuraciones anteriores; se retira cuando coincide exactamente con la entrada
+# conocida y no hay mas reglas de ese tipo, sin tocar nada ajeno.
 $dest = @('opencode.jsonc', 'opencode.json') |
     ForEach-Object { Join-Path $configRoot $_ } |
     Where-Object { Test-Path $_ } |
@@ -156,24 +170,33 @@ else {
             if ($agents.PSObject.Properties[$pair.Name]) { $agents.($pair.Name) = $entry }
             else { $agents | Add-Member -NotePropertyName $pair.Name -NotePropertyValue $entry }
         }
-        $rule = [pscustomobject]@{ action = 'tasks_*'; resource = '*'; effect = 'deny' }
         $permsProp = $data.PSObject.Properties['permissions']
-        if (-not $permsProp -or $null -eq $permsProp.Value) {
-            if ($permsProp) { $data.PSObject.Properties.Remove('permissions') }
-            $data | Add-Member -NotePropertyName permissions -NotePropertyValue @($rule)
+        if ($permsProp -and $permsProp.Value -is [array]) {
+            $rules = @($permsProp.Value)
+            $legacy = $rules | Where-Object { $_ -is [pscustomobject] -and $_.action -eq 'tasks_*' -and $_.resource -eq '*' -and $_.effect -eq 'deny' }
+            $near = $rules | Where-Object { $_ -is [pscustomobject] -and $_.action -eq 'tasks_*' -and ($_.resource -ne '*' -or $_.effect -ne 'deny') }
+            if ($near -and -not $legacy) {
+                Write-Host "Aviso: hay una regla de tasks_* que no coincide con la entrada conocida; se conserva sin tocarla."
+            }
+            if ($legacy) {
+                $rest = @($rules | Where-Object { -not ($_ -is [pscustomobject] -and $_.action -eq 'tasks_*' -and $_.resource -eq '*' -and $_.effect -eq 'deny') })
+                if ($rest.Count -gt 0) { $data.permissions = $rest } else { $data.PSObject.Properties.Remove('permissions') }
+                Write-Host "Retirada la regla global de tasks_* (la herramienta ya no existe en Tasks-AI v0.2.0)."
+            }
         }
-        elseif ($permsProp.Value -is [array]) {
-            $hasRule = @($permsProp.Value | Where-Object { $_.action -eq 'tasks_*' -and $_.effect -eq 'deny' }).Count -gt 0
-            if (-not $hasRule) { $data.permissions = @($permsProp.Value) + @($rule) }
-        }
-        elseif (($permsProp.Value -is [pscustomobject]) -and ($permsProp.Value.action -eq 'tasks_*') -and ($permsProp.Value.effect -eq 'deny')) {
-            # ConvertFrom-Json desenrolla el array de un solo elemento: la regla ya esta.
-        }
-        elseif ($permsProp.Value -is [pscustomobject]) {
-            $data.permissions = @($permsProp.Value) + @($rule)
-        }
-        else {
-            Write-Host "Aviso: la clave 'permissions' no es una lista; no se anade la regla de tasks_*."
+        elseif ($permsProp -and ($permsProp.Value -is [pscustomobject])) {
+            # ConvertFrom-Json desenrolla el array de un solo elemento: una única regla llega como objeto.
+            $rule = $permsProp.Value
+            if ($rule.action -eq 'tasks_*' -and $rule.resource -eq '*' -and $rule.effect -eq 'deny') {
+                $data.PSObject.Properties.Remove('permissions')
+                Write-Host "Retirada la regla global de tasks_* (la herramienta ya no existe en Tasks-AI v0.2.0)."
+            }
+            elseif ($rule.action -eq 'tasks_*') {
+                Write-Host "Aviso: hay una regla de tasks_* que no coincide con la entrada conocida; se conserva sin tocarla."
+            }
+            else {
+                Write-Host "Aviso: la clave 'permissions' no es una lista; la regla de tasks_* se conserva sin tocarla."
+            }
         }
         $utf8 = New-Object System.Text.UTF8Encoding($false)
         [System.IO.File]::WriteAllText($dest, (ConvertTo-Json $data -Depth 100), $utf8)
@@ -186,10 +209,7 @@ else {
         Write-Host '  "agents": {'
         Write-Host '    "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] },'
         Write-Host '    "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] }'
-        Write-Host '  },'
-        Write-Host '  "permissions": ['
-        Write-Host '    { "action": "tasks_*", "resource": "*", "effect": "deny" }'
-        Write-Host '  ],'
+        Write-Host '  }'
     }
 }
 
@@ -199,4 +219,4 @@ Write-Host '  opencode auth login        # elige el proveedor NaN y pega su API 
 Write-Host ''
 Write-Host 'Comprobacion:'
 Write-Host "  opencode models | Select-String 'nan/'"
-Write-Host "  opencode api get /api/agent | Select-String 'orchestrator|verify|review|docs|ui|tasks-agent'"
+Write-Host "  opencode api get /api/agent | Select-String 'orchestrator|verify|review|docs|ui'"

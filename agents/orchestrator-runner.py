@@ -52,10 +52,10 @@ PHASES = [
         "evidence": "la referencia de la tarea (`tk-n`), «trivial sin tarea, con autorización de la persona» o «tarea creada, sin épica»",
         "steps": [
             "Aplicar el test de la sesión interrumpida: si la sesión se parara ahora, ¿alguien podría terminar el trabajo con la petición original y `git diff`?",
-            "Respuesta sí: si el cambio es muy trivial —uno o dos archivos como máximo, p. ej. una entrada en `.gitignore`—, no se crea tarea nueva, salvo que la persona la quiera; en otro caso, lanza a `tasks-agent` el registro de una tarea (`task` + `ODD` + tipo) —o una épica si el trabajo reviste importancia— con su criterio observable y la petición original en un comentario, y comprueba por CLI que quedó con su criterio antes de la primera edición.",
-            "Respuesta no: trabajo grande. Lanza a `tasks-agent` en background un único encargo con la secuencia ordenada de registro: una épica (`epic` + `ODD` + tipo), sus subtareas (`task` + `ODD` + tipo), el criterio observable de cada una y la petición original en un comentario. Continúa con tu proceso y, antes de la primera edición, comprueba por CLI que la épica quedó con su criterio.",
+            "Respuesta sí: si el cambio es muy trivial —uno o dos archivos como máximo, p. ej. una entrada en `.gitignore`—, no se crea tarea nueva, salvo que la persona la quiera; en otro caso, registra por AIF (`tasks-ai aif`) la tarea (`task` + `ODD` + tipo) —o una épica si el trabajo reviste importancia— con su criterio observable y la petición original en un comentario, y comprueba por CLI que quedó con su criterio antes de la primera edición.",
+            "Respuesta no: trabajo grande. Registra por AIF, en una sola secuencia ordenada: una épica (`epic` + `ODD` + tipo), sus subtareas (`task` + `ODD` + tipo), el criterio observable de cada una y la petición original en un comentario. Continúa con tu proceso y, antes de la primera edición, comprueba por CLI que la épica quedó con su criterio.",
             "Comprobar el catálogo con `tasks-ai tags`: las etiquetas nacen ahí antes de usarse.",
-            "Las escrituras sin herramienta `tasks_*` —ADR (`adr create/edit/import/export`) y catálogo de etiquetas (`tag create/edit/delete`)— van por la CLI `tasks-ai` directa, nunca a `tasks-agent`; asignar etiquetas en `create`/`update` sí viaja en el encargo.",
+            "Las operaciones que AIF no cubre —los ADR (`adr create/edit/import/export`) y el catálogo de etiquetas (`tag create/edit/delete`)— van por la CLI `tasks-ai` convencional; asignar etiquetas va dentro de `create`/`update`.",
         ],
         "warnings": [
             "Una tarea sin criterio no se empieza: el criterio es lo que después se contrasta con el resultado real.",
@@ -98,13 +98,13 @@ PHASES = [
         "steps": [
             "Todo encargo lleva cuatro cosas: objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación; si hay tablero, la referencia de la tarea.",
             "En el encargo, distinguir obstáculo corriente —error, timeout, herramienta que falla—, que se diagnostica y se supera, de bloqueo deliberado —fichero marcado para no tocar, acceso retirado a propósito—, que se respeta y se comunica buscando otra vía segura; el informe de retorno se entiende sin haber visto el trabajo.",
-            "Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación, `verify` y `review` para verificación independiente, `tasks-agent` para escribir en el tablero; sus lecturas van directas por la CLI `tasks-ai`.",
+            "Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación y `verify` y `review` para verificación independiente.",
             "Llevar el libro de delegaciones en `.run/delegations.jsonl`: consultarlo antes de lanzar —un lanzamiento con la misma huella que siga en `launched` no se repite, se espera su aviso—, añadir la línea al lanzar y actualizar su `status` al recibir el retorno.",
             "Usar `background` solo para unidades independientes con archivos distintos, y esperar el aviso antes de integrar.",
             "Implementar en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor.",
         ],
         "warnings": [
-            "El subagente no toca el tablero ni inventa estados: cada escritura de `tasks-*` va a `tasks-agent`; una escritura lanzada no es evidencia, se comprueba por CLI antes de usarse.",
+            "El subagente no toca el tablero ni inventa estados: las escrituras del tablero las hace el orquestador por AIF; una operación lanzada no es evidencia, se comprueba por CLI antes de usarse.",
             "Revisa la salida del subagente antes de integrarla; un encargo sustancial nace además con alcance y criterios en su tarea.",
         ],
     },
@@ -160,15 +160,15 @@ PHASES = [
         "evidence": "la tarea cerrada o el siguiente paso declarado",
         "steps": [
             "Comprobar el criterio de la tarea contra el resultado real.",
-            "Dejar la bitácora como comentario en términos del producto: qué se hizo y qué se comprobó, vía `tasks-agent` en primer plano.",
-            "Cerrar con `tasks-agent` en primer plano (`tasks-ai close <ref> --reason done`) solo con la revisión de la persona o su pedido expreso.",
-            "Dejar el trabajo a medias: lanza a `tasks-agent` en background el paso a `open` y un comentario con el siguiente paso, y comprueba por CLI que quedó registrado.",
+            "Dejar la bitácora como comentario en términos del producto: qué se hizo y qué se comprobó, por AIF en primer plano.",
+            "Cerrar por AIF en primer plano solo con la revisión de la persona o su pedido expreso.",
+            "Dejar el trabajo a medias: devuelve la tarea a `open` y añade un comentario con el siguiente paso, por AIF, y comprueba por CLI que quedó registrado.",
             "Épica: cerrarla cuando cierren todas sus hijas; cerrar con hijas abiertas se rechaza sin escribir nada.",
         ],
         "warnings": [
             "La bitácora va en términos del producto, sin estados vivos ni estados de Git: ni hashes, ni ramas, ni «mergeado».",
             "`done` no sustituye la revisión: sin ella, la tarea sigue abierta.",
-            "Una tarea ya cerrada con `done` no se vuelve a cerrar: reabrirla exige una justificación importante y la autorización explícita de la persona, siempre vía `tasks-agent`.",
+            "Una tarea ya cerrada con `done` no se vuelve a cerrar: reabrirla exige una justificación importante y la autorización explícita de la persona, siempre por AIF sin delegar.",
         ],
     },
     {

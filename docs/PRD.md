@@ -31,8 +31,8 @@ ser una introducción a la orquestación en general.
 ### Objetivos
 
 - Transportar la delegación tal cual: los ficheros de agente son copias literales
-  con su frontmatter de modelo, pasos y permisos, incluido `tasks-agent`, el escritor
-  del tablero que concentra las herramientas `tasks_*`.
+  con su frontmatter de modelo, pasos y permisos. Con Tasks-AI v0.2.0 el tablero no lleva
+  subagente: el orquestador lo gestiona directamente por AIF.
 - Un instalador por familia de sistema: `install.sh` para Linux, macOS y WSL, e
   `install.ps1` para Windows, con el mismo comportamiento observable.
 - Un comando nativo `commands/odd-fix.md`, instalado junto a los agentes, que abre el flujo
@@ -73,11 +73,15 @@ ser una introducción a la orquestación en general.
   `.bak.<fecha>` si reemplaza una versión distinta y sin registrarlo en `cli.json`: lo carga
   el servidor, no la TUI.
 - R2. Si la configuración global no existe, el instalador crea una desde su plantilla con
-  el bloque `agents` de `explore` y `general` y la regla de `permissions` que deniega
-  `tasks_*`.
-- R3. Si ya existe, la fusión toca solo `agents.explore`, `agents.general` y la regla
-  global de `permissions`, conserva las claves y los agentes ajenos de la configuración y
-  deja copia con fecha y hora antes de escribir.
+  el bloque `agents` de `explore` y `general`.
+- R3. Si ya existe, la fusión toca solo `agents.explore` y `agents.general`, conserva las
+  claves y los agentes ajenos de la configuración y deja copia con fecha y hora antes de
+  escribir. Además retira, con la misma garantía de conservación de lo ajeno, el
+  `tasks-agent.md` previo —con copia `.bak.<fecha>` siempre antes de borrarlo, porque el
+  paquete ya no distribuye el fichero y una versión personalizada solo se conserva con la
+  copia— y la regla global de `permissions` que denegaba `tasks_*`,
+  solo cuando coincide exactamente con la entrada conocida; si difiere, la conserva e
+  informa.
 - R4. Si el fichero de configuración no es JSON estricto (comentarios JSONC), no hay
   `python3` en Linux o la clave `agents` no es un objeto, el instalador aborta la escritura
   con el fichero intacto, la copia previa hecha y los bloques exactos para pegar a mano.
@@ -85,17 +89,19 @@ ser una introducción a la orquestación en general.
 - R6. Los dos instaladores son idempotentes y no piden interacción.
 - R7. Antes de reemplazar un agente existente con el mismo nombre, el instalador guarda una
   copia `.bak.<fecha>`; si el contenido es idéntico, no crea copia.
-- R8. Los instaladores dejan en la configuración global una regla que deniega `tasks_*` a
-  todos los agentes; solo `tasks-agent` las reabre en su frontmatter. La regla se añade una
-  vez y reejecutar no la duplica; si `permissions` existe y no es una lista, avisan y no la
-  tocan.
+- R8. Los instaladores retiran de instalaciones anteriores el `tasks-agent.md` distribuido
+  por este paquete —el escritor del tablero, retirado con Tasks-AI v0.2.0, que dejó a AIF
+  como única superficie del tablero— y la regla global exacta `{"action": "tasks_*",
+  "resource": "*", "effect": "deny"}`; una regla `tasks_*` que no coincida exactamente se
+  conserva e informa. Reejecutar no duplica ni rompe nada; si `permissions` existe y no es
+  una lista, avisan y no la tocan.
 - R9. `check-package.sh` ejecuta de una vez la batería de verificación: sintaxis de
   `install.sh`, plantilla JSON estricta, instalación limpia en un `HOME` temporal, fusión
   con claves ajenas y copia `.bak`, camino JSONC con el fichero intacto y el bloque manual
   impreso, `diff` contra los agentes y la herramienta instalados, la instalación limpia del
   comando nativo y su reemplazo con `.bak` en una segunda pasada, y las guardas de skills
   —los cuatro subagentes (verify, review, docs y ui) con el permiso `skill` denegado,
-  `tasks-agent` conservando el catálogo, ningún agente que lo abra en
+  ningún agente que lo abra en
   `allow` o `ask` y las skills citadas presentes en una raíz de descubrimiento—. No pide interacción,
   solo escribe en directorios temporales y devuelve 0 si todo está en verde o un código distinto de 0 con
   el nombre de la comprobación fallida. Si la máquina no tiene agentes instalados, omite el
@@ -179,29 +185,24 @@ ser una introducción a la orquestación en general.
   `CHANGELOG`; lo que impide escribir archivos o código por shell vive en el prompt.
 - La clave `agent` en singular está obsoleta en OpenCode V2: el instalador escribe en
   `agents` y migra ahí los overrides `explore` y `general`, conservando el resto de claves.
-- Los instaladores funden solo `agents.explore`, `agents.general` y la regla global de
-  `permissions`; el resto de claves y agentes ajenos se conservan.
-- El orquestador conserva el catálogo de skills y lo reparte: los subagentes salvo
-  `tasks-agent` —que conserva el suyo— y los agentes integrados `explore` y `general`
-  llevan el permiso `skill` denegado (`action: skill`,
+- Los instaladores funden solo `agents.explore` y `agents.general`; el resto de claves y
+  agentes ajenos se conservan.
+- El orquestador conserva el catálogo de skills y lo reparte: los subagentes y los agentes
+  integrados `explore` y `general` llevan el permiso `skill` denegado (`action: skill`,
   `resource: "*"`, `effect: deny`), que oculta la skill al modelo y rechaza la carga, y no
   pueden cargarlas por su cuenta; cuando una aplica, el encargo lleva su ruta absoluta y
   el subagente la lee antes de empezar. Ninguna skill vive en el paquete. `tools` es un
   campo de la V1 que OpenCode V2 acepta en el esquema pero ignora: el mecanismo vigente es
   el permiso.
-- El tablero tiene una sola puerta: la configuración global deniega `tasks_*` a todos los
-  agentes y `tasks-agent` las reabre en su frontmatter; los demás le delegan las escrituras
-  del tablero, mientras las lecturas van directas por la CLI `tasks-ai`. A `tasks-agent` no se le delega ninguna
-   lectura ni investigación —ni a través de la intención del encargo—: el encargo lleva
-   cada operación con sus campos, etiquetas y referencias ya resueltas por el orquestador,
-   y ante una instrucción que no pueda ejecutar con `tasks_*`, el escritor devuelve un
-   fallo de una línea y para. Los lotes de
-  creación —épica, subtareas, etiquetas, comentario— van en un único encargo ordenado, en
-  segundo plano, y se comprueban por CLI antes de usar su resultado; el cierre y el
-  comentario de bitácora del momento van en primer plano. Las escrituras sin herramienta
-  `tasks_*` —los ADR y el catálogo de etiquetas— van directas por la CLI como las lecturas;
-  solo las operaciones ejecutables con `tasks_*` se delegan a `tasks-agent`, y asignar
-  etiquetas en `create`/`update` viaja en su encargo.
+- El tablero no lleva intermediario: con Tasks-AI v0.2.0 el orquestador ejecuta él mismo
+  las operaciones deterministas del tablero por AIF (`tasks-ai aif`), el subcomando
+  autodescriptivo; AIF es la fuente del contrato de sus operaciones y su regla vive en
+  `.tasks-ai/AGENTS.md` del proyecto. Las escrituras se comprueban por CLI antes de usar
+  su resultado; los lotes de creación —épica, subtareas, etiquetas, comentario— se
+  registran ordenados y el cierre y el comentario de bitácora del momento van en primer
+  plano. Las lecturas van directas por la CLI `tasks-ai`. Las operaciones que AIF no cubre
+  —los ADR y el catálogo de etiquetas— van por la CLI convencional, y asignar etiquetas
+  va dentro de `create`/`update`.
 - Ante un `partial`, un retorno malformado o un fallo que pida re-encargo, la causa se
   clasifica con cuatro ejes antes de relanzar: selección de fuente (el subagente fue al
   sitio equivocado), interpretación (datos correctos con el significado equivocado: leyó
@@ -261,9 +262,9 @@ ser una introducción a la orquestación en general.
   conserva esas claves y crea la copia `.bak` con fecha.
 - Con una configuración JSONC con comentarios, el instalador termina con código 0, imprime
   el bloque manual y el fichero queda byte a byte igual a su copia previa.
-- La fusión añade la regla de `permissions` una sola vez: reejecutar el instalador no la
-  duplica ni repite avisos; en el camino JSONC el bloque impreso incluye `agents` y
-  `permissions`.
+- La fusión no deja regla de `permissions` nueva: la plantilla no la lleva y en una
+  configuración anterior la regla exacta de `tasks_*` se retira; reejecutar el instalador
+  no añade ni repite avisos; en el camino JSONC el bloque impreso incluye solo `agents`.
 - Con una configuración que use la clave obsoleta `agent` solo para `explore` y `general`,
   el instalador los mueve a `agents` y retira `agent`; si `agent` tiene otras claves, las
   conserva y avisa.
@@ -278,7 +279,7 @@ ser una introducción a la orquestación en general.
 - Ningún subagente abre el permiso de acción `skill` en `allow` ni `ask`, y los cuatro de
   verificación y documentación (verify, review, docs y ui) lo
   deniegan (`action: skill`, `resource: "*"`, `effect: deny`): no reciben catálogo ni
-  pueden cargarlas por su cuenta; `tasks-agent` conserva el suyo.
+  pueden cargarlas por su cuenta.
 - Con `HOME` limpio, `agents.explore.permissions` y `agents.general.permissions` contienen
   `{"action": "skill", "resource": "*", "effect": "deny"}`; la fusión sobre claves ajenas
   deja la misma regla.

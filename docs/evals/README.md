@@ -61,7 +61,12 @@ cubría el rol worker. La primera fila del CSV (`task=?`) es una ejecución de
 calentamiento, fuera de la tabla. La pared del CSV difiere en décimas de la
 publicada en el tablero por el punto de corte (sesión completa frente a tarea).
 
-## Arnés de tasks-agent (tk-35, 13 de noviembre de 2026)
+## Arnés de tasks-agent (tk-35, 13 de noviembre de 2026) — RETIRADO (27-11-2026)
+
+> **Retirado con Tasks-AI v0.2.0:** las extensiones OpenCode con las herramientas
+> `tasks_*` desaparecieron y con ellas el agente medido; el tablero va directo por
+> AIF y el orquestador hace las escrituras por sí mismo. Este arnés y sus JSONL
+> se conservan como registro histórico; ya no mide ningún agente del paquete.
 
 La ley de `tasks-agent` cambió: ejecuta encargos 100 % cocinados, falla en una línea
 cuando el encargo pide algo que no puede hacer y no reconstruye contexto leyendo o

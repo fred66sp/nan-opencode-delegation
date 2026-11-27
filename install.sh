@@ -29,6 +29,19 @@ done
 echo "Agentes copiados en $agents_dir:"
 ls -1 "$agents_dir"/*.md "$agents_dir"/orchestrator-runner.py
 
+# 1b. Retirada de tasks-agent, el escritor del tablero retirado con Tasks-AI v0.2.0:
+# AIF cubre sus operaciones y el tablero va directo. Copia .bak siempre antes de borrar:
+# el paquete ya no distribuye el fichero, así que no hay contra qué comparar y una
+# versión personalizada se conservaría solo con la copia. La segunda pasada no crea
+# otra porque el fichero ya no existe.
+legacy_agent="$agents_dir/tasks-agent.md"
+if [ -f "$legacy_agent" ]; then
+  cp "$legacy_agent" "$legacy_agent.bak.$stamp"
+  echo "Copia previa de tasks-agent.md: $legacy_agent.bak.$stamp"
+  rm -f "$legacy_agent"
+  echo "tasks-agent.md retirado de $agents_dir (el tablero va directo por AIF)"
+fi
+
 # 2. Los comandos nativos, en commands/ del mismo directorio de configuración.
 commands_dir="$config_root/commands"
 mkdir -p "$commands_dir"
@@ -115,7 +128,9 @@ else
   echo "  \"plugins\": [ \"$plugin_dir\", ... ]"
 fi
 
-# 5. Modelos de explore y general, y la regla global que deniega tasks_*.
+# 5. Modelos de explore y general. La regla global que deniega tasks_* vive en
+# configuraciones anteriores; se retira cuando coincide exactamente con la entrada
+# conocida y no hay más reglas de ese tipo, sin tocar nada ajeno.
 dest=""
 for cand in "$config_root/opencode.jsonc" "$config_root/opencode.json"; do
   if [ -f "$cand" ]; then dest="$cand"; break; fi
@@ -153,15 +168,22 @@ elif old is not None:
 agents["explore"] = {"model": {"providerID": "nan", "model": "glm5.3-flash", "variant": "low"}, "permissions": [{"action": "skill", "resource": "*", "effect": "deny"}]}
 agents["general"] = {"model": {"providerID": "nan", "model": "deepseek-v4-flash", "variant": "high"}, "permissions": [{"action": "skill", "resource": "*", "effect": "deny"}]}
 
-rule = {"action": "tasks_*", "resource": "*", "effect": "deny"}
 perms = data.get("permissions")
-if perms is None:
-    data["permissions"] = [rule]
-elif isinstance(perms, list):
-    if not any(isinstance(r, dict) and r.get("action") == "tasks_*" and r.get("effect") == "deny" for r in perms):
-        perms.append(rule)
-else:
-    print("Aviso: la clave 'permissions' no es una lista; no se añade la regla de tasks_*.")
+legacy = {"action": "tasks_*", "resource": "*", "effect": "deny"}
+if isinstance(perms, list):
+    exact = [r for r in perms if isinstance(r, dict) and r == legacy]
+    near = [r for r in perms if isinstance(r, dict) and r != legacy and r.get("action") == "tasks_*"]
+    if near and not exact:
+        print("Aviso: hay una regla de tasks_* que no coincide con la entrada conocida; se conserva sin tocarla.")
+    if exact:
+        perms = [r for r in perms if not (isinstance(r, dict) and r == legacy)]
+        if perms:
+            data["permissions"] = perms
+        else:
+            data.pop("permissions", None)
+        print("Retirada la regla global de tasks_* (la herramienta ya no existe en Tasks-AI v0.2.0).")
+elif perms is not None:
+    print("Aviso: la clave 'permissions' no es una lista; la regla de tasks_* se conserva sin tocarla.")
 
 with open(p, "w", encoding="utf-8") as f:
     json.dump(data, f, ensure_ascii=False, indent=2)
@@ -172,15 +194,13 @@ PY
   else
     echo "No pude actualizar $dest automáticamente: el fichero tiene comentarios JSONC, falta python3 o la clave 'agents' no es un objeto."
     echo "Copia previa en $backup. Añade a mano este bloque dentro del objeto raíz:"
-    cat <<'EOF'
+
+  cat <<'EOF'
 
   "agents": {
     "explore": { "model": { "providerID": "nan", "model": "glm5.3-flash", "variant": "low" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] },
     "general": { "model": { "providerID": "nan", "model": "deepseek-v4-flash", "variant": "high" }, "permissions": [ { "action": "skill", "resource": "*", "effect": "deny" } ] }
-  },
-  "permissions": [
-    { "action": "tasks_*", "resource": "*", "effect": "deny" }
-  ],
+  }
 EOF
   fi
 fi
@@ -191,4 +211,4 @@ echo "  opencode auth login        # elige el proveedor NaN y pega su API key"
 echo ""
 echo "Comprobación:"
 echo "  opencode models | grep 'nan/'"
-echo "  opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui|tasks-agent'"
+echo "  opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'"
