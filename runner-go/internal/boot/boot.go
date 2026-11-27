@@ -19,9 +19,31 @@ import (
 	"github.com/fred66sp/nan-opencode-delegation/runner-go/internal/store"
 )
 
+// Store returns the project store opened for writing, registering the session
+// in phase 1 when it has no row yet. The file and the .run directory are
+// created on demand only.
+func StoreFor(root, session string) (*store.Store, error) {
+	s, err := store.Open(root, true)
+	if err != nil || session == "" {
+		return s, err
+	}
+	if state, err := s.SessionPhase(session); err == nil && !state.Exists {
+		_, err = s.SetPhase(session, 1, "")
+		if err != nil {
+			return s, err
+		}
+	}
+	return s, nil
+}
+
 // Start renders the integrated context. Alone among the commands it may open
-// the ACM session; everything else it reads.
+// the ACM session; everything else it reads. It registers this session in
+// phase 1 when the state has no row for it yet (idempotently: an existing
+// row with its current phase is never rewritten).
 func Start(root, session string) string {
+	if s, err := StoreFor(root, session); err == nil && s != nil {
+		s.Close()
+	}
 	sections := []string{
 		memory(),
 		board(root),

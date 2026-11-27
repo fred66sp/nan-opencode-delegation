@@ -492,6 +492,28 @@ func setPhase(tx *sql.Tx, session string, n int) error {
 	return err
 }
 
+// SetPhase registers the phase of one session without recording evidence; it
+// is the public entry used by `runner start` to create the row in phase 1.
+func (s *Store) SetPhase(session string, n int, requestID string) (json.RawMessage, error) {
+	if n < 1 || n > phase.Count {
+		return nil, &FieldError{Field: "phase", Reason: "fase fuera de rango"}
+	}
+	return s.Mutate(session, requestID, "phase_start", func(tx *sql.Tx) (json.RawMessage, error) {
+		// A missing row is created; an existing row keeps its current phase.
+		var current int
+		err := tx.QueryRow("SELECT phase FROM sessions WHERE session = ?", session).Scan(&current)
+		if err != nil && !errors.Is(err, sql.ErrNoRows) {
+			return nil, err
+		}
+		if errors.Is(err, sql.ErrNoRows) {
+			if err := setPhase(tx, session, n); err != nil {
+				return nil, err
+			}
+		}
+		return json.Marshal(outcome(n))
+	})
+}
+
 func appendEvidence(tx *sql.Tx, session string, from int, text string, skip int) error {
 	var skipValue any
 	if skip > 0 {
