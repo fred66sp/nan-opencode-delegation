@@ -11,9 +11,10 @@ enlaza.
 | Qué es el paquete y cómo se instala | [`README.md`](README.md) y [`docs/web/index.html`](docs/web/index.html) |
 | Qué hace cada agente, con qué modelo y qué permisos | `agents/<nombre>.md`, frontmatter y prompt |
 | Cómo se evaluaron los agentes y qué demostró cada prueba | [`docs/evals/README.md`](docs/evals/README.md) |
-| Cómo guiar el flujo del orquestador | [`agents/orchestrator-runner.py`](agents/orchestrator-runner.py) |
-| Cómo comprobar el informe de retorno de un subagente | [`agents/delegation-report-checker.py`](agents/delegation-report-checker.py) y su `--help`, y la regla 6 de [`agents/orchestrator.md`](agents/orchestrator.md) |
-| Cómo se ve la fase del orquestador en la sesión: panel, operativa, advertencias e historial | [`plugins/orchestrator-status/tui.tsx`](plugins/orchestrator-status/tui.tsx) y el `--json` de [`agents/orchestrator-runner.py`](agents/orchestrator-runner.py) |
+| Cómo guiar el flujo del orquestador | [`runner-go/`](runner-go/) — el binario `orchestrator-runner` — y [`docs/runner/PRODUCT.md`](docs/runner/PRODUCT.md) |
+| Producto, requisitos, diseño y contrato del runner Go | [`docs/runner/PRODUCT.md`](docs/runner/PRODUCT.md), [`PRD.md`](docs/runner/PRD.md), [`DESIGN.md`](docs/runner/DESIGN.md) y [`orchestrator-proposal.md`](docs/runner/orchestrator-proposal.md) |
+| Cómo se valida el informe de retorno de un subagente | La operación `deck_return` de [`runner-go/internal/aifops/`](runner-go/internal/aifops/) y la regla 6 de [`agents/orchestrator.md`](agents/orchestrator.md) |
+| Cómo se ve la fase del orquestador en la sesión: panel, operativa, advertencias e historial | [`plugins/orchestrator-status/tui.tsx`](plugins/orchestrator-status/tui.tsx) y el `--json` de [`runner-go/`](runner-go/) |
 | Qué instala exactamente el instalador y qué hace con una config existente | [`install.sh`](install.sh), [`install.ps1`](install.ps1) |
 | Comprobar el paquete entero de una vez | [`check-package.sh`](check-package.sh) |
 | Qué fragmento de configuración se añade y cómo se escribe la variante | [`config/opencode.jsonc`](config/opencode.jsonc), [`README.md`](README.md) |
@@ -35,8 +36,9 @@ enlaza.
 | Cambiar los instaladores | [`docs/PRD.md`](docs/PRD.md) requisitos R1 a R7 | La batería de [`CONTRIBUTING.md`](CONTRIBUTING.md): sintaxis, instalación limpia, fusión con claves ajenas y camino JSONC |
 | Crear o etiquetar una tarea | [`.tasks-ai/CONTRATO_ETIQUETAS.md`](.tasks-ai/CONTRATO_ETIQUETAS.md) sección 2 | La tarea nace con su tipo y su estructural (`task` o `epic`); el catálogo vivo, en `tasks-ai tags` |
 | Cambiar la guía o la prosa | [`docs/web/index.html`](docs/web/index.html) y [`README.md`](README.md) completos | Los criterios de aceptación del PRD, sección 5, aplicados a la documentación: nada que la prosa diga puede contradecir a los artefactos |
-| Validar el retorno de un delegado | La regla 6 de [`agents/orchestrator.md`](agents/orchestrator.md) y el `--help` de [`agents/delegation-report-checker.py`](agents/delegation-report-checker.py) | El checker sale con 0 sobre el informe y con 1 sobre una comprobación esperada ausente; el veredicto y lo no verificado vuelven al orquestador |
-| Cambiar el plugin TUI o el contrato `--json` | [`plugins/orchestrator-status/tui.tsx`](plugins/orchestrator-status/tui.tsx), su [`package.json`](plugins/orchestrator-status/package.json) y el `--help` de [`agents/orchestrator-runner.py`](agents/orchestrator-runner.py) | `bash check-package.sh` en verde y el panel abierto con `/orquestador` contra un proyecto con estado |
+| Validar el retorno de un delegado | La regla 6 de [`agents/orchestrator.md`](agents/orchestrator.md) y la operación `deck_return` de [`runner-go/internal/aifops/`](runner-go/internal/aifops/) | El retorno se registra con su forma validada y su evidencia conservada; los incumplimientos vuelven en `invalid` y el veredicto y lo no verificado, al orquestador |
+| Cambiar el plugin TUI o el contrato `--json` | [`plugins/orchestrator-status/tui.tsx`](plugins/orchestrator-status/tui.tsx), su [`package.json`](plugins/orchestrator-status/package.json) y el contrato de [`runner-go/`](runner-go/) (DESIGN §2) | `bash check-package.sh` en verde y el panel abierto con `/orquestador` contra un proyecto con estado |
+| Cambiar el runner Go | [`docs/runner/`](docs/runner/PRODUCT.md) y [`runner-go/`](runner-go/) | `cd runner-go && go test ./...` y el arnés de [`runner-go/equivalence/`](runner-go/equivalence/README.md) |
 | Ver la guía web correctamente | [`serve-web.sh`](serve-web.sh) | `./serve-web.sh start` y la guía en `http://127.0.0.1:8766/docs/web/index.html`; por `file://` pierde iconos y resaltado |
 | Cambiar requisitos o alcance | [`docs/PRD.md`](docs/PRD.md) completo | El PRD actualizado antes del commit y el CHANGELOG si hay valor de usuario |
 

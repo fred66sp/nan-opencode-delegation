@@ -28,6 +28,61 @@ Get-ChildItem (Join-Path $here 'agents\*') -File | ForEach-Object {
 Write-Host "Agentes copiados en $agentsDir :"
 Get-ChildItem $agentsDir -File | Where-Object { $_.Name -notlike '*.bak.*' } | ForEach-Object { Write-Host "  $($_.Name)" }
 
+# 1a. El runner de orquestacion: binario estatico junto a los agentes.
+# Origen, en orden: RUNNER_BIN (binario local ya compilado), el Release de la
+# version de runner-go/VERSION (RUNNER_BIN_URL, o RUNNER_RELEASE_BASE_URL y
+# RUNNER_ASSET) y, si la red falla, compilacion Go de desarrollo.
+$runnerTarget = Join-Path $agentsDir 'orchestrator-runner.exe'
+$runnerVersion = (Get-Content (Join-Path $here 'runner-go\VERSION') -Raw).Trim()
+$runnerAsset = if ($env:RUNNER_ASSET) { $env:RUNNER_ASSET } else { 'orchestrator-runner-windows-amd64.exe' }
+$runnerBase = if ($env:RUNNER_RELEASE_BASE_URL) { $env:RUNNER_RELEASE_BASE_URL } else { "https://github.com/fred66sp/nan-opencode-delegation/releases/download/v$runnerVersion" }
+$runnerUrl = if ($env:RUNNER_BIN_URL) { $env:RUNNER_BIN_URL } else { "$runnerBase/$runnerAsset" }
+$runnerTmp = Join-Path ([System.IO.Path]::GetTempPath()) ('orchestrator-runner-' + [guid]::NewGuid().ToString('N') + '.exe')
+$runnerReady = $false
+if ($env:RUNNER_BIN) {
+    if (-not (Test-Path $env:RUNNER_BIN)) {
+        Write-Host "error: RUNNER_BIN no existe: $env:RUNNER_BIN"
+        exit 1
+    }
+    Copy-Item $env:RUNNER_BIN $runnerTmp
+    $runnerReady = $true
+}
+else {
+    try {
+        Invoke-WebRequest -Uri $runnerUrl -OutFile $runnerTmp -UseBasicParsing -TimeoutSec 60
+        $runnerReady = $true
+    }
+    catch {
+        Write-Host "Sin Release descargable en $runnerUrl"
+    }
+}
+if (-not $runnerReady -and (Get-Command go -ErrorAction SilentlyContinue)) {
+    Write-Host 'Compilo con go build.'
+    Push-Location (Join-Path $here 'runner-go')
+    try {
+        & go build -buildvcs=false -ldflags "-X main.version=$runnerVersion" -o $runnerTmp ./cmd/orchestrator-runner
+        $runnerReady = ($LASTEXITCODE -eq 0)
+    }
+    finally {
+        Pop-Location
+    }
+}
+if (-not $runnerReady) {
+    if (Test-Path $runnerTmp) { Remove-Item $runnerTmp -Force }
+    Write-Host 'error: no pude obtener el binario orchestrator-runner.'
+    Write-Host "  Sin Release descargable en $runnerUrl y sin go en el PATH. Dos salidas:"
+    Write-Host "  1) descarga $runnerAsset del Release v$runnerVersion y ejecuta con RUNNER_BIN=<ruta> .\install.ps1"
+    Write-Host '  2) instala Go y compilalo: cd runner-go; go build -buildvcs=false -o orchestrator-runner.exe .\cmd\orchestrator-runner'
+    exit 1
+}
+if ((Test-Path $runnerTarget) -and ((Get-FileHash $runnerTmp).Hash -ne (Get-FileHash $runnerTarget).Hash)) {
+    Copy-Item $runnerTarget ($runnerTarget + '.bak.' + $stamp)
+    Write-Host "Copia previa del runner: $runnerTarget.bak.$stamp"
+}
+Copy-Item -Force $runnerTmp $runnerTarget
+Remove-Item $runnerTmp -Force
+Write-Host "Runner instalado en $runnerTarget (version $runnerVersion)"
+
 # 1b. Retirada de tasks-agent: AIF cubre sus operaciones y el tablero va directo.
 # Copia .bak siempre antes de borrar: el paquete ya no distribuye el fichero y una
 # version personalizada se conservaria solo con la copia. La segunda pasada no

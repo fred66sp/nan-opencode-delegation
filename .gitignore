@@ -41,6 +41,13 @@ Desktop.ini
 .tasks-ai/extensions/
 .run/
 
+# --- Estado del runner (SQLite) -----------------------------------------------
+# La base y los legados ya migrados son estado local; el ledger JSON deja de ser
+# producto, pero su exclusión se conserva mientras exista el fichero.
+.run/orchestrator.db*
+.run/*.migrated
+runner-go/orchestrator-runner
+
 # --- Secretos y ficheros con claves -------------------------------------------
 *.pem
 *.key

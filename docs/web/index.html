@@ -184,59 +184,6 @@
     box-shadow: var(--shadow);
   }
 
-  /* El diálogo del código del runner repite la forma del lightbox: overlay
-     fijo, panel acotado al viewport y cierre por Esc o por el fondo. El panel
-     se limita en unidades de viewport por la misma razón que la imagen: un
-     porcentaje aquí se resolvería contra la fila que él mismo dimensiona.
-     Quien se desplaza es el bloque de código, no la caja. */
-  .code-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 200;
-    display: none;
-    place-items: center;
-    background: rgb(0 0 0 / .72);
-  }
-  .code-modal.open { display: grid; }
-  .code-modal-panel {
-    display: flex;
-    flex-direction: column;
-    width: min(1040px, 92vw);
-    max-height: 92vh;
-    max-height: 92dvh;
-    overflow: hidden;
-    border: 1px solid var(--border-strong);
-    border-radius: 14px;
-    background: var(--bg-elev);
-    box-shadow: var(--shadow);
-  }
-  .code-modal-head {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    padding: 10px 14px;
-    border-bottom: 1px solid var(--border);
-  }
-  .code-modal-head h2 { margin: 0; font-family: var(--mono); font-size: 13.5px; }
-  /* El cuerpo del diálogo es el .code de la casa tal cual: el marco, la barra
-     con el lenguaje y el botón de copiar los pone chrome.css. Aquí solo se le
-     deja crecer y desplazarse. El .code recorta, así que su pre tiene que
-     encoger: min-height: 0 es lo que lo deja scrollear en vez de desbordar. */
-  .code-modal-body {
-    display: flex;
-    flex-direction: column;
-    flex: 1 1 auto;
-    min-height: 0;
-    margin: 0;
-  }
-  .code-modal-body pre {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-  /* El bloque se recorre con el teclado: sin anillo, el foco no se ve. */
-  .code-modal-body pre:focus-visible { outline: 2px solid var(--accent-on-dark); outline-offset: -2px; }
-
   /* La luciérnaga: un resplandor que persigue al puntero con un retardo
      suave. Decorativa y puramente visual: sin puntero propio, fuera del
      alcance táctil y del motion reducido, y por debajo del lightbox. */
@@ -375,9 +322,9 @@
       <div class="code"><pre data-language="bash"><code>bash install.sh</code></pre></div>
       <p class="cmdcap">Windows (PowerShell)</p>
       <div class="code"><pre data-language="bash"><code>powershell -ExecutionPolicy Bypass -File install.ps1</code></pre></div>
-      <p>Lo que hace: copia los agentes de <code>agents/</code> a <code>~/.config/opencode/agents/</code> —las dos herramientas del flujo, <code>orchestrator-runner.py</code> y <code>delegation-report-checker.py</code>, viajan con ellos—, copia el comando <code>commands/odd-fix.md</code> a <code>~/.config/opencode/commands/</code> —el único del paquete, sin herramientas ni flujo propios—, copia el plugin de servidor <code>plugins/orchestrator-phase.ts</code> a <code>~/.config/opencode/plugins/</code> —lo carga el servidor, así que no se registra en <code>cli.json</code>—, copia el plugin del estado a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code> con sus fuentes y sin <code>node_modules</code>, lo registra en la clave <code>plugins</code> de <code>cli.json</code> —un paquete solo-TUI no puede vivir en <code>plugins/</code>, el servidor lo cargaría y colisiona con su OpenTUI interno—, y deja el bloque <code>agents</code> de <code>explore</code> y <code>general</code> en la configuración global. En instalaciones anteriores retira además un <code>tasks-agent.md</code> previo —con copia <code>.bak</code> con fecha siempre antes de borrar, porque el paquete ya no distribuye el fichero— y la regla global de <code>permissions</code> que denegaba <code>tasks_*</code>, una entrada ya muerta desde Tasks-AI v0.2.0; la retira solo cuando coincide exactamente con la entrada conocida, y si difiere la conserva e informa. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si un agente o fichero del plugin existente difiere, guarda también una copia <code>.bak</code> con fecha antes de reemplazarlo; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime los bloques para pegarlos a mano. Deposita además las dos herramientas junto a los agentes, en <code>~/.config/opencode/agents/</code>: el runner <code>orchestrator-runner.py</code>, ejecutable en Linux y macOS, que dice en qué fase va el flujo y qué evidencia pide para avanzar, y el comprobador <code>delegation-report-checker.py</code>, que dice si el informe de un delegado cumple la forma del contrato.</p>
-      <p>El comando <code>/odd-fix</code> abre la sesión con <code>orchestrator</code> y le pasa la descripción del defecto en <code>$ARGUMENTS</code>; si falta o no describe un defecto observable, el agente la pide y no toca archivos. No añade herramientas ni pasos propios: el trabajo sigue el contrato y el tablero del orquestador. No hay <code>/odd-status</code>: se descartó porque <code>boot</code> puede escribir —<code>git status</code> y <code>acm start</code>— y su <code>--json</code> se solapa con el panel <code>/orquestador</code>.</p>
-      <div class="note"><p><strong>A mano en cinco pasos.</strong> Copia los ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code>, copia <code>commands/odd-fix.md</code> a <code>~/.config/opencode/commands/</code>, copia <code>plugins/orchestrator-phase.ts</code> a <code>~/.config/opencode/plugins/</code>, copia <code>plugins/orchestrator-status/</code> a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code>, añade esa ruta a la clave <code>plugins</code> de tu <code>cli.json</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
+      <p>Lo que hace: copia los agentes de <code>agents/</code> a <code>~/.config/opencode/agents/</code> —e instala junto a ellos el binario <code>orchestrator-runner</code>—, copia el comando <code>commands/odd-fix.md</code> a <code>~/.config/opencode/commands/</code> —el único del paquete, sin herramientas ni flujo propios—, copia el plugin de servidor <code>plugins/orchestrator-phase.ts</code> a <code>~/.config/opencode/plugins/</code> —lo carga el servidor, así que no se registra en <code>cli.json</code>—, copia el plugin del estado a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code> con sus fuentes y sin <code>node_modules</code>, lo registra en la clave <code>plugins</code> de <code>cli.json</code> —un paquete solo-TUI no puede vivir en <code>plugins/</code>, el servidor lo cargaría y colisiona con su OpenTUI interno—, y deja el bloque <code>agents</code> de <code>explore</code> y <code>general</code> en la configuración global. En instalaciones anteriores retira además un <code>tasks-agent.md</code> previo —con copia <code>.bak</code> con fecha siempre antes de borrar, porque el paquete ya no distribuye el fichero— y la regla global de <code>permissions</code> que denegaba <code>tasks_*</code>, una entrada ya muerta desde Tasks-AI v0.2.0; la retira solo cuando coincide exactamente con la entrada conocida, y si difiere la conserva e informa. Si la configuración ya existía, guarda una copia con fecha y hora antes de escribir; si un agente o fichero del plugin existente difiere, guarda también una copia <code>.bak</code> con fecha antes de reemplazarlo; si el fichero lleva comentarios JSONC, no escribe nada, deja el fichero tal cual y te imprime los bloques para pegarlos a mano. Deposita además el binario del runner junto a los agentes, en <code>~/.config/opencode/agents/orchestrator-runner</code>: un ejecutable Go con AIF nativo y SQLite que presenta el contexto operativo, ejecuta el catálogo de operaciones del proceso y valida el retorno de cada encargo.</p>
+      <p>El comando <code>/odd-fix</code> abre la sesión con <code>orchestrator</code> y le pasa la descripción del defecto en <code>$ARGUMENTS</code>; si falta o no describe un defecto observable, el agente la pide y no toca archivos. No añade herramientas ni pasos propios: el trabajo sigue el contrato y el tablero del orquestador. No hay <code>/odd-status</code>: se descartó porque <code>start</code> puede escribir —<code>git status</code> y <code>acm start</code>— y su <code>--json</code> se solapa con el panel <code>/orquestador</code>.</p>
+      <div class="note"><p><strong>A mano.</strong> Copia los ficheros de <code>agents/</code> a <code>~/.config/opencode/agents/</code>, descarga el binario <code>orchestrator-runner</code> de las releases y déjalo en ese mismo directorio, copia <code>commands/odd-fix.md</code> a <code>~/.config/opencode/commands/</code>, copia <code>plugins/orchestrator-phase.ts</code> a <code>~/.config/opencode/plugins/</code>, copia <code>plugins/orchestrator-status/</code> a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code>, añade esa ruta a la clave <code>plugins</code> de tu <code>cli.json</code> y añade el bloque de la sección <a href="#configuracion">La configuración</a> al objeto raíz de tu fichero de configuración. Es lo mismo que hace el instalador; el script solo evita que se te olvide la copia de seguridad.</p></div>
     </section>
 
     <section id="arquitectura">
@@ -398,12 +345,12 @@
 
     <section id="runner">
       <div class="section-head"><span class="section-num">04</span><h2 class="title">El runner</h2></div>
-      <p class="sub">La fase no la decide el agente. La decide un registro pequeño que vive en el proyecto y que el orquestador consulta antes de moverse: <code>~/.config/opencode/agents/orchestrator-runner.py</code>. El instalador lo deja junto a los agentes, y sirve en cualquier proyecto desde el que se invoque.</p>
-      <p>Sin argumentos muestra la fase actual, su lista operativa y la evidencia que se espera para dejarla. Para avanzar está <code>next</code>. Sin texto no avanza —sigue en la misma fase y pide la evidencia que toca—; con texto, lo registra en el historial y pasa a la siguiente. El texto va en un único argumento; los varios puntos de una misma evidencia se separan con punto y coma. Un texto vacío, uno que empiece por <code>--</code> o dos argumentos son error de uso y salen con código 1, para que <code>next --json</code> no avance por accidente. Los códigos de salida son dos: 0 para una consulta o un avance correctos, y 1 si el uso es incorrecto o no se pudo escribir el estado.</p>
-      <p>Cuando una fase intermedia no aporta al encargo, <code>skip &lt;fase&gt; "motivo"</code> salta a una posterior: solo hacia delante, con al menos una fase de por medio y con el motivo obligatorio. El historial anterior se conserva y el salto queda como una entrada con su fase de partida y su destino, así que las fases omitidas y su motivo se ven en el panel y en <code>--json</code>. Un salto no sustituye ninguna autorización: si omite Commit, lo advierte y la confirmación explícita de la persona sigue pendiente. Un destino que no sea un entero, una fase que no avance —la actual o una anterior—, la siguiente —para eso está <code>next</code>—, una fuera de rango y un motivo vacío o que empiece por <code>--</code> salen con código 1, y el estado no se toca.</p>
+      <p class="sub">La fase no la decide el agente. La decide un registro que vive en el proyecto y que el orquestador consulta antes de moverse, con el binario <code>orchestrator-runner</code>: el instalador lo deja junto a los agentes, en <code>~/.config/opencode/agents/orchestrator-runner</code> (<code>orchestrator-runner.exe</code> en Windows), y sirve en cualquier proyecto desde el que se invoque.</p>
+      <p><code>orchestrator-runner aif</code> es la interfaz principal: descubre y ejecuta el catálogo de diez operaciones —<code>phase_next</code>, <code>phase_skip</code>, <code>phase_reset</code>, <code>recover</code>, <code>deck_prepare</code>, <code>deck_launch</code>, <code>deck_return</code>, <code>deck_close</code>, <code>deck_note</code> y <code>deck_list</code>— con un envelope JSON por la entrada estándar y una respuesta por la salida, y códigos normados por AIF: 0 ejecutada o descubrimiento, 1 <code>failed</code>, 2 <code>invalid</code> o <code>input_needed</code>, 3 contrato y 4 <code>denied</code>. <code>phase_next</code> exige la evidencia de la fase; <code>phase_skip</code> salta a una fase posterior con su motivo; <code>phase_reset</code> reinicia sin tocar las delegaciones; <code>recover</code> recupera un estado dañado. Las operaciones <code>deck_*</code> llevan el ciclo de cada encargo: alta con huella calculada y deduplicación, lanzamiento con sesión, retorno con la forma validada y los pendientes devueltos, notas de conciliación y cierre con guardas.</p>
+      <p>Sin pasar por AIF están <code>start</code>, que reúne en una invocación memoria, tablero, Git, fase y pendientes con degradación por sección; <code>--json</code>, la consulta de solo lectura que consumen el panel y el plugin de servidor; <code>--version</code>, que identifica el binario; y <code>export-legacy</code>, que devuelve el estado al formato del runner anterior para revertir sin pérdida. El producto, sus requisitos y su diseño viven en <a href="../runner/PRODUCT.md"><code>docs/runner/</code></a>.</p>
       <p>El recorrido tiene once fases, agrupadas en las tres etapas del flujo. <strong>1 Inicio de sesión</strong>, <strong>2 Clasificar el encargo</strong>, <strong>3 Tamaño y tablero</strong>, <strong>4 Explorar</strong> y <strong>5 Decidir</strong> preparan el encargo; <strong>6 Delegar</strong> es la ejecución; <strong>7 Verificar</strong>, <strong>8 Riesgo</strong>, <strong>9 Commit</strong>, <strong>10 Cierre de tarea</strong> y <strong>11 Memoria y sesión</strong> lo cierran. La evidencia que pide cada fase es concreta: la 3 espera la referencia de la tarea, la constancia de que el cambio es muy trivial —uno o dos archivos— y la persona lo autorizó sin tarea, o la de una tarea creada sin épica, la 8 la línea <code>Risk:</code> ya escrita y la 11 ninguna, porque es la última y no tiene transición que justificar.</p>
       <figure class="diagram">
-        <svg viewBox="0 0 880 660" role="img" aria-label="Diagrama del runner: once fases agrupadas en encargo (1 a 5), ejecución (6) y cierre (7 a 11); la fase actual es la 6, Delegar, y next solo avanza cuando recibe la evidencia de la fase.">
+        <svg viewBox="0 0 880 660" role="img" aria-label="Diagrama del runner: once fases agrupadas en encargo (1 a 5), ejecución (6) y cierre (7 a 11); la fase actual es la 6, Delegar, y phase_next solo avanza cuando recibe la evidencia de la fase.">
           <defs>
             <linearGradient id="gArcRun" x1="0" y1="0" x2="1" y2="1">
               <stop offset="0" stop-color="#56c7ea"/>
@@ -468,9 +415,9 @@
           <text x="96" y="330" font-size="11.5" fill="var(--muted)">cada subagente, con su encargo acotado</text>
           <line x1="380" y1="248" x2="380" y2="340" stroke="var(--border)"/>
           <text x="410" y="260" font-size="11.5" font-weight="750" letter-spacing="1.3" fill="var(--muted)">CONTRATO DE EVIDENCIA</text>
-          <text x="410" y="292" font-size="12.5" font-weight="700" fill="var(--text)">next <tspan font-weight="500" fill="var(--muted)">· sin texto no avanza: pide la evidencia de la fase.</tspan></text>
-          <text x="410" y="318" font-size="12.5" font-weight="700" fill="var(--text)">next «texto» <tspan font-weight="500" fill="var(--muted)">· la registra en el historial y avanza.</tspan></text>
-          <text x="410" y="344" font-size="12.5" font-weight="700" fill="var(--text)">reset <tspan font-weight="500" fill="var(--muted)">· borra la fase y el historial; vuelve a la 1.</tspan></text>
+          <text x="410" y="292" font-size="12.5" font-weight="700" fill="var(--text)">phase_next <tspan font-weight="500" fill="var(--muted)">· sin evidencia no avanza; con ella, la registra y avanza.</tspan></text>
+          <text x="410" y="318" font-size="12.5" font-weight="700" fill="var(--text)">phase_skip <tspan font-weight="500" fill="var(--muted)">· salta a una fase posterior con su motivo.</tspan></text>
+          <text x="410" y="344" font-size="12.5" font-weight="700" fill="var(--text)">phase_reset <tspan font-weight="500" fill="var(--muted)">· reinicia fase e historial; no toca delegaciones.</tspan></text>
 
           <path d="M432 374 L440 382 L448 374" fill="none" stroke="url(#gArcRun)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 
@@ -516,32 +463,31 @@
           <path d="M432 548 L440 556 L448 548" fill="none" stroke="url(#gArcRun)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
 
           <rect x="24" y="570" width="832" height="72" rx="18" fill="var(--bg-elev)" stroke="var(--border)" filter="url(#shRun)"/>
-          <text x="48" y="596" font-size="12" font-weight="700" fill="var(--text)">.run/orchestrator-runner.json</text>
+          <text x="48" y="596" font-size="12" font-weight="700" fill="var(--text)">.run/orchestrator.db</text>
           <text x="48" y="618" font-size="11.5" fill="var(--muted)">el estado vive en el proyecto</text>
           <text x="328" y="596" font-size="12" font-weight="700" fill="var(--text)">--json</text>
           <text x="328" y="618" font-size="11.5" fill="var(--muted)">lee fases y estado sin escribir</text>
-          <text x="608" y="596" font-size="12" font-weight="700" fill="var(--text)">códigos 0 y 1</text>
-          <text x="608" y="618" font-size="11.5" fill="var(--muted)">consulta o avance; error de uso</text>
+          <text x="608" y="596" font-size="12" font-weight="700" fill="var(--text)">códigos AIF</text>
+          <text x="608" y="618" font-size="11.5" fill="var(--muted)">0, 2, 3, 4 y 1 según el resultado</text>
         </svg>
-        <figcaption class="figcap">Figura 1 · El runner: once fases en tres etapas, con la fase actual y la evidencia que exige <code>next</code> para avanzar.</figcaption>
+        <figcaption class="figcap">Figura 1 · El runner: once fases en tres etapas, con la fase actual y la evidencia que exige <code>phase_next</code> para avanzar.</figcaption>
       </figure>
-      <p>El estado vive en <code>.run/orchestrator-runner.json</code>, en el directorio del proyecto en el que trabajas, nunca junto al script instalado. Guarda la fase y el historial, con una entrada por fase dejada; cuando se omitieron fases, esa entrada lleva además el motivo y la fase de destino. Si falta, se empieza en la fase 1 y la primera invocación lo crea. Un fichero corrupto o con la fase fuera de rango vuelve a la fase 1 con un aviso por stderr; un historial que no es una lista se descarta conservando la fase. <code>reset</code> borra el fichero entero —fase e historial— sin tocar nada más.</p>
-      <p><code>--json</code> imprime un único objeto por la salida estándar con <code>version</code>, las once fases —número, nombre, cuándo, evidencia esperada, pasos y advertencias— y el estado: si existe el fichero, la fase actual, si el estado y el historial son válidos y la evidencia registrada, donde una entrada puede traer el destino de un salto. No crea ni modifica el estado y no emite avisos: su stdout es para un programa, no para una persona. Se acepta solo, sin otros argumentos.</p>
-      <p><code>boot</code> reúne en una invocación el arranque de la fase 1 en secciones de texto: la memoria reciente de la sesión (<code>acm start</code>), el tablero con lo que está en curso y lo que está listo para empezar, la rama, el estado y los tres últimos commits de git, y la fase actual del runner. No escribe el estado del runner: no crea ni modifica el estado. Cada fuente falla por su cuenta y su sección dice «no disponible» con el motivo, así que un proyecto sin tablero, sin git o sin estado sigue dando el resto del arranque.</p>
-      <p>Para que el agente no toque ese registro a mano, el paquete lleva un <code>.llmignore</code> con la regla. Se aplica con el plugin <code>opencode-ignore-file</code> instalado globalmente (<code>npm run install:plugin</code> desde su repositorio, y reiniciar opencode). Sin el plugin, la regla no bloquea: vale la convención.</p>
+      <p>El estado vive en <code>.run/orchestrator.db</code>, una base SQLite en el directorio del proyecto en el que trabajas, nunca junto al binario instalado. La primera operación que muta importa el estado y el registro de delegaciones del runner anterior y los archiva como <code>.migrated</code>; a partir de ahí, fases, evidencias y delegaciones comparten base con transacciones. Si falta, se empieza en la fase 1. <code>phase_reset</code> reinicia la fase y el historial de la sesión sin tocar las delegaciones; <code>recover</code> archiva lo dañado, rescata lo legible y declara qué se conservó y qué se perdió, sin reiniciar en silencio.</p>
+      <p><code>--json</code> imprime un único objeto por la salida estándar con <code>version</code>, las once fases —número, nombre, cuándo, evidencia esperada, pasos y advertencias— y el <code>state</code> de la sesión invocante: si existe, la fase actual, si el estado y el historial son válidos y la evidencia registrada, donde una entrada puede traer el destino de un salto. No crea la base ni la modifica y no emite avisos: su stdout es para un programa, no para una persona. Se acepta solo, sin otros argumentos.</p>
+      <p><code>start</code> reúne en una invocación el contexto operativo en secciones de texto: la memoria reciente de la sesión (<code>acm start</code>, que puede abrir o recuperar la sesión), el tablero con lo que está en curso y lo que está listo para empezar, la rama, el estado y los tres últimos commits de git, la fase actual y los encargos pendientes de conciliar. No cambia la fase. Cada fuente falla por su cuenta y su sección dice «no disponible» con el motivo, así que un proyecto sin tablero, sin git o sin estado sigue dando el resto del arranque.</p>
+      <p>El runner es el único escritor del registro: el agente no edita la base ni el estado a mano, y las delegaciones entran y salen por las operaciones <code>deck_*</code>. El <code>.llmignore</code> del paquete mantiene la guarda de no editar el estado del runner; se aplica con el plugin <code>opencode-ignore-file</code> instalado globalmente (<code>npm run install:plugin</code> desde su repositorio, y reiniciar opencode), y sin él vale la convención.</p>
       <div class="note"><p><strong>El runner no juzga el trabajo.</strong> Dice en qué fase estás y qué evidencia falta; no comprueba el mundo real. Los bloqueos siguen siendo los del tablero y los de la tarea.</p></div>
-      <p><button class="btn btn-ghost" type="button" id="runner-code-button">Ver el código del runner</button></p>
     </section>
 
     <section id="contrato">
       <div class="section-head"><span class="section-num">05</span><h2 class="title">El contrato de delegación</h2></div>
       <p class="sub">Estas ocho reglas resumen el prompt del orquestador, que vive en <code>agents/orchestrator.md</code>. Vale leerlas antes de confiar en el reparto. Las reglas 2 y 4 desarrollan la metodología ODD de <a href="#metodologia">la sección 06</a>.</p>
       <ol class="rules">
-        <li><strong>Clasifica la petición</strong>: pregunta, revisión, plan o implementación, y con ella el recorrido: qué fases aportan valor y cuáles se omiten con su motivo (<code>skip</code>). Investigar, explicar, revisar o proponer es solo lectura; se escribe solo con una petición explícita de implementar, y una consulta termina sin pasar por tablero, implementación ni commit.</li>
+        <li><strong>Clasifica la petición</strong>: pregunta, revisión, plan o implementación, y con ella el recorrido: qué fases aportan valor y cuáles se omiten con su motivo (<code>phase_skip</code>). Investigar, explicar, revisar o proponer es solo lectura; se escribe solo con una petición explícita de implementar, y una consulta termina sin pasar por tablero, implementación ni commit.</li>
         <li><strong>El camino cotidiano es orgánico</strong>: describir el resultado, explorar el sistema real, aclarar solo las decisiones que pertenecen al humano, implementar lo autorizado, verificar proporcionalmente y conservar evidencia. Formalizar más —un plan, una especificación formal— sigue siendo elección explícita de la persona; lo que ODD exige es registrar el trabajo grande en el tablero antes de la primera escritura. Distingue hecho (comprobado en el repo o con una herramienta), inferencia (razonada pero sin verificar: se contrasta con herramientas antes de actuar sobre ella) y decisión (elección de diseño: es del humano).</li>
-        <li><strong>Delega el trabajo sustancial a <code>general</code></strong>; lo trivial, inequívoco y de bajo riesgo se resuelve en línea, y lo que no toca archivos no se delega. Antes de delegar un trabajo sustancial, comprueba que el encargo tiene objetivo concreto, alcance delimitado, resultado verificable y volumen razonable para el presupuesto del agente. Los <code>steps</code> de su frontmatter son una restricción operativa, no una medida del esfuerzo cognitivo: <code>docs</code> 20, <code>verify</code> 12, <code>review</code> 12 y <code>ui</code> 20, mientras <code>general</code> y <code>explore</code> no tienen fichero ni límite declarado. Si no cabe con margen, divídelo por responsabilidades independientes, no por un número de archivos o llamadas, o pre-mastícale el contexto, y deja la síntesis final en el orquestador. Los subagentes entran por razones con nombre: <code>explore</code> cuando evita exploración repetida, <code>docs</code> para documentación y <code>verify</code> y <code>review</code> para verificación independiente. El libro <code>.run/delegations.jsonl</code> evita repetir un encargo vivo: una línea JSON por encargo con <code>ts</code>, <code>phase</code>, <code>task</code>, <code>fingerprint</code>, <code>agent</code> y <code>status</code>; se consulta antes de lanzar, se anota al lanzar y se actualiza al recibir el retorno. El mapa de <code>explore</code> y la evidencia de <code>verify</code> vuelven acotados, unos 2k tokens con <code>path:line</code>.</li>
+        <li><strong>Delega el trabajo sustancial a <code>general</code></strong>; lo trivial, inequívoco y de bajo riesgo se resuelve en línea, y lo que no toca archivos no se delega. Antes de delegar un trabajo sustancial, comprueba que el encargo tiene objetivo concreto, alcance delimitado, resultado verificable y volumen razonable para el presupuesto del agente. Los <code>steps</code> de su frontmatter son una restricción operativa, no una medida del esfuerzo cognitivo: <code>docs</code> 20, <code>verify</code> 12, <code>review</code> 12 y <code>ui</code> 20, mientras <code>general</code> y <code>explore</code> no tienen fichero ni límite declarado. Si no cabe con margen, divídelo por responsabilidades independientes, no por un número de archivos o llamadas, o pre-mastícale el contexto, y deja la síntesis final en el orquestador. Los subagentes entran por razones con nombre: <code>explore</code> cuando evita exploración repetida, <code>docs</code> para documentación y <code>verify</code> y <code>review</code> para verificación independiente. El runner evita repetir un encargo vivo: calcula la huella del encargo, bloquea un duplicado con esa huella en estado abierto y lleva el ciclo <code>deck_*</code> con la sesión de cada ejecución. El mapa de <code>explore</code> y la evidencia de <code>verify</code> vuelven acotados, unos 2k tokens con <code>path:line</code>.</li>
         <li><strong>Verifica de forma proporcional al impacto</strong>: antes de implementar, acota el impacto esperado —el comportamiento que debe cambiar, lo que alcanza (archivos, interfaces, datos), sus consumidores y la comprobación que lo demostraría—; en un cambio trivial basta la comprobación localizada, y una dependencia no demostrada es no verificada. Después, contrasta el <code>git diff</code> con esa previsión: si aparece un impacto relevante no previsto, amplía las comprobaciones solo en esa dirección, sin pedir la batería completa porque hayan cambiado más archivos. Parte de la evidencia que ya existe —el <code>validation</code> del implementador y el diff— y no repitas una comprobación ya ejecutada. Ejecutar no es validar: el criterio solo queda acreditado si la comprobación cubre el comportamiento que exige; la aceptación en destino, cuando aplique, es evidencia aparte que se declara pendiente si falta acceso. La profundidad la fija el alcance y el riesgo —la fase Verificar enumera sus escalones: comprobación localizada, tests y flujo, suite o puerta del repo, y verificación independiente en el cambio crítico—. <code>verify</code> entra cuando falte una comprobación, la evidencia del implementador no sea independiente o el riesgo lo justifique, y su encargo lleva también el objetivo, los criterios y la evidencia disponible, no solo los comandos: contrasta el criterio, analiza críticamente el código afectado con sus llamadores y sus pruebas, y ejecuta lo pedido más solo las comprobaciones adicionales que resuelvan una incertidumbre relevante y su lista de prefijos permita, sin reconstruir la infraestructura. <code>review</code> entra solo cuando el impacto justifique una revisión independiente —contratos, seguridad, datos, concurrencia o criterio ambiguo—, no para prosa o configuración trivial, y no repite lo ya probado. Un <code>partial</code> no reabre el encargo entero: mira qué evidencia falta y reutiliza la que ya tienes. Todo cambio de código se cierra con una línea <code>Risk: item N</code> o <code>Risk: none</code>, escrita una vez con el ítem que aplica; el riesgo alto añade verificación independiente.</li>
-        <li><strong>Todo encargo lleva objetivo, archivos propios, comprobaciones esperadas y criterio de aceptación literal de la tarea, y exige un retorno breve</strong>: <code>status</code> (<code>completed</code>, <code>partial</code> o <code>blocked</code>, o la pregunta al humano si el bloqueo es de decisión), una línea <code>&lt;comando&gt;: &lt;resultado observado&gt;</code> por comprobación y los riesgos y lo no verificado. El informe no repite el criterio ni el encargo. <code>completed</code> es el alcance ejecutado e informado aunque algo falle —el fallo va en su línea—; <code>partial</code> es una comprobación sin ejecutar o sin evidencia suficiente; <code>blocked</code> es el impedimento deliberado, no un error corriente. Un obstáculo corriente —error, timeout, herramienta que falla— se diagnostica y se supera. Ante un <code>partial</code> o un retorno malformado se nombra la causa —fuente, interpretación, búsqueda o ejecución— y se re-encarga solo lo que falta; si el entorno bloqueó una comprobación, la completa el orquestador desde la raíz. <code>delegation-report-checker.py</code> dice lo que falta en la forma del informe, no si el trabajo está bien.</li>
+        <li><strong>Todo encargo lleva objetivo, archivos propios, comprobaciones esperadas y criterio de aceptación literal de la tarea, y exige un retorno breve</strong>: <code>status</code> (<code>completed</code>, <code>partial</code> o <code>blocked</code>, o la pregunta al humano si el bloqueo es de decisión), una línea <code>&lt;comando&gt;: &lt;resultado observado&gt;</code> por comprobación y los riesgos y lo no verificado. El informe no repite el criterio ni el encargo. <code>completed</code> es el alcance ejecutado e informado aunque algo falle —el fallo va en su línea—; <code>partial</code> es una comprobación sin ejecutar o sin evidencia suficiente; <code>blocked</code> es el impedimento deliberado, no un error corriente. Un obstáculo corriente —error, timeout, herramienta que falla— se diagnostica y se supera. Ante un <code>partial</code> o un retorno malformado se nombra la causa —fuente, interpretación, búsqueda o ejecución— y se re-encarga solo lo que falta; si el entorno bloqueó una comprobación, la completa el orquestador desde la raíz. El runner valida la forma del informe al registrar el retorno (<code>deck_return</code>) y devuelve lo pendiente; no juzga si el trabajo está bien.</li>
         <li><strong>Un subagente lanzado no es evidencia</strong>: revisa su salida antes de integrarla. El orquestador es el único que cierra.</li>
         <li><strong>Usa el trabajo en segundo plano solo para trabajo independiente</strong> y espera el aviso antes de integrar.</li>
         <li><strong>El tablero va directo por AIF, sin intermediario</strong>: el orquestador ejecuta él mismo las operaciones deterministas del tablero con el subcomando <code>tasks-ai aif</code> del proyecto —petición JSON por stdin, una respuesta por stdout—. AIF es la fuente autodescriptiva de sus operaciones: lo que ofrece lo dice él mismo y las reglas de negocio viven en el <code>.tasks-ai/AGENTS.md</code> del proyecto. Las operaciones que AIF no cubre —los ADR y el catálogo de etiquetas— van por la CLI <code>tasks-ai</code> convencional. Cada escritura se ejecuta en su momento y se comprueba por CLI antes de usar su resultado: lanzado no es hecho. El cierre y el comentario de bitácora del momento van en primer plano. Ningún subagente escribe en el tablero.</li>
@@ -608,7 +554,7 @@
       <p>Un cambio de riesgo alto recibe, además de sus propias comprobaciones, una verificación independiente: otro agente lee el criterio de la tarea y lo prueba contra el resultado real. En este paquete la hacen <code>verify</code> —evidencia de las comprobaciones— y <code>review</code> —hallazgos contra el criterio—, ninguno de los dos edita.</p>
 
       <h3>Cómo se reparte el trabajo</h3>
-      <p>La implementación sustancial se delega a <code>general</code>; el orquestador resuelve en línea lo trivial, inequívoco y de bajo riesgo, y no delega lo que se resuelve sin tocar archivos. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas, devuelto acotado a unos 2k tokens con evidencia <code>path:line</code>—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Antes de cada lanzamiento el orquestador consulta el libro de delegaciones en disco, el <code>.run/delegations.jsonl</code> del proyecto —una línea JSON por encargo con <code>ts</code>, <code>phase</code>, <code>task</code>, <code>fingerprint</code>, <code>agent</code> y <code>status</code>—, y no relanza la misma huella mientras sus últimos lanzamientos sigan en <code>launched</code>: espera el aviso y actualiza la línea al recibirlo. El retorno de cada delegado puede pasar por <code>delegation-report-checker.py</code>, que dice si el informe cumple la forma del contrato —un <code>status</code> único sin contradicciones, una línea de <code>validation</code> por comprobación esperada y ni una referencia indefinida—, no si el trabajo está bien. Las escrituras del tablero van directas por AIF, el subcomando autodescriptivo <code>tasks-ai aif</code>; las lecturas van por la CLI <code>tasks-ai</code>. El catálogo de skills vive solo en el orquestador: los subagentes llevan el permiso <code>skill</code> denegado (<code>action: skill</code>, <code>resource: "*"</code>, <code>effect: deny</code>), que oculta la skill al modelo y rechaza la carga; no pueden cargarlas por su cuenta, y cuando una aplica el encargo lleva su ruta absoluta y una línea de por qué.</p>
+      <p>La implementación sustancial se delega a <code>general</code>; el orquestador resuelve en línea lo trivial, inequívoco y de bajo riesgo, y no delega lo que se resuelve sin tocar archivos. El tamaño o el número de archivos no deciden el reparto. Los subagentes entran por razones con nombre: <code>explore</code> cuando una exploración independiente prepara mejor el encargo —un mapa que exige más de unas cinco consultas seguidas, devuelto acotado a unos 2k tokens con evidencia <code>path:line</code>—, el trabajo en segundo plano para varias unidades independientes con archivos distintos, y <code>verify</code> o <code>review</code> para la verificación independiente de un cambio de riesgo alto. Antes de cada lanzamiento el orquestador pasa por el runner: calcula la huella del encargo, no relanza uno con la misma huella en estado abierto y lleva el ciclo con las operaciones <code>deck_*</code>. El retorno entra por <code>deck_return</code>, que valida su forma —un <code>status</code> único sin contradicciones, una línea de <code>validation</code> por comprobación esperada y ni una referencia indefinida—, conserva la evidencia y devuelve lo pendiente; no decide si el trabajo está bien. Las escrituras del tablero van directas por AIF, el subcomando autodescriptivo <code>tasks-ai aif</code>; las lecturas van por la CLI <code>tasks-ai</code>. El catálogo de skills vive solo en el orquestador: los subagentes llevan el permiso <code>skill</code> denegado (<code>action: skill</code>, <code>resource: "*"</code>, <code>effect: deny</code>), que oculta la skill al modelo y rechaza la carga; no pueden cargarlas por su cuenta, y cuando una aplica el encargo lleva su ruta absoluta y una línea de por qué.</p>
     </section>
 
     <section id="permisos">
@@ -684,8 +630,8 @@
       <div class="code"><pre data-language="bash"><code>opencode models | grep 'nan/'
 opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code></pre></div>
       <p>La primera orden lista los modelos disponibles de <code>nan/</code>. La segunda devuelve el JSON de agentes con su id, su modelo y sus permisos; los identificadores dependen de la cuenta y de lo que tenga cargado el servicio.</p>
-      <p>La batería completa del paquete se ejecuta de una vez con <code>bash check-package.sh</code>: sintaxis del instalador, plantilla JSON, instalación limpia de las dos herramientas junto a los agentes y del comando nativo, fusión con claves ajenas y sobre un comando previo, camino JSONC, <code>diff</code> contra los agentes y las herramientas ya instalados, las guardas de skills, el contrato <code>--json</code> del runner y sus saltos justificados —válido, inválido sin tocar el estado, salto sobre Commit, consulta de solo lectura y estado anterior sin saltos—, la instalación del plugin, los siete pasos del comprobador del informe —su sintaxis, el contrato de <code>--help</code>, un informe conforme con una anáfora que su ruta resuelve que sale con 0 y cuatro no conformes que salen con 1: sin <code>status</code>, sin una comprobación esperada (con <code>--json</code>), con dos <code>status</code> contradictorios y con una anáfora sin ruta—, la validación mecánica opcional del <code>.run/delegations.jsonl</code> y la coincidencia entre la copia embebida del runner en esta guía y el fichero <code>agents/orchestrator-runner.py</code>. No pide interacción y solo escribe en temporales.</p>
-      <p><code>~/.config/opencode/agents/delegation-report-checker.py</code> comprueba la forma del retorno de un delegado contra el contrato del encargo, sin dependencias y sin juicio del modelo: exige una línea <code>status: completed|partial|blocked</code> —única: varias líneas <code>status:</code> con valores distintos se marcan contradictorias, repetir el mismo valor no incumple—, una sección <code>validation</code> con una línea <code>&lt;comando&gt;: &lt;resultado observado&gt;</code> por comprobación esperada y ninguna referencia indefinida —una mención de «el fichero» o «esa línea» sin la ruta o el <code>path:line</code> en la misma línea—, y rechaza un <code>pregunta:</code> que debía llegar al humano como pregunta. Lee el informe de un fichero o de la entrada estándar y las comprobaciones esperadas de un fichero pasado con <code>--checks</code>; devuelve 0 si es conforme, 1 con la lista de incumplimientos y 2 ante un error de uso, y con <code>--json</code> imprime un único objeto con <code>ok</code>, <code>status</code>, <code>checks</code> y <code>violations</code>. Juzga la forma, no el trabajo: un informe conforme puede describir un trabajo roto, y una prosa legítima puede quedar marcada por una anáfora sin ruta.</p>
+      <p>La batería completa del paquete se ejecuta de una vez con <code>bash check-package.sh</code>: sintaxis del instalador, plantilla JSON, instalación limpia del binario del runner junto a los agentes y del comando nativo, fusión con claves ajenas y sobre un comando previo, camino JSONC, <code>diff</code> contra los agentes y el binario instalados, las guardas de skills, el contrato <code>--json</code> del runner, su ciclo <code>deck_*</code> —alta, duplicado abierto denegado, retorno con la forma validada y cierre con guardas—, las pruebas del módulo Go y la instalación y el registro de los plugins. No pide interacción y solo escribe en temporales.</p>
+      <p>La validación estructural del retorno es lógica interna de <code>deck_return</code>, no un paso previo: exige una línea <code>status: completed|partial|blocked</code> —única: varias con valores distintos se marcan contradictorias—, una sección <code>validation</code> con una línea <code>&lt;comando&gt;: &lt;resultado observado&gt;</code> por comprobación esperada y ninguna referencia indefinida —una mención de «el fichero» o «esa línea» sin la ruta o el <code>path:line</code> en la misma línea—, y rechaza un <code>pregunta:</code> que debía llegar al humano. Conserva la evidencia válida, devuelve los pendientes en la misma respuesta y, si la forma no cuadra, un <code>invalid</code> con la lista de incumplimientos. Juzga la forma, no el trabajo: un informe conforme puede describir un trabajo roto.</p>
       <p>Las conductas dependen del prompt y de los permisos: <code>verify</code> ejecuta y no edita; <code>review</code> tiene la edición denegada; <code>docs</code> la tiene limitada a Markdown, <code>docs/</code> y <code>CHANGELOG</code>; <code>ui</code> la tiene abierta y pide permiso antes de Playwright. El shell sigue abierto en <code>review</code>, <code>docs</code> y <code>ui</code>; lo que les impide escribir por esa vía es su prompt.</p>
       <p>La prueba funcional del escritor del tablero tasks-agent —diez casos, los hallazgos que corrigieron su enunciado y la latencia de lectura por modelo— está en <a href="tasks-agent-verification.html">su verificación histórica</a>: el agente quedó retirado con Tasks-AI v0.2.0, cuando AIF dejó a las herramientas del tablero sin superficie de subagente, y el arnés de <code>docs/evals/</code> que lo medía está identificado ahí como retirado. El documento se conserva como registro, no como contrato vigente.</p>
     </section>
@@ -693,8 +639,8 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
     <section id="estado">
       <div class="section-head"><span class="section-num">11</span><h2 class="title">El estado en la TUI</h2></div>
       <p class="sub">El runner ya sabe en qué fase está el orquestador; lo que añade el paquete es la ventana para verlo sin salir de la sesión. El plugin <code>plugins/orchestrator-status</code> abre con <code>/orquestador</code> un diálogo modal, grande y centrado, con la fase actual, su operativa, sus advertencias y el historial de evidencias, con scroll cuando el contenido no cabe; <code>esc</code> cierra y <code>r</code> refresca.</p>
-      <p>El diálogo no guarda estado propio: invoca <code>python3 ~/.config/opencode/agents/orchestrator-runner.py --json</code> desde el directorio del proyecto y pinta lo que responde. Ese modo solo lee, como se explicó en <a href="#runner">la sección 04</a>: abrir el diálogo o pulsar <code>r</code> para refrescar no cambia la fase ni crea el <code>.run/orchestrator-runner.json</code>.</p>
-      <div class="code"><pre data-language="bash"><code>python3 ~/.config/opencode/agents/orchestrator-runner.py --json</code></pre></div>
+      <p>El diálogo no guarda estado propio: invoca <code>orchestrator-runner --json</code> desde el directorio del proyecto y pinta lo que responde. Ese modo solo lee, como se explicó en <a href="#runner">la sección 04</a>: abrir el diálogo o pulsar <code>r</code> para refrescar no cambia la fase ni crea <code>.run/orchestrator.db</code>.</p>
+      <div class="code"><pre data-language="bash"><code>orchestrator-runner --json</code></pre></div>
       <div class="table-wrap">
         <table>
           <thead><tr><th>Bloque del diálogo</th><th>Qué muestra</th></tr></thead>
@@ -707,11 +653,11 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
           </tbody>
         </table>
       </div>
-      <p>Sin estado guardado el diálogo muestra la fase 1 y lo dice en el pie. Un estado corrupto vuelve a la fase 1 con <code>valid</code> en false, y un historial que no es una lista se omite conservando la fase. Si no encuentra <code>python3</code> o el runner, muestra un error de consulta en vez de inventar una fase.</p>
+      <p>Sin estado guardado el diálogo muestra la fase 1 y lo dice en el pie. Un estado corrupto vuelve a la fase 1 con <code>valid</code> en false, y un historial que no es una lista se omite conservando la fase. Si no encuentra el binario o su respuesta no es válida, muestra un error de consulta en vez de inventar una fase.</p>
       <p>Los instaladores copian las fuentes del plugin a <code>~/.config/opencode/cli-plugins/orchestrator-status/</code> y registran esa ruta en la clave <code>plugins</code> de <code>cli.json</code>, sin <code>node_modules</code>: OpenCode resuelve sus dependencias en runtime y no hay nada que compilar. Si ya existía una versión distinta, dejan una copia <code>.bak</code> con fecha antes de reemplazarla. <code>check-package.sh</code> comprueba esa instalación, el registro, la ausencia de <code>node_modules</code> y que una segunda pasada no duplique la copia ni el registro.</p>
       <p>El panel conoce además dos desajustes y los nombra en su cabecera. El de fase 1 con tareas en curso y ninguna evidencia registrada señala que el runner no se está usando; el de la fase 2 a la 8 cuenta con <code>git status --porcelain</code> los ficheros sin commit y avisa de que el árbol se ha adelantado al flujo —hay trabajo que aún no ha pasado por «Riesgo y Commit»—. Como cubren fases distintas, el segundo se evalúa primero y es el que se ve cuando toca.</p>
-      <p>La fase viaja también al modelo sin abrir el panel: el plugin de servidor <code>plugins/orchestrator-phase.ts</code>, que la <a href="#empezar">instalación</a> deja en <code>~/.config/opencode/plugins/</code>, la añade al system prompt de cada petición de chat con su nombre y la evidencia que pide <code>next</code>. También falla en silencio: sin estado, sin runner o sin una respuesta válida en tres segundos, no inyecta nada.</p>
-      <div class="note"><p><strong>La ruta del runner es la de la instalación por defecto.</strong> El panel busca <code>~/.config/opencode/agents/orchestrator-runner.py</code>; con otro <code>XDG_CONFIG_HOME</code> no lo encuentra y muestra el error de consulta.</p></div>
+      <p>La fase viaja también al modelo sin abrir el panel: el plugin de servidor <code>plugins/orchestrator-phase.ts</code>, que la <a href="#empezar">instalación</a> deja en <code>~/.config/opencode/plugins/</code>, la añade al system prompt de cada petición de chat con su nombre y la evidencia que pide la transición, solo cuando cambia la fase o hay avisos pendientes. También falla en silencio: sin estado, sin runner o sin una respuesta válida en tres segundos, no inyecta nada.</p>
+      <div class="note"><p><strong>La ruta del runner es la de la instalación por defecto.</strong> El panel busca <code>~/.config/opencode/agents/orchestrator-runner</code> y, si no está, <code>orchestrator-runner</code> en el <code>PATH</code>; con otro <code>XDG_CONFIG_HOME</code> usa <code>OPENCODE_RUNNER_BIN</code> o muestra el error de consulta.</p></div>
     </section>
 
     <section id="errores">
@@ -1027,589 +973,6 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
   <span class="tk-icon tk-icon--mask tk-icon--chevron-up" aria-hidden="true"></span>
 </a>
 
-<!-- El diálogo del código del runner: el código viaja embebido y el panel se
-     limita al viewport. La forma y el cierre repiten los del lightbox del hero.
-     La copia de agents/orchestrator-runner.py vive en este HTML, porque la guía
-     no la pide por red; check-package.sh la contrasta byte a byte. -->
-<div class="code-modal" id="runner-code-modal" role="dialog" aria-modal="true" aria-labelledby="runner-code-title" hidden>
-  <div class="code-modal-panel">
-    <div class="code-modal-head">
-      <h2 id="runner-code-title">agents/orchestrator-runner.py</h2>
-      <button class="btn btn-ghost code-modal-close" type="button">Cerrar</button>
-    </div>
-    <div class="code code-modal-body"><pre data-language="python" tabindex="0"><code id="runner-code">#!/usr/bin/env python3
-&quot;&quot;&quot;Guía determinista del flujo del orquestador: la fase actual, su lista operativa, sus
-advertencias y la evidencia que hace falta para dejarla. Sin dependencias y sin reloj: la
-misma entrada produce la misma salida.
-&quot;&quot;&quot;
-
-import json
-import os
-import shutil
-import subprocess
-import sys
-
-# El estado vive en el .run/ del directorio actual, que es el proyecto en el que se trabaja.
-# shortcut: invocar desde la raíz del proyecto en el que se trabaja (este paquete u otro);
-# desde otro directorio crea su propio .run/.
-STATE = os.path.join(&quot;.run&quot;, &quot;orchestrator-runner.json&quot;)
-
-PHASES = [
-    {
-        &quot;name&quot;: &quot;Inicio de sesión&quot;,
-        &quot;when&quot;: &quot;al empezar cualquier sesión, antes de lanzar subagentes o tocar archivos&quot;,
-        &quot;evidence&quot;: &quot;qué se leyó (memoria de la sesión, tablero y `AGENTS.md` del proyecto)&quot;,
-        &quot;steps&quot;: [
-            &quot;Recuperar el contexto con `acm start` en la raíz del proyecto; `acm aif` es la interfaz autodescriptiva del resto de operaciones de la memoria: el envelope de descubrimiento ({\&quot;aif\&quot;:\&quot;0.2\&quot;}) por stdin devuelve su lista.&quot;,
-            &quot;Leer el `AGENTS.md` del proyecto y su mapa de fuentes antes de decidir nada.&quot;,
-            &quot;Consultar el tablero (en curso y listas para empezar) con la CLI `tasks-ai` del proyecto, directamente: las lecturas del tablero no se delegan.&quot;,
-            &quot;Comprobar la fase con `~/.config/opencode/agents/orchestrator-runner.py`; si la sesión anterior dejó otra y empiezas trabajo nuevo, ejecuta su subcomando `reset` para volver a la fase 1. El fichero `.run/orchestrator-runner.json` no se borra a mano: el agente no puede tocarlo.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;Nada se lanza antes de leer la memoria de la sesión y el tablero.&quot;,
-            &quot;El runner no comprueba el mundo real: informa antes de que falles; las guardas del tablero y del producto siguen siendo las que bloquean.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Clasificar el encargo&quot;,
-        &quot;when&quot;: &quot;en cuanto llega la petición, antes de cualquier escritura&quot;,
-        &quot;evidence&quot;: &quot;la clasificación del encargo y, si es planificación, el acuerdo explícito de la persona&quot;,
-        &quot;steps&quot;: [
-            &quot;Clasificar la petición: pregunta, revisión, plan o implementación.&quot;,
-            &quot;Pregunta, revisión o plan son solo lectura: no se escribe sin una petición explícita de implementar.&quot;,
-            &quot;Detectar planificación: ejemplos, matices sobre decisiones ya tomadas, «es un ejemplo», «ya lo abordaremos más adelante». Ahí no se abre tablero ni se lanzan subagentes hasta el acuerdo explícito.&quot;,
-            &quot;Separar hecho (comprobado en el repo o con una herramienta) de inferencia (razonada pero sin verificar) y de decisión (elección de diseño, del humano).&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;Sin tablero ni subagentes hasta el acuerdo explícito: una petición de plan no autoriza a implementar.&quot;,
-            &quot;Ante la duda entre plan e implementación, pregunta; no conviertas la ambigüedad en trabajo.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Tamaño y tablero&quot;,
-        &quot;when&quot;: &quot;tras clasificar como implementación y antes de la primera escritura&quot;,
-        &quot;evidence&quot;: &quot;la referencia de la tarea (`tk-n`), «trivial sin tarea, con autorización de la persona» o «tarea creada, sin épica»&quot;,
-        &quot;steps&quot;: [
-            &quot;Aplicar el test de la sesión interrumpida: si la sesión se parara ahora, ¿alguien podría terminar el trabajo con la petición original y `git diff`?&quot;,
-            &quot;Respuesta sí: si el cambio es muy trivial —uno o dos archivos como máximo, p. ej. una entrada en `.gitignore`—, no se crea tarea nueva, salvo que la persona la quiera; en otro caso, registra por AIF (`tasks-ai aif`) la tarea (`task` + `ODD` + tipo) —o una épica si el trabajo reviste importancia— con su criterio observable y la petición original en un comentario, y comprueba por CLI que quedó con su criterio antes de la primera edición.&quot;,
-            &quot;Respuesta no: trabajo grande. Registra por AIF, en una sola secuencia ordenada: una épica (`epic` + `ODD` + tipo), sus subtareas (`task` + `ODD` + tipo), el criterio observable de cada una y la petición original en un comentario. Continúa con tu proceso y, antes de la primera edición, comprueba por CLI que la épica quedó con su criterio.&quot;,
-            &quot;Comprobar el catálogo con `tasks-ai tags`: las etiquetas nacen ahí antes de usarse.&quot;,
-            &quot;Las operaciones que AIF no cubre —los ADR (`adr create/edit/import/export`) y el catálogo de etiquetas (`tag create/edit/delete`)— van por la CLI `tasks-ai` convencional; asignar etiquetas va dentro de `create`/`update`.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;Una tarea sin criterio no se empieza: el criterio es lo que después se contrasta con el resultado real.&quot;,
-            &quot;La épica pasa a `in_progress` cuando empieza su primera hija y no cierra hasta que cierran todas.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Explorar&quot;,
-        &quot;when&quot;: &quot;antes de proponer o editar, en proporción a la petición&quot;,
-        &quot;evidence&quot;: &quot;las fuentes exploradas: código, requisitos y lo que el cambio debe alcanzar&quot;,
-        &quot;steps&quot;: [
-            &quot;Leer el código y los requisitos que la petición toca.&quot;,
-            &quot;En repositorios con `.codegraph/`, `codegraph explore \&quot;...\&quot;` antes de buscar a mano.&quot;,
-            &quot;Usar `lsp_*` para símbolos, referencias y tipos; `grep` para texto, configuración y documentación.&quot;,
-            &quot;Mapear lo que el cambio debe alcanzar: llamadores, pruebas, fixtures, configuración y exportaciones.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;Lo razonado sin verificar es inferencia: contrástalo con una herramienta antes de actuar sobre ello.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Decidir&quot;,
-        &quot;when&quot;: &quot;cuando aparece una duda de diseño o de producto&quot;,
-        &quot;evidence&quot;: &quot;la decisión tomada o «sin decisiones del humano»&quot;,
-        &quot;steps&quot;: [
-            &quot;Resolver los hechos investigando: repo, herramientas, documentación del paquete.&quot;,
-            &quot;Elevar solo las decisiones que son del humano: producto, alcance, formato, permisos, pérdida de datos.&quot;,
-            &quot;Preguntar de una en una y esperar la respuesta.&quot;,
-            &quot;Formalizar más (un plan, una especificación) es elección explícita de la persona, nunca un cambio silencioso de proceso.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;Ni preguntas innecesarias ni autoridad no concedida.&quot;,
-            &quot;Puedes advertir que un cambio tiene implicaciones arquitectónicas y proponer formalizarlo; no lo decidas tú.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Delegar&quot;,
-        &quot;when&quot;: &quot;antes de lanzar un subagente&quot;,
-        &quot;evidence&quot;: &quot;los subagentes lanzados y la tarea de cada uno&quot;,
-        &quot;steps&quot;: [
-            &quot;Todo encargo lleva cuatro cosas: objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación; si hay tablero, la referencia de la tarea.&quot;,
-            &quot;En el encargo, distinguir obstáculo corriente —error, timeout, herramienta que falla—, que se diagnostica y se supera, de bloqueo deliberado —fichero marcado para no tocar, acceso retirado a propósito—, que se respeta y se comunica buscando otra vía segura; el informe de retorno se entiende sin haber visto el trabajo.&quot;,
-            &quot;Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación y `verify` y `review` para verificación independiente.&quot;,
-            &quot;Llevar el libro de delegaciones en `.run/delegations.jsonl`: consultarlo antes de lanzar —un lanzamiento con la misma huella que siga en `launched` no se repite, se espera su aviso—, añadir la línea al lanzar y actualizar su `status` al recibir el retorno.&quot;,
-            &quot;Usar `background` solo para unidades independientes con archivos distintos, y esperar el aviso antes de integrar.&quot;,
-            &quot;Implementar en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;El subagente no toca el tablero ni inventa estados: las escrituras del tablero las hace el orquestador por AIF; una operación lanzada no es evidencia, se comprueba por CLI antes de usarse.&quot;,
-            &quot;Revisa la salida del subagente antes de integrarla; un encargo sustancial nace además con alcance y criterios en su tarea.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Verificar&quot;,
-        &quot;when&quot;: &quot;tras cualquier cambio y antes del commit o del cierre&quot;,
-        &quot;evidence&quot;: &quot;el escalón de verificación aplicado y su resultado&quot;,
-        &quot;steps&quot;: [
-            &quot;Elegir el escalón por alcance y riesgo: trivial → la comprobación localizada que toca ese archivo; funcional → los tests afectados y una prueba del flujo; transversal → la suite relevante o la puerta del repo; crítico → además, verificación independiente.&quot;,
-            &quot;Partir de la evidencia que ya existe —el `validation` del implementador y el `git diff`— y no repetir una comprobación ya ejecutada sin motivo; `verify` entra cuando falte una comprobación, la independencia o el riesgo lo justifique, y en un cambio crítico su encargo lleva también el objetivo, los criterios y la evidencia disponible: no lo reduzcas a una lista de comandos.&quot;,
-            &quot;Ejecutar el escalón elegido, no la batería completa por defecto: la batería entera solo cuando el cambio no permita acotar qué puede romper.&quot;,
-            &quot;Contrastar el criterio de aceptación de la tarea con el resultado real, no con el informe del subagente: el diff y el resumen se contrastan los dos, porque el resumen tiende a omitir cambios pequeños.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;La salida de un subagente no es evidencia: se revisa antes de integrarla.&quot;,
-            &quot;`review` se reserva a contratos, seguridad, datos, concurrencia o criterio ambiguo; no repite lo ya probado.&quot;,
-            &quot;Toda verificación no ejecutada se declara.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Riesgo&quot;,
-        &quot;when&quot;: &quot;en todo cambio de código, antes de preparar el commit&quot;,
-        &quot;evidence&quot;: &quot;la línea `Risk:` escrita&quot;,
-        &quot;steps&quot;: [
-            &quot;Recorrer los seis ítems: 1 datos o efectos irreversibles; 2 seguridad; 3 contratos que otros consumen; 4 concurrencia; 5 entrega o entorno; 6 nada que detecte una regresión en lo que cambia.&quot;,
-            &quot;Escribir la línea `Risk: item N (motivo)` si toca alguno, o `Risk: none` si no toca ninguno.&quot;,
-            &quot;Riesgo alto: añadir verificación independiente, además de las comprobaciones propias; otro agente lee el criterio de la tarea y lo prueba contra el resultado real (`verify` y `review`).&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;La línea viaja en el cuerpo del commit: sin ella, el cambio no está cerrado.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Commit&quot;,
-        &quot;when&quot;: &quot;cuando el criterio está verificado y el trabajo está listo para integrarse&quot;,
-        &quot;evidence&quot;: &quot;la revisión o confirmación de la persona recibida&quot;,
-        &quot;steps&quot;: [
-            &quot;Preparar el commit y presentar el informe de preparación: qué entra, qué queda fuera y qué comprobaciones se ejecutaron.&quot;,
-            &quot;Esperar la confirmación explícita: cubre lo presentado, y un cambio de alcance pide otra.&quot;,
-            &quot;Redactar en Conventional Commits, en inglés, en imperativo y sin punto final, una unidad coherente por commit.&quot;,
-            &quot;Cerrar el cuerpo con `Refs: tk-n`, una por tarea, y la línea de riesgo.&quot;,
-            &quot;Seguir `CONTRIBUTING.md` para rama, integración y versiones; `push`, merge y etiqueta piden autorización.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;Sin firmas de IA ni `Co-Authored-By` salvo petición expresa.&quot;,
-            &quot;El tablero no habla de Git: no escribas estados Git en comentarios del tablero; el estado de Git vive en Git.&quot;,
-            &quot;Ningún commit con cabos sueltos: lo que aparece al prepararlo se arregla o se pregunta antes.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Cierre de tarea&quot;,
-        &quot;when&quot;: &quot;tras el commit, al terminar la unidad de trabajo&quot;,
-        &quot;evidence&quot;: &quot;la tarea cerrada o el siguiente paso declarado&quot;,
-        &quot;steps&quot;: [
-            &quot;Comprobar el criterio de la tarea contra el resultado real.&quot;,
-            &quot;Dejar la bitácora como comentario en términos del producto: qué se hizo y qué se comprobó, por AIF en primer plano.&quot;,
-            &quot;Cerrar por AIF en primer plano solo con la revisión de la persona o su pedido expreso.&quot;,
-            &quot;Dejar el trabajo a medias: devuelve la tarea a `open` y añade un comentario con el siguiente paso, por AIF, y comprueba por CLI que quedó registrado.&quot;,
-            &quot;Épica: cerrarla cuando cierren todas sus hijas; cerrar con hijas abiertas se rechaza sin escribir nada.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;La bitácora va en términos del producto, sin estados vivos ni estados de Git: ni hashes, ni ramas, ni «mergeado».&quot;,
-            &quot;`done` no sustituye la revisión: sin ella, la tarea sigue abierta.&quot;,
-            &quot;Una tarea ya cerrada con `done` no se vuelve a cerrar: reabrirla exige una justificación importante y la autorización explícita de la persona, siempre por AIF sin delegar.&quot;,
-        ],
-    },
-    {
-        &quot;name&quot;: &quot;Memoria y sesión&quot;,
-        &quot;when&quot;: &quot;tras cada decisión, bugfix o hallazgo, y antes de decir «done»&quot;,
-        &quot;evidence&quot;: &quot;ninguna: es la última fase y no hay transición que justificar; el reinicio lo hace `reset`&quot;,
-        &quot;steps&quot;: [
-            &quot;Guardar con `acm aif` las operaciones de memoria (decision, learning, discovery, bugfix) tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema; las preferencias de la persona, su operación `preference`.&quot;,
-            &quot;Dejar trabajo a medias: `acm aif` con su operación `checkpoint` y el estado con los siguientes pasos.&quot;,
-            &quot;Antes de decir «done» o cerrar la sesión, `acm aif` con su operación `close` y el resumen del cierre; el cierre del tablero (si el proyecto usa tasks-ai) manda sobre el de memoria.&quot;,
-            &quot;Antes de dar la sesión por cerrada, `reset`: una vez cerrada la sesión el estado debe quedar en fase 1 y sin historial, nunca en la fase 11; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.&quot;,
-        ],
-        &quot;warnings&quot;: [
-            &quot;Lo que no se guarda se pierde en la próxima sesión.&quot;,
-            &quot;«Podemos cerrar» de la persona apunta a la sesión, no a la tarea: no repitas el cierre de la fase 10 ni reabras una tarea cerrada sin autorización explícita.&quot;,
-        ],
-    },
-]
-
-HELP = &quot;&quot;&quot;\
-Guía determinista del flujo del orquestador. La fase la decide este registro, no el agente.
-
-Uso, desde la raíz del proyecto en el que se trabaja:
-  ~/.config/opencode/agents/orchestrator-runner.py                muestra la fase actual sin cambiar el estado
-  ~/.config/opencode/agents/orchestrator-runner.py next           no avanza: muestra la fase y la evidencia que se espera para dejarla
-  ~/.config/opencode/agents/orchestrator-runner.py next &quot;texto&quot;   registra el texto como evidencia, avanza y muestra la nueva fase
-  ~/.config/opencode/agents/orchestrator-runner.py skip &lt;fase&gt; &quot;motivo&quot;  salta a una fase posterior: registra el motivo y las fases omitidas
-  ~/.config/opencode/agents/orchestrator-runner.py boot           imprime el arranque de la fase 1: memoria, tablero, git, últimos commits y fase
-  ~/.config/opencode/agents/orchestrator-runner.py reset          borra el estado: vuelve a la fase 1 sin historial
-  ~/.config/opencode/agents/orchestrator-runner.py --json         imprime las fases y el estado en JSON, sin cambiar nada
-  ~/.config/opencode/agents/orchestrator-runner.py --help         esta ayuda
-
-`next` exige evidencia: sin texto no avanza (código 0, es una consulta) y pide la evidencia de
-la fase actual. Un único argumento de texto; varios puntos van en el mismo texto separados por
-`;`. Texto vacío o solo espacios, texto que empieza por `--`, o más de un argumento, son error
-de uso (código 1): así `next --json` no avanza por accidente. En la fase 11 no hay transición:
-`next`, con o sin evidencia, avisa de que es la última y no avanza.
-
-`skip` solo va hacia delante y omite al menos una fase: para la inmediatamente siguiente está
-`next`. El motivo es obligatorio —vacío, solo espacios o con `--` al principio es error de uso,
-igual que un destino que no sea un número entero— y queda en el historial junto a la fase de
-partida y la de destino; la evidencia anterior no se toca y las fases omitidas se muestran, con
-su motivo, en cada render. Un salto no sustituye ninguna autorización humana: si omite Commit, el
-render lo advierte y la confirmación explícita de la persona sigue pendiente. Retroceder, saltar
-a la fase actual o a la siguiente, salir del flujo o saltar desde la fase 11 son error (código 1)
-y el estado no se toca.
-
-`--json` se acepta solo y sin otros argumentos: imprime por stdout un único objeto JSON con
-`version` (1), `phases` (las 11 fases en orden, con número, nombre, cuándo, evidencia esperada,
-pasos y advertencias) y `state` (si existe el fichero de estado con `exists`, fase actual, si el
-estado es válido, si el historial lo es y la evidencia registrada). Una entrada de `evidence`
-puede traer además `skip` con la fase de destino de un salto. No crea ni modifica el
-estado y no emite avisos: su stdout es para un programa, no para una persona. Estado corrupto:
-fase 1 con `valid` en false y `exists` en true; historial que no es una lista: `evidence_valid`
-en false con la evidencia descartada y la fase conservada. Sin fichero de estado: `exists` en
-false, fase 1 y `valid` en true.
-
-`boot` imprime en una invocación el arranque de la fase 1 en cuatro secciones de texto —memoria
-de la sesión (`acm start` sobre el montaje del proyecto, con la sesión del entorno, acotada), tablero (en curso y
-listas para empezar, con ref y título), git (rama, resumen de `git status` y los tres últimos commits) y la fase actual—.
-Es solo lectura: no escribe el estado ni llama a `save_state`. Cada fuente falla por su cuenta: su
-sección imprime «no disponible» con el motivo y el comando sigue con código 0. Solo un `boot` con
-argumentos de más es error de uso.
-
-Estado: .run/orchestrator-runner.json, en el directorio actual, con la forma
-{&quot;phase&quot;: N, &quot;evidence&quot;: [{&quot;phase&quot;: N, &quot;text&quot;: &quot;...&quot;}]}, donde cada entrada es la evidencia con
-la que se dejó esa fase. Un estado viejo con solo {&quot;phase&quot;: N} se acepta como fase válida y
-historial vacío. El directorio actual es el proyecto en el que se trabaja; el estado nunca se
-escribe junto al script instalado. Si falta, la fase inicial es la 1 y la primera invocación
-crea el fichero. Un fichero corrupto o con la fase fuera de rango vuelve a la fase 1 con un
-aviso por stderr; una evidencia que no es una lista se descarta con aviso y la fase se conserva.
-Para reiniciar, `reset`: borra el fichero completo —fase e historial— sin tocar nada más.
-
-Códigos de salida: 0 consulta, avance o `boot` correctos; 1 error de uso o no se pudo escribir el estado.
-
-Fases:
-&quot;&quot;&quot; + &quot;&quot;.join(&quot;  %2d  %s\n&quot; % (i, p[&quot;name&quot;]) for i, p in enumerate(PHASES, 1))
-
-USAGE = &#x27;uso: orchestrator-runner.py [next [&quot;texto de evidencia&quot;] | skip &lt;fase&gt; &quot;motivo&quot; | boot | reset | --json | --help]&#x27;
-
-
-def load_state():
-    &quot;&quot;&quot;Devuelve (fase, evidencias, corrupto, evidencia_invalida). Estado ausente: fase 1 sin aviso.&quot;&quot;&quot;
-    if not os.path.exists(STATE):
-        return 1, [], False, False
-    try:
-        with open(STATE, encoding=&quot;utf-8&quot;) as f:
-            data = json.load(f)
-        phase = data[&quot;phase&quot;]
-        if not (type(phase) is int and 1 &lt;= phase &lt;= len(PHASES)):
-            return 1, [], True, False
-        evidence = data.get(&quot;evidence&quot;, [])
-        if not isinstance(evidence, list):
-            return phase, [], False, True
-        return phase, evidence, False, False
-    except (OSError, ValueError, KeyError, TypeError):
-        return 1, [], True, False
-
-
-def save_state(phase, evidence):
-    os.makedirs(os.path.dirname(STATE), exist_ok=True)
-    with open(STATE, &quot;w&quot;, encoding=&quot;utf-8&quot;) as f:
-        json.dump({&quot;phase&quot;: phase, &quot;evidence&quot;: evidence}, f)
-        f.write(&quot;\n&quot;)
-
-
-def warn_state(corrupt, bad_evidence):
-    &quot;&quot;&quot;Los mismos avisos por stderr para cualquiera que cargue y reescriba el estado.&quot;&quot;&quot;
-    if corrupt:
-        print(&quot;aviso: estado inválido en %s; se vuelve a la fase 1&quot; % STATE, file=sys.stderr)
-    if bad_evidence:
-        print(&quot;aviso: historial de evidencia inválido en %s; se descarta&quot; % STATE, file=sys.stderr)
-
-
-def render(phase, evidence=None):
-    p = PHASES[phase - 1]
-    lines = [&quot;Fase %d/%d · %s&quot; % (phase, len(PHASES), p[&quot;name&quot;]), &quot;Cuándo: %s.&quot; % p[&quot;when&quot;], &quot;&quot;, &quot;Operativa:&quot;]
-    lines += [&quot;  %d. %s&quot; % (i, s) for i, s in enumerate(p[&quot;steps&quot;], 1)]
-    lines += [&quot;&quot;, &quot;Advertencias:&quot;] + [&quot;  - %s&quot; % w for w in p[&quot;warnings&quot;]]
-    skipped = []
-    for entry in evidence or []:
-        if not isinstance(entry, dict):
-            continue
-        start, dest, text = entry.get(&quot;phase&quot;), entry.get(&quot;skip&quot;), entry.get(&quot;text&quot;)
-        if type(start) is not int or type(dest) is not int or dest &lt;= start + 1:
-            continue
-        if dest - start == 2:
-            line = &quot;Omitidas: fase %d (salto de la %d a la %d) · %s&quot; % (start + 1, start, dest, text)
-        else:
-            line = &quot;Omitidas: fases %d-%d (salto de la %d a la %d) · %s&quot; % (start + 1, dest - 1, start, dest, text)
-        if start &lt;= 9 &lt; dest:
-            line += &quot; — Commit omitido: la confirmación explícita de la persona sigue pendiente.&quot;
-        skipped.append(line)
-    if skipped:
-        lines += [&quot;&quot;] + skipped
-    return &quot;\n&quot;.join(lines)
-
-
-def render_evidence(phase):
-    p = PHASES[phase - 1]
-    return &quot;\n&quot;.join([
-        &quot;&quot;,
-        &quot;Evidencia para dejar la fase %d/%d · %s:&quot; % (phase, len(PHASES), p[&quot;name&quot;]),
-        &quot;  Se espera que declares %s.&quot; % p[&quot;evidence&quot;],
-        &quot;  Sin ella el runner no avanza: sigues en la fase %d.&quot; % phase,
-        &#x27;  Para avanzar: orchestrator-runner.py next &quot;texto de evidencia&quot;&#x27;,
-        &quot;  Varios puntos van en el mismo texto, separados por `;`.&quot;,
-    ])
-
-
-def locate(name, *fallbacks):
-    &quot;&quot;&quot;Primer ejecutable disponible: el del PATH o una ruta concreta de las de reserva.&quot;&quot;&quot;
-    for candidate in (name,) + fallbacks:
-        if shutil.which(candidate) or os.path.isfile(candidate):
-            return candidate
-    return None
-
-
-def capture(cmd):
-    &quot;&quot;&quot;Ejecuta una lectura externa. Devuelve (stdout, motivo del fallo o None).&quot;&quot;&quot;
-    try:
-        done = subprocess.run(cmd, capture_output=True, encoding=&quot;utf-8&quot;, errors=&quot;replace&quot;, timeout=15)
-    except subprocess.TimeoutExpired:
-        return None, &quot;sin respuesta en 15 s&quot;
-    except OSError:
-        return None, &quot;no se pudo ejecutar&quot;
-    if done.returncode != 0:
-        detail = (done.stderr or done.stdout).strip().splitlines()
-        return None, detail[0] if detail else &quot;salió con código %d&quot; % done.returncode
-    return done.stdout, None
-
-
-def head(text, limit=30):
-    &quot;&quot;&quot;Recorta una salida larga a sus primeras líneas, con la cuenta de las que quedan.&quot;&quot;&quot;
-    lines = text.strip().splitlines()
-    if len(lines) &lt;= limit:
-        return lines or [&quot;(sin contenido)&quot;]
-    return lines[:limit] + [&quot;… %d líneas más&quot; % (len(lines) - limit)]
-
-
-def boot_memory():
-    lines = [&quot;## Memoria&quot;]
-    acm = locate(&quot;acm&quot;, os.path.expanduser(os.path.join(&quot;~&quot;, &quot;.local&quot;, &quot;bin&quot;, &quot;acm&quot;)))
-    if not acm:
-        return lines + [&quot;no disponible: acm no está instalado ni en el PATH&quot;]
-    output, error = capture([acm, &quot;start&quot;])
-    if error:
-        return lines + [&quot;no disponible: %s&quot; % error]
-    return lines + head(output)
-
-
-def task_lines(tasks):
-    return [&quot;  - %s · %s&quot; % (t[&quot;ref&quot;], t[&quot;title&quot;]) for t in tasks] or [&quot;  - ninguna&quot;]
-
-
-def boot_board():
-    lines = [&quot;## Tablero&quot;]
-    board = locate(&quot;.tasks-ai/bin/tasks-ai&quot;, &quot;tasks-ai&quot;)
-    if not board:
-        return lines + [&quot;no disponible: no hay CLI tasks-ai, ni .tasks-ai/bin ni en el PATH&quot;]
-    output, error = capture([board, &quot;list&quot;])
-    if error:
-        return lines + [&quot;no disponible: tasks-ai list %s&quot; % error]
-    try:
-        tasks = json.loads(output)
-    except ValueError:
-        return lines + [&quot;no disponible: la salida de tasks-ai list no es JSON&quot;]
-    if not isinstance(tasks, list):
-        return lines + [&quot;no disponible: la salida de tasks-ai list no es una lista de tareas&quot;]
-    lines.append(&quot;En curso:&quot;)
-    lines += task_lines([t for t in tasks if isinstance(t, dict) and t.get(&quot;status&quot;) == &quot;in_progress&quot;])
-    lines.append(&quot;Listas para empezar:&quot;)
-    lines += task_lines([t for t in tasks if isinstance(t, dict) and t.get(&quot;status&quot;) == &quot;open&quot;])
-    return lines
-
-
-def boot_git():
-    lines = [&quot;## Git&quot;]
-    if not locate(&quot;git&quot;):
-        return lines + [&quot;no disponible: git no está instalado&quot;]
-    branch, error = capture([&quot;git&quot;, &quot;branch&quot;, &quot;--show-current&quot;])
-    if error:
-        return lines + [&quot;no disponible: git branch %s&quot; % error]
-    changed, error = capture([&quot;git&quot;, &quot;status&quot;, &quot;--porcelain&quot;])
-    if error:
-        return lines + [&quot;no disponible: git status %s&quot; % error]
-    count = len(changed.strip().splitlines())
-    lines.append(&quot;Rama: %s&quot; % (branch.strip() or &quot;(sin rama, HEAD desacoplado)&quot;))
-    lines.append(&quot;Estado: %s&quot; % (&quot;%d fichero(s) cambiado(s)&quot; % count if count else &quot;limpio&quot;))
-    lines.append(&quot;Últimos commits:&quot;)
-    lines += boot_commits()
-    return lines
-
-
-def boot_commits():
-    &quot;&quot;&quot;Los tres últimos commits, uno por línea, o su degradación.&quot;&quot;&quot;
-    log, error = capture([&quot;git&quot;, &quot;log&quot;, &quot;-3&quot;, &quot;--pretty=format:%h %s&quot;])
-    if error:
-        return [&quot;no disponible: git log %s&quot; % error]
-    return [&quot;  - %s&quot; % line for line in log.strip().splitlines() if line] or [&quot;  - (sin commits)&quot;]
-
-
-def boot_phase():
-    lines = [&quot;## Fase&quot;]
-    phase, _, corrupt, _ = load_state()
-    if corrupt:
-        print(&quot;aviso: estado inválido en %s; se vuelve a la fase 1&quot; % STATE, file=sys.stderr)
-        return lines + [&quot;estado corrupto en %s: se vuelve a la fase 1&quot; % STATE]
-    if not os.path.exists(STATE):
-        return lines + [&quot;sin estado: la primera invocación empieza en la fase 1&quot;]
-    return lines + [&quot;Fase %d/%d · %s&quot; % (phase, len(PHASES), PHASES[phase - 1][&quot;name&quot;])]
-
-
-def render_boot():
-    &quot;&quot;&quot;El arranque de la fase 1 en cuatro secciones. Solo lectura: no escribe el estado.&quot;&quot;&quot;
-    sections = [boot_memory(), boot_board(), boot_git(), boot_phase()]
-    return &quot;\n\n&quot;.join(&quot;\n&quot;.join(section) for section in sections)
-
-
-def render_json():
-    &quot;&quot;&quot;Devuelve el flujo y el estado como JSON, con la misma lectura que una consulta.&quot;&quot;&quot;
-    phase, evidence, corrupt, bad_evidence = load_state()
-    return json.dumps({
-        &quot;version&quot;: 1,
-        &quot;phases&quot;: [dict(number=i, **p) for i, p in enumerate(PHASES, 1)],
-        &quot;state&quot;: {
-            &quot;exists&quot;: os.path.exists(STATE),
-            &quot;phase&quot;: phase,
-            &quot;valid&quot;: not corrupt,
-            &quot;evidence_valid&quot;: not bad_evidence,
-            &quot;evidence&quot;: evidence,
-        },
-    }, ensure_ascii=False, indent=2)
-
-
-def skip(args):
-    &quot;&quot;&quot;Salta a una fase posterior registrando el motivo y las fases omitidas.&quot;&quot;&quot;
-    if len(args) != 3:
-        return usage_error(args)
-    dest_arg, text = args[1], args[2]
-    # `isdigit` acepta superíndices que `int` rechaza: solo los dígitos ASCII son un número entero.
-    if not (dest_arg.isascii() and dest_arg.isdigit()):
-        print(&quot;error: la fase de destino no es un número entero: %s&quot; % dest_arg, file=sys.stderr)
-        print(USAGE, file=sys.stderr)
-        return 1
-    if not text.strip():
-        print(&quot;error: el motivo del salto no puede estar vacío ni ser solo espacios&quot;, file=sys.stderr)
-        print(USAGE, file=sys.stderr)
-        return 1
-    if text.startswith(&quot;--&quot;):
-        print(&quot;error: el motivo del salto no puede empezar por --&quot;, file=sys.stderr)
-        print(USAGE, file=sys.stderr)
-        return 1
-
-    phase, evidence, corrupt, bad_evidence = load_state()
-    dest = int(dest_arg)
-    if phase == len(PHASES):
-        print(&quot;error: la fase %d es la última: no hay transición&quot; % len(PHASES), file=sys.stderr)
-        return 1
-    if dest &gt; len(PHASES):
-        print(&quot;error: la fase de destino %d no existe: el flujo tiene %d fases&quot; % (dest, len(PHASES)), file=sys.stderr)
-        return 1
-    if dest &lt;= phase:
-        print(&quot;error: no se retrocede: la fase actual es %d; el salto solo va a una fase posterior&quot; % phase, file=sys.stderr)
-        return 1
-    if dest == phase + 1:
-        print(&quot;error: el salto no omitiría ninguna fase (la siguiente es %d); usa next&quot; % (phase + 1), file=sys.stderr)
-        return 1
-
-    warn_state(corrupt, bad_evidence)
-    evidence.append({&quot;phase&quot;: phase, &quot;text&quot;: text, &quot;skip&quot;: dest})
-    try:
-        save_state(dest, evidence)
-    except OSError as e:
-        print(&quot;error: no se pudo escribir %s: %s&quot; % (STATE, e), file=sys.stderr)
-        return 1
-    print(render(dest, evidence))
-    return 0
-
-
-def main(argv):
-    args = argv[1:]
-    if args and args[0] == &quot;--json&quot;:
-        if len(args) &gt; 1:
-            return usage_error(args)
-        print(render_json())
-        return 0
-    if args and args[0] in (&quot;--help&quot;, &quot;-h&quot;):
-        if len(args) &gt; 1:
-            return usage_error(args)
-        print(HELP, end=&quot;&quot;)
-        return 0
-    if args and args[0] == &quot;reset&quot;:
-        if len(args) &gt; 1:
-            return usage_error(args)
-        if os.path.exists(STATE):
-            try:
-                os.remove(STATE)
-            except OSError as e:
-                print(&quot;error: no se pudo borrar %s: %s&quot; % (STATE, e), file=sys.stderr)
-                return 1
-            print(&quot;estado borrado: la próxima invocación empieza en la fase 1 sin historial&quot;)
-        else:
-            print(&quot;sin estado: sigues en la fase 1&quot;)
-        return 0
-    if args and args[0] == &quot;boot&quot;:
-        if len(args) &gt; 1:
-            return usage_error(args)
-        print(render_boot())
-        return 0
-    if args and args[0] == &quot;skip&quot;:
-        return skip(args)
-    if args and args[0] != &quot;next&quot;:
-        return usage_error(args)
-    if len(args) &gt; 2:
-        return usage_error(args)
-    text = args[1] if len(args) == 2 else None
-    if text is not None and not text.strip():
-        print(&quot;error: la evidencia no puede estar vacía ni ser solo espacios&quot;, file=sys.stderr)
-        print(USAGE, file=sys.stderr)
-        return 1
-    if text is not None and text.startswith(&quot;--&quot;):
-        print(&quot;error: la evidencia no puede empezar por --&quot;, file=sys.stderr)
-        print(USAGE, file=sys.stderr)
-        return 1
-
-    phase, evidence, corrupt, bad_evidence = load_state()
-    warn_state(corrupt, bad_evidence)
-
-    # La fase 11 no tiene transición: solo informa, con evidencia o sin ella.
-    advances = text is not None and phase &lt; len(PHASES)
-    if advances:
-        evidence.append({&quot;phase&quot;: phase, &quot;text&quot;: text})
-        phase += 1
-    if not args or advances:
-        try:
-            save_state(phase, evidence)
-        except OSError as e:
-            print(&quot;error: no se pudo escribir %s: %s&quot; % (STATE, e), file=sys.stderr)
-            return 1
-
-    print(render(phase, evidence))
-    if phase == len(PHASES):
-        print(&quot;&quot;)
-        print(&quot;Última fase (%d/%d): el runner no avanza más.&quot; % (phase, len(PHASES)))
-    elif text is None:
-        print(render_evidence(phase))
-    return 0
-
-
-def usage_error(args):
-    print(&quot;error: argumento no reconocido: %s&quot; % &quot; &quot;.join(args), file=sys.stderr)
-    print(USAGE, file=sys.stderr)
-    return 1
-
-
-if __name__ == &quot;__main__&quot;:
-    sys.exit(main(sys.argv))
-</code></pre></div>
-  </div>
-</div>
-
 <script type="module" src="assets/vendor/microlighter/microlighter.min.js"></script>
 <script type="application/json" id="docs-config">
 {
@@ -1717,58 +1080,7 @@ if __name__ == &quot;__main__&quot;:
   });
 })();
 </script>
-<script>
-(function () {
-  /* El código del runner viaja dentro de la página, así que el diálogo no pide
-     nada al abrir y también se lee servido desde file://. Una copia puede
-     derivar del fichero del paquete: la vigila check-package.sh. */
-  var modal = document.getElementById("runner-code-modal");
-  var pre = modal.querySelector(".code-modal-body pre");
-  var closeBtn = modal.querySelector(".code-modal-close");
-  var opener = null;
 
-  function open() {
-    opener = document.activeElement;
-    modal.hidden = false;
-    modal.classList.add("open");
-    document.body.style.overflow = "hidden";
-    closeBtn.focus();
-    // MicroLighter escanea al cargar la página, pero el bloque nace en un
-    // [hidden]: se le pide el repaso al abrir por si el primer barrido no basta.
-    document.dispatchEvent(new Event("syntax-highlight"));
-  }
-  function close() {
-    modal.classList.remove("open");
-    modal.hidden = true;
-    document.body.style.overflow = "";
-    if (opener !== null) {
-      opener.focus();
-      opener = null;
-    }
-  }
-
-  document.getElementById("runner-code-button").addEventListener("click", open);
-  closeBtn.addEventListener("click", close);
-  // El fondo cierra; el panel no, que es donde se lee y se desplaza.
-  modal.addEventListener("click", function (event) {
-    if (event.target === modal) { close(); }
-  });
-  document.addEventListener("keydown", function (event) {
-    if (event.key === "Escape" && !modal.hidden) { close(); }
-  });
-  // El foco no se escapa del diálogo: dentro solo están el cierre y el bloque.
-  modal.addEventListener("keydown", function (event) {
-    if (event.key !== "Tab") { return; }
-    if (event.shiftKey && document.activeElement === closeBtn) {
-      event.preventDefault();
-      pre.focus();
-    } else if (!event.shiftKey && document.activeElement === pre) {
-      event.preventDefault();
-      closeBtn.focus();
-    }
-  });
-})();
-</script>
 <script>
 (function () {
   /* La luciérnaga persigue al puntero: el punto avanza una fracción del

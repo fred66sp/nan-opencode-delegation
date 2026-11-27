@@ -1,20 +1,29 @@
 /** @jsxImportSource @opentui/solid */
 import { execFile } from "node:child_process"
+import { existsSync } from "node:fs"
 import { homedir } from "node:os"
 import { join } from "node:path"
 import { For, Show, createSignal, onCleanup } from "solid-js"
 import { Plugin, usePlugin } from "@opencode/plugin/tui"
 import type { RGBA } from "@opentui/core"
 
-/** Fichero del runner del orquestador que produce el contrato --json. */
-const RUNNER_SCRIPT = join(homedir(), ".config", "opencode", "agents", "orchestrator-runner.py")
+/** Binario del runner del orquestador que produce el contrato --json. */
+const RUNNER_INSTALLED = join(homedir(), ".config", "opencode", "agents", "orchestrator-runner")
 const QUERY_TIMEOUT_MS = 10_000
+
+/** Localización del binario: variable de entorno, copia instalada y, por último, el PATH. */
+function runnerBinary(): string {
+  const override = process.env.OPENCODE_RUNNER_BIN
+  if (override) return override
+  if (existsSync(RUNNER_INSTALLED)) return RUNNER_INSTALLED
+  return "orchestrator-runner"
+}
 
 /** Tablero del proyecto: primero el binario del PATH, y su copia del repo como respaldo. */
 const BOARD_BIN = "tasks-ai"
 const BOARD_LOCAL_BIN = join(".tasks-ai", "bin", "tasks-ai")
 
-const RUNNER_ERROR = "No se pudo consultar el runner. Comprueba que python3 y ~/.config/opencode/agents/orchestrator-runner.py estén disponibles."
+const RUNNER_ERROR = "No se pudo consultar el runner. Comprueba que el binario orchestrator-runner esté instalado y disponible."
 const MALFORMED_ERROR = "El runner respondió algo que no es el JSON esperado."
 
 type Phase = {
@@ -190,7 +199,7 @@ function mismatchNotice(data: RunnerData, inProgress: number, dirty: number): st
 /** Consulta el runner sin escribir nada; cualquier fallo se convierte en un mensaje estable. */
 function queryRunner(cwd: string): Promise<Snapshot> {
   return new Promise((resolve) => {
-    execFile("python3", [RUNNER_SCRIPT, "--json"], { cwd, timeout: QUERY_TIMEOUT_MS }, (error, stdout) => {
+    execFile(runnerBinary(), ["--json"], { cwd, timeout: QUERY_TIMEOUT_MS }, (error, stdout) => {
       const at = Date.now()
       if (error) {
         resolve({ kind: "error", message: RUNNER_ERROR, at })

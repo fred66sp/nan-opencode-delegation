@@ -8,6 +8,30 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- El runner del orquestador sustituye la herramienta Python por un binario Go
+  (`runner-go/`, `orchestrator-runner`), con AIF como interfaz nativa y SQLite como
+  persistencia. `runner start` reúne memoria, tablero, Git, fase y pendientes en una
+  invocación; `runner aif` descubre y ejecuta el catálogo de diez operaciones
+  —`phase_next`, `phase_skip`, `phase_reset`, `recover`, `deck_prepare`, `deck_launch`,
+  `deck_return`, `deck_close`, `deck_note` y `deck_list`—; `--version` identifica el
+  binario y `--json` responde en solo lectura a los plugins. El estado vive en
+  `.run/orchestrator.db`: la primera mutación importa el estado y el registro de
+  delegaciones anteriores y los archiva como `.migrated`, `recover` conserva lo
+  rescatable y declara lo perdido, y `export-legacy` regenera el formato anterior para
+  revertir sin pérdida.
+- El contrato del orquestador se simplifica en la propuesta de
+  `docs/runner/orchestrator-proposal.md`: sus cinco instrucciones administrativas —libro
+  de delegaciones, checker, arranque compuesto, ruta del artefacto Python y
+  reconstrucción del registro tras corrupción— pasan a comportamiento determinista del
+  runner. El lanzamiento y el retorno de cada encargo siguen siendo del agente.
+- Los instaladores dejan el binario junto a los agentes y los plugins lo invocan sin
+  `python3`: el panel y el plugin de servidor lo buscan en la ruta instalada o en el
+  `PATH`, y el servidor conserva su tolerancia a la ausencia de estado o de binario.
+- La guía web deja de embeber el código del runner: su sección 04 describe el binario y
+  enlaza `docs/runner/`, y la comprobación byte a byte de la copia embebida desaparece de
+  `check-package.sh`. README, guía, PRD y AGENTS describen el runner Go, AIF y SQLite en
+  lugar del artefacto Python.
+
 - `verify` evoluciona a verificación crítica e integral en una misma delegación: contrasta
   la implementación con los criterios de aceptación, analiza críticamente el código afectado
   —sus llamadores y sus pruebas, buscando por qué podría no ser correcta, suficiente o
@@ -22,6 +46,14 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Retirado
 
+- `agents/orchestrator-runner.py`: lo sustituye el binario `orchestrator-runner`. La
+  CLI antigua se conserva solo en el arnés de equivalencia hasta cerrar la transición.
+- `agents/delegation-report-checker.py`: la validación estructural del informe pasa a ser
+  lógica interna de `deck_return`, que además conserva la evidencia y devuelve los
+  pendientes en la misma invocación. Los casos del checker se ejecutan contra el retorno.
+- El libro `.run/delegations.jsonl` editado a mano: lo sustituye el registro SQLite del
+  runner, único escritor, con huella calculada, deduplicación de abiertos y guardas de
+  cierre. El fichero anterior se importa una vez y queda archivado.
 - Retirado `tasks-agent`: con Tasks-AI v0.2.0 las herramientas `tasks_*` de OpenCode
   desaparecieron y el tablero va directo. El orquestador ejecuta él mismo las operaciones
   deterministas del tablero por AIF (`tasks-ai aif`), el subcomando autodescriptivo cuya
@@ -43,6 +75,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Módulo Go `runner-go/` con sus pruebas (`go test ./...`) y el arnés de equivalencia de
+  `runner-go/equivalence/`, que compara secuencias, contrato `--json`, migración,
+  concurrencia y el camino de vuelta con `export-legacy`.
+- Documentación del runner en `docs/runner/`: producto, requisitos, diseño y la propuesta
+  del contrato del orquestador.
 - Comando nativo `commands/odd-fix.md`: `/odd-fix <descripción>` selecciona en la sesión actual al agente
   `orchestrator` y le pasa el defecto en `$ARGUMENTS`; si falta o no describe un defecto
   observable, el agente la pide y no toca archivos. Los instaladores lo copian a

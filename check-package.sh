@@ -27,6 +27,29 @@ ko() {
   failures=$((failures + 1))
 }
 
+# Binario del runner para toda la batería. La instalación limpia lo recibe por
+# RUNNER_BIN para no depender de la red; sin go, los grupos Go se avisan omitidos.
+runner_bin="$tmp/orchestrator-runner"
+runner_built=''
+if command -v go >/dev/null 2>&1; then
+  step "compilación del binario runner-go"
+  if (cd runner-go && go build -buildvcs=false -o "$runner_bin" ./cmd/orchestrator-runner); then
+    ok
+    runner_built=1
+  else
+    ko
+  fi
+else
+  printf 'aviso: sin go en PATH; los grupos Go y la compilación se omiten\n'
+fi
+if [ -n "$runner_built" ]; then export RUNNER_BIN="$runner_bin"; fi
+
+# a2. Sintaxis y vet del módulo Go, si hay toolchain.
+if command -v go >/dev/null 2>&1; then
+  step "sintaxis y vet del runner Go (gofmt -l, go vet ./...)"
+  if [ -z "$(cd runner-go && gofmt -l .)" ] && (cd runner-go && go vet ./...); then ok; else ko; fi
+fi
+
 # a. Sintaxis del instalador de Linux.
 step "sintaxis de install.sh (bash -n)"
 if bash -n install.sh; then ok; else ko; fi
@@ -48,7 +71,8 @@ if env -u XDG_CONFIG_HOME HOME="$home_c" bash install.sh >"$tmp/clean.log" 2>&1;
   cfg_c="$home_c/.config/opencode/opencode.jsonc"
   [ -f "$cfg_c" ] || cfg_c="$home_c/.config/opencode/opencode.json"
   if [ -d "$home_c/.config/opencode/agents" ] && [ -f "$cfg_c" ] &&
-    [ -x "$home_c/.config/opencode/agents/orchestrator-runner.py" ] &&
+    [ -x "$home_c/.config/opencode/agents/orchestrator-runner" ] &&
+    [ ! -e "$home_c/.config/opencode/agents/orchestrator-runner.py" ] &&
     python3 - "$cfg_c" <<'PY'
 import json, sys
 data = json.load(open(sys.argv[1], encoding="utf-8"))
@@ -78,9 +102,10 @@ server_plugin_c="$home_c/.config/opencode/plugins/orchestrator-phase.ts"
 if [ -f "$server_plugin_c" ] &&
   cmp -s plugins/orchestrator-phase.ts "$server_plugin_c" &&
   grep -Fq "experimental.chat.system.transform" "$server_plugin_c" &&
-  grep -Fq "orchestrator-runner.py" "$server_plugin_c" &&
+  grep -Fq "orchestrator-runner" "$server_plugin_c" &&
+  ! grep -Fq "python3" "$server_plugin_c" &&
   python3 -c "import json, sys; assert not any('orchestrator-phase' in p for p in json.load(open(sys.argv[1], encoding='utf-8')).get('plugins') or [])" "$home_c/.config/opencode/cli.json"
-then ok; else ko; echo "    falta $server_plugin_c, difiere del paquete, no cita el hook y el runner, o cli.json lo registra"; fi
+then ok; else ko; echo "    falta $server_plugin_c, difiere del paquete, no cita el hook y el binario, menciona python3 o cli.json lo registra"; fi
 
 # c3. El comando nativo /odd-fix viaja en la instalación limpia de c y su contrato se
 # limita a lo pedido: selecciona al orquestador, usa $ARGUMENTS y no autoriza commits.
@@ -157,10 +182,12 @@ fi
 # f. Los agentes del paquete coinciden con los instalados en esta máquina.
 # -x '*.bak.*': el instalador deja copias .bak.<fecha> en esa carpeta (R7) y el
 # diff literal las marcaría siempre; contrasta agentes, no copias de respaldo.
+# -x de los dos artefactos retirados: una instalación anterior puede conservarlos
+# hasta que se reinstale; el paquete ya no los distribuye y la batería no la toca.
 cfgroot="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 if [ -d "$cfgroot/agents" ]; then
   step "diff de agents/ contra $cfgroot/agents"
-  if diff -r -x '*.bak.*' agents "$cfgroot/agents"; then ok; else ko; fi
+  if diff -r -x '*.bak.*' -x 'orchestrator-runner.py' -x 'delegation-report-checker.py' -x 'orchestrator-runner' agents "$cfgroot/agents"; then ok; else ko; fi
 else
   printf 'aviso: diff omitido, no hay agentes instalados en esta máquina\n'
 fi
@@ -243,16 +270,20 @@ else
   if [ -z "$missing_i" ]; then ok; else ko; echo "    no encontradas en ninguna raíz:$missing_i"; fi
 fi
 
-# j. El flag --json del runner: JSON válido con las 11 fases y el estado, sin mutar nada,
-# con la ayuda y el estado corrupto cubiertos. El resto de usos del runner no cambian.
-runner="$here/agents/orchestrator-runner.py"
-dir_j="$tmp/runner-json"
-mkdir -p "$dir_j"
+# j. Contrato del binario Go: --json v1 (11 fases, solo lectura), catálogo AIF,
+# transiciones y errores de entrada. Se ejecuta el binario compilado arriba; sin
+# go, los grupos se avisan omitidos. Los casos de forma viven en go test (§n).
+if [ -z "$runner_built" ]; then
+  printf 'aviso: sin binario runner-go compilado; se omiten las comprobaciones del runner\n'
+else
+  session_j=ses_bateria
 
-step "runner --json: JSON válido, version 1 y las 11 fases"
-if (cd "$dir_j" && python3 "$runner" --json) >"$tmp/runner.json" 2>"$tmp/runner.err" &&
-  [ ! -e "$dir_j/.run" ] &&
-  python3 - "$tmp/runner.json" <<'PY'
+  step "runner --json: JSON válido, version 1 y las 11 fases"
+  dir_j="$tmp/runner-json"
+  mkdir -p "$dir_j"
+  if (cd "$dir_j" && "$runner_bin" --json) >"$tmp/runner.json" 2>"$tmp/runner.err" &&
+    [ ! -e "$dir_j/.run" ] &&
+    python3 - "$tmp/runner.json" <<'PY'
 import json, sys
 doc = json.load(open(sys.argv[1], encoding="utf-8"))
 assert doc["version"] == 1, doc["version"]
@@ -265,129 +296,115 @@ for p in phases:
     assert isinstance(p["warnings"], list), p["number"]
 assert doc["state"] == {"exists": False, "phase": 1, "valid": True, "evidence_valid": True, "evidence": []}, doc["state"]
 PY
-then ok; else ko; sed 's/^/    /' "$tmp/runner.err"; fi
+  then ok; else ko; sed 's/^/    /' "$tmp/runner.err"; fi
 
-step "runner --json no crea ni modifica el estado"
-dir_k="$tmp/runner-json-estado"
-mkdir -p "$dir_k/.run"
-printf '%s\n' '{"phase": 4, "evidence": [{"phase": 3, "text": "explorado"}]}' >"$dir_k/.run/orchestrator-runner.json"
-cp "$dir_k/.run/orchestrator-runner.json" "$tmp/runner-estado-antes"
-if (cd "$dir_k" && python3 "$runner" --json) >"$tmp/runner-estado.json" 2>&1 &&
-  cmp -s "$tmp/runner-estado-antes" "$dir_k/.run/orchestrator-runner.json" &&
-  python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['state']['exists'] is True and d['state']['phase'] == 4, d['state']" "$tmp/runner-estado.json"
-then ok; else ko; echo "    el estado cambió o la fase no se conservó"; fi
+  step "runner --json con sesión y sin base no crea ni modifica el estado"
+  dir_k="$tmp/runner-json-sin-base"
+  mkdir -p "$dir_k"
+  if (cd "$dir_k" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" --json) >"$tmp/runner-vacio.json" 2>&1 &&
+    [ ! -e "$dir_k/.run" ] &&
+    python3 -c "import json, sys; s = json.load(open(sys.argv[1]))['state']; assert s['exists'] is False and s['phase'] == 1 and s['evidence'] == [], s" "$tmp/runner-vacio.json"
+  then ok; else ko; echo "    el estado vacío no es el contrato o se creó .run/"; fi
 
-step "runner --json con otro argumento es error de uso (código 1)"
-(cd "$dir_j" && python3 "$runner" --json next) >/dev/null 2>"$tmp/runner-uso.err"
-rc_j=$?
-if [ "$rc_j" -eq 1 ] && grep -Fq "uso:" "$tmp/runner-uso.err"; then ok; else ko; echo "    código $rc_j"; fi
-
-step "runner next --json no avanza ni escribe estado (código 1)"
-(cd "$dir_j" && python3 "$runner" next --json) >/dev/null 2>"$tmp/runner-next-json.err"
-rc_nj=$?
-if [ "$rc_nj" -eq 1 ] && [ ! -e "$dir_j/.run" ]; then ok; else ko; echo "    código $rc_nj; ¿.run creado? $([ -e "$dir_j/.run" ] && echo sí || echo no)"; fi
-
-step "runner --help documenta --json"
-if python3 "$runner" --help | grep -Fq -- "--json"; then ok; else ko; fi
-
-step "runner --json marca el estado corrupto con valid=false"
-printf '%s\n' '{"phase": 99}' >"$dir_k/.run/orchestrator-runner.json"
-if (cd "$dir_k" && python3 "$runner" --json) >"$tmp/runner-corrupto.json" 2>&1 &&
-  python3 - "$tmp/runner-corrupto.json" <<'PY'
+  step "runner aif: phase_next registra evidencia y --json la devuelve"
+  dir_l="$tmp/runner-next"
+  mkdir -p "$dir_l"
+  if printf '%s\n' '{"aif":"0.2","operation":"phase_next","input":{"evidence":"leído"}}' |
+    (cd "$dir_l" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >"$tmp/runner-next.out" 2>&1 &&
+    (cd "$dir_l" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" --json) >"$tmp/runner-next.json" 2>&1 &&
+    python3 - "$tmp/runner-next.json" <<'PY'
 import json, sys
-state = json.load(open(sys.argv[1], encoding="utf-8"))["state"]
-assert state["exists"] is True and state["valid"] is False and state["phase"] == 1, state
+s = json.load(open(sys.argv[1], encoding="utf-8"))["state"]
+assert s["exists"] is True and s["phase"] == 2, s
+assert s["evidence"] == [{"phase": 1, "text": "leído"}], s["evidence"]
 PY
-then ok; else ko; fi
+  then ok; else ko; sed 's/^/    /' "$tmp/runner-next.out"; fi
 
-step "runner sin argumentos, next y reset siguen funcionando"
-dir_l="$tmp/runner-usos"
-mkdir -p "$dir_l"
-if (cd "$dir_l" && python3 "$runner") >/dev/null 2>&1 &&
-  (cd "$dir_l" && python3 "$runner" next "texto de prueba") >/dev/null 2>&1 &&
-  python3 -c "import json, sys; assert json.load(open(sys.argv[1]))['phase'] == 2" "$dir_l/.run/orchestrator-runner.json" &&
-  (cd "$dir_l" && python3 "$runner" reset) >/dev/null 2>&1 &&
-  [ ! -e "$dir_l/.run/orchestrator-runner.json" ]
-then ok; else ko; echo "    un uso existente cambió de comportamiento"; fi
+  step "runner aif: phase_next sin evidencia es invalid (código 2) y no avanza"
+  dir_m="$tmp/runner-next-invalido"
+  mkdir -p "$dir_m"
+  printf '%s\n' '{"aif":"0.2","operation":"phase_next","input":{"evidence":""}}' |
+    (cd "$dir_m" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >"$tmp/runner-next-invalido.out" 2>&1
+  rc_j=$?
+  if [ "$rc_j" -eq 2 ] && [ ! -e "$dir_m/.run" ] &&
+    python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['result'] == 'invalid', d" "$tmp/runner-next-invalido.out"
+  then ok; else ko; echo "    código $rc_j"; sed 's/^/    /' "$tmp/runner-next-invalido.out"; fi
 
-# j2. El subcomando skip: omite fases hacia delante con motivo y la evidencia previa intacta,
-# y rechaza sin escribir el estado todo lo que no sea un salto válido.
-step "runner skip: salta a una fase posterior y conserva la evidencia previa"
-dir_m="$tmp/runner-skip"
-mkdir -p "$dir_m"
-if (cd "$dir_m" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
-  (cd "$dir_m" && python3 "$runner" skip 6 "sin decisiones ni delegación: cambio trivial") >"$tmp/runner-skip.out" 2>&1 &&
-  python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['phase'] == 6, d; assert d['evidence'] == [{'phase': 1, 'text': 'leído'}, {'phase': 2, 'text': 'sin decisiones ni delegación: cambio trivial', 'skip': 6}], d['evidence']" "$dir_m/.run/orchestrator-runner.json" &&
-  grep -Fq "Omitidas: fases 3-5" "$tmp/runner-skip.out" &&
-  grep -Fq "(salto de la 2 a la 6)" "$tmp/runner-skip.out"
-then ok; else ko; sed 's/^/    /' "$tmp/runner-skip.out"; fi
+  step "runner aif: phase_skip avanza con motivo, omite fases y conserva la evidencia"
+  dir_n="$tmp/runner-skip"
+  mkdir -p "$dir_n"
+  if printf '%s\n' '{"aif":"0.2","operation":"phase_next","input":{"evidence":"leído"}}' |
+    (cd "$dir_n" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >/dev/null 2>&1 &&
+    printf '%s\n' '{"aif":"0.2","operation":"phase_skip","input":{"target":6,"reason":"sin decisiones ni delegación"}}' |
+    (cd "$dir_n" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >"$tmp/runner-skip.out" 2>&1 &&
+    python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['result'] == 'executed' and d['outcome']['phase'] == 6 and d['outcome']['skipped'] == [3, 4, 5], d" "$tmp/runner-skip.out" &&
+    (cd "$dir_n" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" --json) >"$tmp/runner-skip.json" 2>&1 &&
+    python3 - <<'PY' "$tmp/runner-skip.json"
+import json, sys
+s = json.load(open(sys.argv[1], encoding="utf-8"))["state"]
+assert s["phase"] == 6, s
+assert s["evidence"] == [
+    {"phase": 1, "text": "leído"},
+    {"phase": 2, "text": "sin decisiones ni delegación", "skip": 6},
+], s["evidence"]
+PY
+  then ok; else ko; sed 's/^/    /' "$tmp/runner-skip.out"; fi
 
-step "runner skip inválido sale con 1 sin tocar el estado"
-dir_o="$tmp/runner-skip-invalido"
-mkdir -p "$dir_o/.run"
-printf '%s\n' '{"phase": 6, "evidence": [{"phase": 5, "text": "decidido"}]}' >"$dir_o/.run/orchestrator-runner.json"
-cp "$dir_o/.run/orchestrator-runner.json" "$tmp/runner-skip-invalido-antes"
-skip_fails() { (cd "$dir_o" && python3 "$runner" skip "$@") >/dev/null 2>&1; [ $? -eq 1 ]; }
-if skip_fails 1 "x" && skip_fails 6 "x" && skip_fails 7 "x" && skip_fails 12 "x" &&
-  skip_fails 8 "" && skip_fails 8 " " && skip_fails 8 --x && skip_fails ocho "x" &&
-  skip_fails ² "x" && skip_fails && skip_fails 8 &&
-  cmp -s "$tmp/runner-skip-invalido-antes" "$dir_o/.run/orchestrator-runner.json"
-then ok; else ko; echo "    algún salto inválido no salió con 1 o el estado cambió"; fi
+  step "runner aif: saltos inválidos son invalid (código 2) sin tocar el estado"
+  dir_o="$tmp/runner-skip-invalido"
+  mkdir -p "$dir_o"
+  printf '%s\n' '{"aif":"0.2","operation":"phase_skip","input":{"target":6,"reason":"punto de partida"}}' |
+    (cd "$dir_o" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >/dev/null 2>&1
+  (cd "$dir_o" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" --json) >"$tmp/runner-antes.json" 2>&1
+  skip_fails() { # envelope JSON
+    printf '%s\n' "$1" | (cd "$dir_o" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >/dev/null 2>&1
+    [ $? -eq 2 ]
+  }
+  if skip_fails '{"aif":"0.2","operation":"phase_skip","input":{"target":1,"reason":"x"}}' &&
+    skip_fails '{"aif":"0.2","operation":"phase_skip","input":{"target":6,"reason":"x"}}' &&
+    skip_fails '{"aif":"0.2","operation":"phase_skip","input":{"target":7,"reason":"x"}}' &&
+    skip_fails '{"aif":"0.2","operation":"phase_skip","input":{"target":12,"reason":"x"}}' &&
+    skip_fails '{"aif":"0.2","operation":"phase_skip","input":{"target":8,"reason":"   "}}' &&
+    skip_fails '{"aif":"0.2","operation":"phase_skip","input":{"target":"ocho","reason":"x"}}' &&
+    (cd "$dir_o" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" --json) >"$tmp/runner-despues.json" 2>&1 &&
+    cmp -s "$tmp/runner-antes.json" "$tmp/runner-despues.json"
+  then ok; else ko; echo "    algún salto inválido no salió con 2 o el estado cambió"; fi
 
-step "runner skip: un destino no ASCII es error de uso, no un traceback"
-(cd "$dir_o" && python3 "$runner" skip ² "x") >/dev/null 2>"$tmp/runner-skip-unicode.err"
-rc_u=$?
-if [ "$rc_u" -eq 1 ] && grep -Fq "no es un número entero" "$tmp/runner-skip-unicode.err" &&
-  ! grep -Fq "Traceback" "$tmp/runner-skip-unicode.err"
-then ok; else ko; sed 's/^/    /' "$tmp/runner-skip-unicode.err"; fi
+  step "runner aif: la fase 11 es terminal y phase_reset vuelve a la fase 1"
+  dir_p="$tmp/runner-terminal"
+  mkdir -p "$dir_p"
+  if printf '%s\n' '{"aif":"0.2","operation":"phase_skip","input":{"target":11,"reason":"prueba del terminal"}}' |
+    (cd "$dir_p" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >/dev/null 2>&1 &&
+    printf '%s\n' '{"aif":"0.2","operation":"phase_next","input":{"evidence":"texto"}}' |
+    (cd "$dir_p" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >"$tmp/runner-terminal.out" 2>&1 &&
+    python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['result'] == 'executed' and d['outcome']['terminal'] is True, d" "$tmp/runner-terminal.out" &&
+    printf '%s\n' '{"aif":"0.2","operation":"phase_reset","input":{"reason":"fin de la prueba"}}' |
+    (cd "$dir_p" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" aif) >/dev/null 2>&1 &&
+    (cd "$dir_p" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" --json) >"$tmp/runner-reset.json" 2>&1 &&
+    python3 -c "import json, sys; s = json.load(open(sys.argv[1]))['state']; assert s['exists'] is False and s['phase'] == 1, s" "$tmp/runner-reset.json"
+  then ok; else ko; sed 's/^/    /' "$tmp/runner-terminal.out"; fi
 
-step "runner skip sobre Commit advierte de la confirmación pendiente"
-dir_p="$tmp/runner-skip-commit"
-mkdir -p "$dir_p"
-if (cd "$dir_p" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
-  (cd "$dir_p" && python3 "$runner" skip 10 "consulta de solo lectura") >"$tmp/runner-skip-commit.out" 2>&1 &&
-  grep -Fq "Commit omitido" "$tmp/runner-skip-commit.out" &&
-  grep -Fq "confirmación explícita" "$tmp/runner-skip-commit.out"
-then ok; else ko; sed 's/^/    /' "$tmp/runner-skip-commit.out"; fi
+  step "runner --json marca la base dañada con valid=false"
+  dir_q="$tmp/runner-corrupto"
+  mkdir -p "$dir_q/.run"
+  printf 'esto no es una base sqlite\n' >"$dir_q/.run/orchestrator.db"
+  if (cd "$dir_q" && env OPENCODE_SESSION_ID="$session_j" "$runner_bin" --json) >"$tmp/runner-corrupto.json" 2>&1 &&
+    python3 -c "import json, sys; s = json.load(open(sys.argv[1]))['state']; assert s['exists'] is True and s['valid'] is False and s['phase'] == 1, s" "$tmp/runner-corrupto.json"
+  then ok; else ko; fi
 
-step "runner skip desde Commit también advierte de la confirmación pendiente"
-dir_u="$tmp/runner-skip-desde-commit"
-mkdir -p "$dir_u/.run"
-printf '%s\n' '{"phase": 9, "evidence": []}' >"$dir_u/.run/orchestrator-runner.json"
-if (cd "$dir_u" && python3 "$runner" skip 11 "sin commit: no hay cambios que integrar") >"$tmp/runner-skip-desde-commit.out" 2>&1 &&
-  grep -Fq "Commit omitido" "$tmp/runner-skip-desde-commit.out" &&
-  grep -Fq "Omitidas: fase 10" "$tmp/runner-skip-desde-commit.out"
-then ok; else ko; sed 's/^/    /' "$tmp/runner-skip-desde-commit.out"; fi
+  step "runner --version identifica el ejecutable"
+  if "$runner_bin" --version | grep -Eq '^orchestrator-runner [^ ]+ '; then ok; else ko; fi
 
-step "runner: next avanza tras un salto intermedio"
-dir_v="$tmp/runner-skip-next"
-mkdir -p "$dir_v"
-if (cd "$dir_v" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
-  (cd "$dir_v" && python3 "$runner" skip 6 "sin decisiones ni delegación") >/dev/null 2>&1 &&
-  (cd "$dir_v" && python3 "$runner" next "ejecución terminada") >/dev/null 2>&1 &&
-  python3 -c "import json, sys; d = json.load(open(sys.argv[1])); assert d['phase'] == 7, d['phase']; assert d['evidence'][-1] == {'phase': 6, 'text': 'ejecución terminada'}, d['evidence']" "$dir_v/.run/orchestrator-runner.json"
-then ok; else ko; fi
+  step "runner --help documenta el catálogo AIF, phase_next y los códigos de salida"
+  if "$runner_bin" --help | grep -Fq "runner aif" &&
+    "$runner_bin" --help | grep -Fq "phase_next" &&
+    "$runner_bin" --help | grep -Fq "Códigos de salida"; then ok; else ko; fi
 
-step "runner skip a la fase 11: next ya no avanza y el salto queda registrado"
-dir_q="$tmp/runner-skip-ultima"
-mkdir -p "$dir_q"
-if (cd "$dir_q" && python3 "$runner" next "leído") >/dev/null 2>&1 &&
-  (cd "$dir_q" && python3 "$runner" skip 11 "pregunta de solo lectura: no hay implementación") >/dev/null 2>&1 &&
-  (cd "$dir_q" && python3 "$runner" next "texto") >/dev/null 2>&1 &&
-  (cd "$dir_q" && python3 "$runner" --json) >"$tmp/runner-skip-ultima.json" 2>&1 &&
-  python3 -c "import json, sys; s = json.load(open(sys.argv[1]))['state']; assert s['phase'] == 11, s; assert s['evidence'][-1] == {'phase': 2, 'text': 'pregunta de solo lectura: no hay implementación', 'skip': 11}, s['evidence']" "$tmp/runner-skip-ultima.json"
-then ok; else ko; fi
-
-step "runner --json lee un estado anterior sin saltos sin cambios"
-dir_r="$tmp/runner-skip-estado-viejo"
-mkdir -p "$dir_r/.run"
-printf '%s\n' '{"phase": 4, "evidence": [{"phase": 3, "text": "explorado"}]}' >"$dir_r/.run/orchestrator-runner.json"
-if (cd "$dir_r" && python3 "$runner" --json) >"$tmp/runner-skip-viejo.json" 2>&1 &&
-  python3 -c "import json, sys; s = json.load(open(sys.argv[1]))['state']; assert s['valid'] is True and s['phase'] == 4, s; assert s['evidence'] == [{'phase': 3, 'text': 'explorado'}], s['evidence']" "$tmp/runner-skip-viejo.json"
-then ok; else ko; fi
-
-step "runner --help documenta skip"
-if python3 "$runner" --help | grep -Fq "skip <fase>"; then ok; else ko; fi
+  step "runner con un subcomando desconocido sale con 1"
+  "$runner_bin" inventado >/dev/null 2>"$tmp/runner-uso.err"
+  rc_u=$?
+  if [ "$rc_u" -eq 1 ] && grep -Fq "no reconocido" "$tmp/runner-uso.err"; then ok; else ko; echo "    código $rc_u"; fi
+fi
 
 # k. El plugin TUI viaja en la instalación limpia de c: sus fuentes, sus tipos y su
 # registro en cli.json (un paquete solo-TUI no va en plugins/, el servidor colisiona).
@@ -398,8 +415,9 @@ for f in tui.tsx package.json tsconfig.json types/opencode-plugin.d.ts; do
   [ -f "$plugin_c/$f" ] || missing_k="$missing_k $f"
 done
 if [ -z "$missing_k" ] &&
+  ! grep -Fq "python3" "$plugin_c/tui.tsx" &&
   python3 -c "import json, sys; assert sys.argv[1] in json.load(open(sys.argv[2], encoding='utf-8'))['plugins']" "$plugin_c" "$home_c/.config/opencode/cli.json"
-then ok; else ko; echo "    faltan en $plugin_c:$missing_k o cli.json no lo registra"; fi
+then ok; else ko; echo "    faltan en $plugin_c:$missing_k, menciona python3 o cli.json no lo registra"; fi
 
 # l. Sin node_modules: las dependencias las resuelve OpenCode en runtime.
 step "el plugin instalado no lleva node_modules"
@@ -474,96 +492,29 @@ else
   sed 's/^/    /' "$tmp/command-merge.log"
 fi
 
-# n. El comprobador del retorno estructurado: sintaxis, contrato en la ayuda, un informe
-# conforme (código 0) y dos no conformes (código 1), con las fixtures en el temporal. El
-# bytecode va a $tmp: un __pycache__ en agents/ haría saltar el diff de f.
-checker="$here/agents/delegation-report-checker.py"
-dir_n="$tmp/checker"
-mkdir -p "$dir_n"
-printf '%s\n' 'python3 -m py_compile agents/orchestrator-runner.py' 'bash check-package.sh' >"$dir_n/checks.txt"
-cat >"$dir_n/conforme.txt" <<'REPORT'
-status: completed
+# n. La validación del informe de retorno vive en internal/report: el grupo del
+# checker Python se sustituye por la suite de equivalencia del módulo, sin duplicar
+# casos; el binario y go test son la misma puerta.
+if [ -n "$runner_built" ]; then
+  step "checker: equivalencia del contrato de informe (go test ./internal/report)"
+  if (cd runner-go && go test ./internal/report); then ok; else ko; fi
 
-Se revisó el fichero agents/orchestrator-runner.py y compila.
+  step "runner-go: suite completa (go test ./...)"
+  if (cd runner-go && go test ./...); then ok; else ko; fi
 
-validation:
-  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
-  bash check-package.sh: Todo en verde., código 0
-REPORT
-cat >"$dir_n/sin-status.txt" <<'REPORT'
-validation:
-  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
-  bash check-package.sh: Todo en verde., código 0
-REPORT
-cat >"$dir_n/sin-comprobacion.txt" <<'REPORT'
-status: partial
-
-validation:
-  bash check-package.sh: rojo, 2 comprobaciones fallidas
-REPORT
-cat >"$dir_n/contradicho.txt" <<'REPORT'
-status: completed
-
-validation:
-  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
-  bash check-package.sh: Todo en verde., código 0
-
-status: partial
-REPORT
-cat >"$dir_n/anafora.txt" <<'REPORT'
-status: completed
-
-validation:
-  python3 -m py_compile agents/orchestrator-runner.py: sin salida, código 0
-  bash check-package.sh: Todo en verde., código 0
-
-Se revisó el fichero y quedó listo.
-REPORT
-
-step "sintaxis de delegation-report-checker.py (py_compile)"
-if PYTHONPYCACHEPREFIX="$dir_n/pyc" python3 -m py_compile "$checker"; then ok; else ko; fi
-
-step "checker --help documenta --checks y los códigos de salida"
-if python3 "$checker" --help | grep -Fq -- "--checks" &&
-  python3 "$checker" --help | grep -Fq "Códigos de salida"; then ok; else ko; fi
-
-step "checker: informe conforme devuelve 0"
-if python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/conforme.txt" >"$dir_n/conforme.out" 2>&1 &&
-  grep -Fq "conforme: status completed" "$dir_n/conforme.out"; then ok; else ko; sed 's/^/    /' "$dir_n/conforme.out"; fi
-
-step "checker: informe sin status devuelve 1 y lo nombra"
-python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/sin-status.txt" >"$dir_n/sin-status.out" 2>&1
-rc_n=$?
-if [ "$rc_n" -eq 1 ] && grep -Fq 'falta la línea' "$dir_n/sin-status.out"; then ok; else ko; echo "    código $rc_n"; sed 's/^/    /' "$dir_n/sin-status.out"; fi
-
-step "checker: comprobación esperada ausente devuelve 1 y --json la nombra"
-python3 "$checker" --json --checks "$dir_n/checks.txt" <"$dir_n/sin-comprobacion.txt" >"$dir_n/sin-comprobacion.json" 2>&1
-rc_njson=$?
-if [ "$rc_njson" -eq 1 ] && python3 - "$dir_n/sin-comprobacion.json" <<'PY'
-import json, sys
-doc = json.load(open(sys.argv[1], encoding="utf-8"))
-assert doc["ok"] is False and doc["status"] == "partial", doc
-assert any("orchestrator-runner.py" in v for v in doc["violations"]), doc["violations"]
-PY
-then ok; else ko; echo "    código $rc_njson"; sed 's/^/    /' "$dir_n/sin-comprobacion.json"; fi
-
-step "checker: status contradictorios devuelve 1 y lo nombra"
-python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/contradicho.txt" >"$dir_n/contradicho.out" 2>&1
-rc_nc=$?
-if [ "$rc_nc" -eq 1 ] && grep -Fq "contradictorios" "$dir_n/contradicho.out"; then ok; else ko; echo "    código $rc_nc"; sed 's/^/    /' "$dir_n/contradicho.out"; fi
-
-step "checker: anáfora sin ruta devuelve 1 y la nombra"
-python3 "$checker" --checks "$dir_n/checks.txt" "$dir_n/anafora.txt" >"$dir_n/anafora.out" 2>&1
-rc_na=$?
-if [ "$rc_na" -eq 1 ] && grep -Fq "referencia indefinida" "$dir_n/anafora.out"; then ok; else ko; echo "    código $rc_na"; sed 's/^/    /' "$dir_n/anafora.out"; fi
-
-# n+1. Validación mecánica opcional del libro de delegaciones: si el proyecto tiene
-# .run/delegations.jsonl, cada línea es un objeto JSON con los seis campos de R11 y
-# valores en conjunto; si no lo tiene, el paso pasa.
-step "ledger .run/delegations.jsonl: validación mecánica opcional"
-if [ ! -f "$here/.run/delegations.jsonl" ]; then
-  ok
-elif python3 - "$here/.run/delegations.jsonl" <<'PY'
+  # n+1. El ledger deja de ser producto manual: export-legacy regenera el formato
+  # del Python desde la base y aquí se valida su forma (los seis campos de R11).
+  step "ledger: export-legacy produce líneas válidas para el Python"
+  dir_ledger="$tmp/ledger-export"
+  mkdir -p "$dir_ledger"
+  prep='{"aif":"0.2","operation":"deck_prepare","input":{"agent":"general","task":"tk-bateria","goal":"validar el ledger exportado","scope":["runner-go"],"checks":["go test ./..."],"criteria":"la línea exportada conserva la forma del Python"}}'
+  if printf '%s\n' "$prep" |
+    (cd "$dir_ledger" && env OPENCODE_SESSION_ID=ses_ledger "$runner_bin" aif) >"$tmp/ledger-prepare.json" 2>&1 &&
+    id_ledger="$(python3 -c "import json, sys; print(json.load(open(sys.argv[1]))['outcome']['id'])" "$tmp/ledger-prepare.json")" &&
+    printf '%s\n' "{\"aif\":\"0.2\",\"operation\":\"deck_launch\",\"input\":{\"id\":\"$id_ledger\"}}" |
+    (cd "$dir_ledger" && env OPENCODE_SESSION_ID=ses_ledger "$runner_bin" aif) >/dev/null 2>&1 &&
+    (cd "$dir_ledger" && env OPENCODE_SESSION_ID=ses_ledger "$runner_bin" export-legacy) >/dev/null 2>&1 &&
+    python3 - "$dir_ledger/.run/delegations.jsonl" <<'PY'
 import json, sys
 
 STATUSES = {"launched", "completed", "blocked"}
@@ -586,31 +537,11 @@ for n, line in enumerate(lines, 1):
         "agent vacío en la línea %d" % n
     assert doc["status"] in STATUSES, "status fuera del conjunto en la línea %d" % n
 PY
-then ok; else ko; echo "    ledger inválido: $here/.run/delegations.jsonl"; fi
+  then ok; else ko; echo "    export-legacy no produjo un ledger con la forma del Python"; fi
+else
+  printf 'aviso: sin binario runner-go compilado; se omiten la equivalencia y el ledger\n'
+fi
 
-# o. La guía no pide el runner por red: su copia viaja embebida en el HTML y la
-# deriva respecto al fichero del paquete se caza aquí, no al abrir.
-step "la copia embebida del runner en la guía coincide con agents/orchestrator-runner.py"
-if python3 - docs/web/index.html agents/orchestrator-runner.py >"$tmp/embed.out" 2>&1 <<'PY'
-import difflib, html, re, sys
-
-guide, runner = sys.argv[1], sys.argv[2]
-text = open(guide, encoding="utf-8").read()
-bodies = re.findall(r'<code id="runner-code">(.*?)</code>', text, re.S)
-assert len(bodies) == 1, "el code del runner aparece %d veces, no una" % len(bodies)
-assert "<!--" not in bodies[0], \
-    "hay un comentario dentro del code del runner: microlighter exige un solo nodo de texto"
-embedded = html.unescape(bodies[0]).encode("utf-8")
-expected = open(runner, "rb").read()
-if embedded != expected:
-    print("la copia embebida no coincide con %s" % runner)
-    sys.stdout.writelines(difflib.unified_diff(
-        expected.decode("utf-8").splitlines(True),
-        embedded.decode("utf-8").splitlines(True),
-        runner, "%s (copia embebida)" % guide, n=1))
-    raise SystemExit(1)
-PY
-then ok; else ko; sed 's/^/    /' "$tmp/embed.out"; fi
 
 echo ""
 if [ "$failures" -eq 0 ]; then

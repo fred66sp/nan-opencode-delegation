@@ -11,8 +11,8 @@ if ! command -v opencode >/dev/null 2>&1; then
   exit 1
 fi
 
-# 1. Los agentes —verificación, revisión, documentación, interfaz, tablero y orquestador—
-# y la herramienta del flujo, en el mismo directorio.
+# 1. Los agentes —verificación, revisión, documentación, interfaz, tablero y
+# orquestador— en el directorio de agentes.
 agents_dir="$config_root/agents"
 mkdir -p "$agents_dir"
 stamp="$(date +%Y%m%d%H%M%S)"
@@ -27,7 +27,56 @@ for src in "$here"/agents/*; do
   if [ -x "$src" ]; then chmod 755 "$target"; fi
 done
 echo "Agentes copiados en $agents_dir:"
-ls -1 "$agents_dir"/*.md "$agents_dir"/orchestrator-runner.py
+ls -1 "$agents_dir"/*.md
+
+# 1a. El runner de orquestación: binario estático junto a los agentes.
+# Origen, en orden: RUNNER_BIN (binario local ya compilado), el Release de la
+# versión de runner-go/VERSION (RUNNER_BIN_URL, o RUNNER_RELEASE_BASE_URL y
+# RUNNER_ASSET) y, si la red falla, compilación Go de desarrollo.
+runner_target="$agents_dir/orchestrator-runner"
+runner_version="$(tr -d '[:space:]' <"$here/runner-go/VERSION")"
+runner_asset="${RUNNER_ASSET:-orchestrator-runner-linux-amd64}"
+runner_base="${RUNNER_RELEASE_BASE_URL:-https://github.com/fred66sp/nan-opencode-delegation/releases/download/v$runner_version}"
+runner_url="${RUNNER_BIN_URL:-$runner_base/$runner_asset}"
+runner_tmp="$(mktemp "${TMPDIR:-/tmp}/orchestrator-runner.XXXXXX")"
+runner_ready=''
+if [ -n "${RUNNER_BIN:-}" ]; then
+  if [ ! -x "$RUNNER_BIN" ]; then
+    echo "error: RUNNER_BIN no es un ejecutable: $RUNNER_BIN" >&2
+    rm -f "$runner_tmp"
+    exit 1
+  fi
+  cp "$RUNNER_BIN" "$runner_tmp"
+  runner_ready=1
+elif command -v curl >/dev/null 2>&1 && curl -fsSL --max-time 60 "$runner_url" -o "$runner_tmp" 2>/dev/null; then
+  runner_ready=1
+elif command -v wget >/dev/null 2>&1 && wget -q -T 60 -O "$runner_tmp" "$runner_url" 2>/dev/null; then
+  runner_ready=1
+fi
+if [ -z "$runner_ready" ] && command -v go >/dev/null 2>&1; then
+  echo "Sin Release descargable en $runner_url: compilo con go build."
+  runner_commit="$(git -C "$here" rev-parse --short HEAD 2>/dev/null || echo dev)"
+  if (cd "$here/runner-go" && go build -buildvcs=false -ldflags "-X main.version=$runner_version -X main.commit=$runner_commit" -o "$runner_tmp" ./cmd/orchestrator-runner); then
+    runner_ready=1
+  fi
+fi
+if [ -z "$runner_ready" ]; then
+  rm -f "$runner_tmp"
+  echo "error: no pude obtener el binario orchestrator-runner." >&2
+  echo "  Sin Release descargable en $runner_url y sin go en el PATH. Dos salidas:" >&2
+  echo "  1) descarga $runner_asset del Release v$runner_version y ejecuta con RUNNER_BIN=<ruta> bash install.sh" >&2
+  echo "  2) instala Go y compílalo: (cd runner-go && go build -buildvcs=false -o orchestrator-runner ./cmd/orchestrator-runner)" >&2
+  exit 1
+fi
+chmod 755 "$runner_tmp"
+if [ -f "$runner_target" ] && ! cmp -s "$runner_tmp" "$runner_target"; then
+  cp "$runner_target" "$runner_target.bak.$stamp"
+  echo "Copia previa del runner: $runner_target.bak.$stamp"
+fi
+cp "$runner_tmp" "$runner_target"
+chmod 755 "$runner_target"
+rm -f "$runner_tmp"
+echo "Runner instalado en $runner_target (versión $runner_version)"
 
 # 1b. Retirada de tasks-agent, el escritor del tablero retirado con Tasks-AI v0.2.0:
 # AIF cubre sus operaciones y el tablero va directo. Copia .bak siempre antes de borrar:

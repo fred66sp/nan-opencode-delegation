@@ -1,0 +1,5 @@
+{"ts": "2026-11-17T17:31:50Z", "phase": 3, "task": "tk-1", "fingerprint": "Registro en tablero con criterio; artefacto: tarea creada", "agent": "tasks-agent", "status": "completed", "session": "ses_legacy"}
+{"ts": "2026-11-17T17:36:10Z", "phase": 6, "task": null, "fingerprint": "Exploración del ledger y sus consumidores; artefacto: mapa path:line", "agent": "explore", "status": "launched"}
+{"ts": "2026-11-17T17:38:20Z", "phase": 6, "task": "tk-3", "fingerprint": "Implementar el export legado; artefacto: export.go", "agent": "general", "status": "blocked", "note": "sin acceso al fixture del Python"}
+{"ts": "2026-11-17T17:40:00Z", "phase": 7, "task": "tk-4", "fingerprint": "Verificar la migración y el rollback; artefacto: informe", "agent": "verify", "status": "completed", "session": "ses_legacy"}
+{"ts": "2026-11-17T17:42:00Z", "phase": 8, "task": "tk-5", "fingerprint": "Revisar el contrato del ledger; artefacto: notas", "agent": "review", "status": "launched"}

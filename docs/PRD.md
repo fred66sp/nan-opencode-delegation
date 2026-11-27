@@ -43,10 +43,10 @@ ser una introducción a la orquestación en general.
 ### No objetivos
 
 - No trae código ejecutable fuera de los dos instaladores, la puerta de verificación
-  `check-package.sh`, la herramienta del flujo `agents/orchestrator-runner.py`, el
-  comprobador del retorno `agents/delegation-report-checker.py`, el plugin de servidor
-  `plugins/orchestrator-phase.ts` y el plugin TUI `plugins/orchestrator-status`: fuentes que
-  OpenCode carga en runtime, sin `node_modules` ni nada que compilar.
+  `check-package.sh`, el runner Go de `runner-go/` —distribuido como binario por
+  plataforma—, el plugin de servidor `plugins/orchestrator-phase.ts` y el plugin TUI
+  `plugins/orchestrator-status`: las fuentes de los plugins las carga OpenCode en runtime,
+  sin `node_modules` ni nada que compilar.
 - No inyecta la fase por agente ni por subagente: el plugin de servidor escribe en el system
   prompt del host y no distingue quién responde, de modo que la fase alcanza cada petición de
   chat y no se restringe el alcance a los subagentes.
@@ -63,11 +63,10 @@ ser una introducción a la orquestación en general.
 
 ### Funcionales
 
-- R1. El instalador copia los agentes de `agents/` y las dos herramientas del flujo
-  —`agents/orchestrator-runner.py` y `agents/delegation-report-checker.py`— a
-  `~/.config/opencode/agents/`, honrando
-  `XDG_CONFIG_HOME` si está definido. En Unix quedan con permiso de ejecución;
-  si ya existe un fichero con el mismo nombre y contenido distinto, deja copia `.bak.<fecha>` antes
+- R1. El instalador copia los agentes de `agents/` a `~/.config/opencode/agents/`,
+  honrando `XDG_CONFIG_HOME` si está definido, e instala allí el binario
+  `orchestrator-runner` (`.exe` en Windows) con permiso de ejecución; si ya existe un fichero con el mismo
+  nombre y contenido distinto, deja copia `.bak.<fecha>` antes
   de reemplazarlo, con la política de R7. Después copia el plugin de servidor
   `plugins/orchestrator-phase.ts` a `~/.config/opencode/plugins/`, con la misma copia
   `.bak.<fecha>` si reemplaza una versión distinta y sin registrarlo en `cli.json`: lo carga
@@ -98,7 +97,8 @@ ser una introducción a la orquestación en general.
 - R9. `check-package.sh` ejecuta de una vez la batería de verificación: sintaxis de
   `install.sh`, plantilla JSON estricta, instalación limpia en un `HOME` temporal, fusión
   con claves ajenas y copia `.bak`, camino JSONC con el fichero intacto y el bloque manual
-  impreso, `diff` contra los agentes y la herramienta instalados, la instalación limpia del
+  impreso, `diff` contra los agentes y el binario instalados, la compilación del módulo Go,
+  la instalación limpia del
   comando nativo y su reemplazo con `.bak` en una segunda pasada, y las guardas de skills
   —los cuatro subagentes (verify, review, docs y ui) con el permiso `skill` denegado,
   ningún agente que lo abra en
@@ -107,71 +107,65 @@ ser una introducción a la orquestación en general.
   el nombre de la comprobación fallida. Si la máquina no tiene agentes instalados, omite el
   `diff` con un aviso y no lo cuenta como fallo; si no tiene ninguna raíz de descubrimiento
   de skills, avisa y tampoco lo cuenta como fallo.
-- R10. El estado de orquestación se puede ver desde la sesión. El runner gana
+- R10. El estado de orquestación se puede ver desde la sesión. El runner ofrece
   `--json`: un único objeto con `version` (1), las once fases —número, nombre, cuándo,
-  evidencia esperada, pasos y advertencias— y el `state` con si existe el fichero de estado,
-  la fase actual, si es válida, si lo es el historial y la evidencia registrada; se acepta solo
-  y sin otros argumentos, no
-  crea ni modifica el estado y no escribe avisos. El plugin `plugins/orchestrator-status`, que
+  evidencia esperada, pasos y advertencias— y el `state` de la sesión invocante —fase
+  actual, validez del estado y del historial y evidencia registrada—; se acepta solo y sin
+  otros argumentos, no crea ni modifica la base y no escribe avisos. El plugin
+  `plugins/orchestrator-status`, que
   los instaladores copian con sus fuentes a `~/.config/opencode/cli-plugins/orchestrator-status/`
   y registran en la clave `plugins` de `cli.json` —un paquete solo-TUI no puede vivir en
   `plugins/`, el servidor lo cargaría y colisiona con su OpenTUI interno—
   —sin `node_modules`, con copia `.bak.<fecha>` si reemplaza una versión distinta—, se abre
   con `/orquestador` y muestra en un diálogo modal con scroll la fase actual, su operativa, sus
-  advertencias y el historial de evidencias. El panel solo lee: consulta
-  `python3 ~/.config/opencode/agents/orchestrator-runner.py --json` desde el directorio del
-  proyecto y con `r` vuelve a consultar; sin estado muestra la fase 1 y lo dice.
+  advertencias y el historial de evidencias. El panel solo lee: invoca
+  `orchestrator-runner --json` desde el directorio del proyecto y con `r` vuelve a
+  consultar; sin estado muestra la fase 1 y lo dice.
   `check-package.sh` comprueba el contrato `--json` y la instalación del plugin.
-- R11. El orquestador lleva un libro de delegaciones en disco, el `.run/delegations.jsonl`
-  del proyecto en el que trabaja, con una línea JSON por encargo lanzado y seis campos:
-  `ts` (fecha ISO), `phase` (fase del runner), `task` (referencia del tablero o `null`),
-  `fingerprint` (una frase con objetivo y artefactos), `agent` (nombre del subagente) y
-  `status` (`launched`, `completed` o `blocked`). Antes de lanzar lo consulta: si los
-  últimos lanzamientos con la misma `fingerprint` siguen en `launched`, no relanza y
-  espera su aviso. Al lanzar añade la línea y, al recibir el retorno, actualiza el
-  `status` de esa línea. Rehacer con una corrección un encargo ya terminado no es
-  duplicado. La batería `check-package.sh` valida mecánicamente el ledger si existe:
-  una línea JSON objeto con los seis campos, `phase` entero y `status` en conjunto;
-  si el proyecto no lo tiene, el paso pasa.
-- R12. `agents/delegation-report-checker.py` comprueba el retorno estructurado de un
-  subagente contra el contrato del encargo, sin dependencias y sin juicio del modelo.
-  Exige una línea `status: completed|partial|blocked` —única: varias `status:` con
-  valores distintos se marcan contradictorias, repetir el mismo valor no incumple—, una
-  sección `validation` con una
-  línea `<comando>: <resultado observado>` por comprobación esperada y ninguna referencia
-  indefinida —una mención anafórica sin ruta, fichero o `path:line` en la misma línea—, y
-  rechaza una línea `pregunta:` en el informe. Lee el informe de un fichero o de la
-  entrada estándar y las comprobaciones esperadas de un fichero pasado con `--checks`.
-  Códigos de salida: 0 conforme, 1 no conforme con la lista de incumplimientos y 2 error
-  de uso; con `--json` imprime un único objeto con `ok`, `status`, `checks` y
-  `violations`. Se instala con el paquete junto a los agentes y `check-package.sh` cubre
-  su sintaxis, el contrato de `--help`, un informe conforme y los no conformes —`status`
-  ausente, comprobación esperada ausente, `status` contradictorios y anáfora sin ruta—.
-- R14. El runner permite recorrer solo las fases que aportan, con `skip <fase> "motivo"`:
-  solo hacia una fase posterior, con al menos una fase de por medio, y con el motivo
-  obligatorio. Conserva el historial anterior y registra el salto como una entrada de
-  evidencia con su fase de partida, su motivo y su destino (`skip`), así que las fases
-  omitidas quedan visibles en el panel y en `--json`. Retroceso, salto a la fase actual o a
-  la siguiente, destino fuera de rango, motivo vacío y motivo que empieza por `--` salen
-  con código 1 sin tocar el estado. Un salto no sustituye ninguna autorización humana: si
-  omite Commit, lo advierte y la confirmación de la persona sigue pendiente. `check-package.sh`
-  cubre el salto válido, los inválidos, la evidencia conservada, el salto sobre Commit, la
-  consulta de solo lectura y la lectura de un estado anterior sin saltos. El contrato del
-  orquestador decide el recorrido con evidencia, sin convertirlo en un procedimiento.
+- R11. El registro de delegaciones lo lleva el runner Go como único escritor, en la base
+  SQLite `.run/orchestrator.db` del proyecto: huella calculada sobre el contenido del
+  encargo, bloqueo de duplicados en estado abierto, ciclo `deck_prepare`, `deck_launch`,
+  `deck_return`, `deck_close` y `deck_note`, y consulta `deck_list`. La migración importa
+  el estado y el registro de delegaciones anteriores una sola vez, y `export-legacy`
+  permite revertir al formato del runner retirado sin pérdida. Requisitos y garantías:
+  `docs/runner/PRD.md` R2 y `docs/runner/DESIGN.md` §4 y §6; no se duplican aquí.
+- R12. La validación del informe de retorno es lógica interna de la operación
+  `deck_return`, no una invocación aparte: exige `status` único y válido, una línea por
+  comprobación esperada y ninguna referencia indefinida, conserva la evidencia y devuelve
+  los pendientes. La verdad y la cobertura siguen siendo juicio del orquestador. Reglas y
+  criterio: `docs/runner/PRD.md` R3.
+- R14. El runner permite recorrer solo las fases que aportan, con la operación
+  `phase_skip` de su catálogo AIF: solo hacia una fase posterior, con al menos una fase
+  de por medio y con el motivo obligatorio. Conserva el historial anterior y registra el
+  salto con su fase de partida, su motivo y su destino, así que las fases omitidas quedan
+  visibles en el panel y en `--json`. Un salto no sustituye ninguna autorización humana:
+  si omite Commit, lo advierte y la confirmación de la persona sigue pendiente. Semántica
+  completa: `docs/runner/PRD.md` R1; `check-package.sh` cubre el salto válido, los
+  inválidos y la consulta de solo lectura. El contrato del orquestador decide el recorrido
+  con evidencia, sin convertirlo en un procedimiento.
 - R13. El plugin de servidor `plugins/orchestrator-phase.ts` inyecta en el system prompt de
   cada petición de chat la fase actual del runner —número, nombre y la evidencia que pide
-  `next` para avanzar, más la última evidencia registrada cuando es válida—, para que el
-  modelo no la olvide al alargarse la sesión. Consulta
-  `python3 ~/.config/opencode/agents/orchestrator-runner.py --json` desde el directorio del
-  proyecto con un límite de tres segundos y su tolerancia es total: sin estado, con el runner
-  ausente o no ejecutable, pasado el tiempo o con una respuesta fuera del contrato `--json`,
-  no inyecta nada y la petición sigue su curso. Solo lee, y una sola copia sirve a los dos
-  hosts (V1 y V2). `check-package.sh` comprueba su instalación y que no figura en `cli.json`.
+  la transición para avanzar, más la última evidencia registrada cuando es válida—, para
+  que el modelo no la olvide al alargarse la sesión, y solo cuando cambia la fase o hay
+  avisos pendientes. Consulta `orchestrator-runner --json` (ruta instalada, `PATH` o
+  `OPENCODE_RUNNER_BIN`) desde el directorio del proyecto con un límite de tres segundos y
+  su tolerancia es total: sin estado, con el runner ausente o no ejecutable, pasado el
+  tiempo o con una respuesta fuera del contrato `--json`, no inyecta nada y la petición
+  sigue su curso. Solo lee, y una sola copia sirve a los dos hosts (V1 y V2).
+  `check-package.sh` comprueba su instalación y que no figura en `cli.json`.
 - R15. Los instaladores copian `commands/odd-fix.md` a `~/.config/opencode/commands/`,
   respetando `XDG_CONFIG_HOME`; si el destino difiere, guardan una copia `.bak.<fecha>`.
   El comando selecciona `orchestrator` en la sesión actual, recibe `$ARGUMENTS` y solicita
   una descripción si falta; no sustituye el contrato ni concede autorizaciones de Git.
   Reinstalar el mismo contenido no crea otra copia previa.
+- R16. El paquete incluye el runner del proceso como producto propio: un binario Go
+  (`runner-go/`, binario `orchestrator-runner`) con AIF como interfaz nativa y SQLite
+  como persistencia, distribuido por plataforma desde las releases y sin runtime en
+  destino. Sus requisitos —fases, delegaciones, informe, arranque, superficie JSON,
+  portabilidad, recuperación y reversión— viven en `docs/runner/PRD.md` y su diseño en
+  `docs/runner/DESIGN.md`; el paquete solo exige que instale, se identifique con
+  `--version`, pase `go test ./...` y el arnés de equivalencia de
+  `runner-go/equivalence/`, y no distribuya binarios compilados en el repositorio.
 
 ### Reglas de negocio
 
@@ -241,23 +235,23 @@ ser una introducción a la orquestación en general.
 - Con `HOME` limpio, la instalación copia `commands/odd-fix.md` sin diferencias; al
   reemplazar un comando distinto deja una copia previa y la siguiente instalación idéntica
   no crea otra.
-- Con `HOME` limpio, `bash install.sh` crea los agentes, las dos herramientas del flujo y una
-  configuración nueva desde la plantilla; la salida por pantalla nombra los destinos.
-- La herramienta queda en `~/.config/opencode/agents/orchestrator-runner.py` con permiso de
-  ejecución y su contenido coincide con el del paquete. Reejecutar el instalador con el
-  contenido idéntico no crea `.bak`; con contenido distinto, deja
-  `orchestrator-runner.py.bak.<fecha>` antes de reemplazarlo.
-- Invocada desde el directorio de un proyecto arbitrario, la herramienta crea su estado en
-  el `.run/orchestrator-runner.json` de ese proyecto y guía el flujo; nunca escribe estado
-  junto al script instalado.
-- `next` sin evidencia no avanza: pide la evidencia esperada para la fase actual y se
-  queda donde está; con evidencia (`next "texto"`), la registra en el historial del
-  estado y avanza. Un registro viejo con solo la fase sigue aceptándose.
-- `skip <fase> "motivo"` avanza a una fase posterior, exige motivo y conserva la evidencia
-  previa; un salto inválido —retroceso, fase actual, siguiente, fuera de rango, sin motivo
-  o con motivo que empieza por `--`— sale con código 1 sin escribir el estado. La entrada
-  del historial nombra la fase de partida y el destino, y `--json` la expone sin cambiar
-  `version` ni la forma de `state`; un estado anterior sin saltos se sigue leyendo.
+- Con `HOME` limpio, `bash install.sh` crea los agentes, instala el binario
+  `orchestrator-runner` y una configuración nueva desde la plantilla; la salida por
+  pantalla nombra los destinos.
+- El binario queda en `~/.config/opencode/agents/orchestrator-runner` con permiso de
+  ejecución, se identifica con `--version` y responde al catálogo AIF. Reejecutar el
+  instalador con el contenido idéntico no crea `.bak`; con contenido distinto, deja
+  `orchestrator-runner.bak.<fecha>` antes de reemplazarlo.
+- Invocado desde el directorio de un proyecto arbitrario, el runner escribe su estado en
+  `.run/orchestrator.db` y guía el flujo; nunca escribe estado junto al binario instalado.
+- `phase_next` sin `evidence` no avanza: devuelve `input_needed` y sigue en la fase
+  actual; con evidencia, la registra en el historial y avanza. Una base anterior con solo
+  la fase sigue aceptándose tras la migración.
+- `phase_skip` avanza a una fase posterior, exige motivo y conserva la evidencia previa;
+  un salto inválido —retroceso, fase actual, siguiente, fuera de rango, sin motivo o con
+  motivo que empieza por `--`— devuelve `invalid` sin escribir. La entrada del historial
+  nombra la fase de partida y el destino, y `--json` la expone sin cambiar `version` ni la
+  forma de `state`; un estado anterior sin saltos se sigue leyendo.
 - Con una configuración JSON preexistente con claves ajenas (`share`, `mcp`), la fusión
   conserva esas claves y crea la copia `.bak` con fecha.
 - Con una configuración JSONC con comentarios, el instalador termina con código 0, imprime
@@ -272,9 +266,8 @@ ser una introducción a la orquestación en general.
   instalador lo reemplaza y deja `orchestrator.md.bak.<fecha>`; una segunda ejecución sin
   cambios no crea otra copia.
 - `diff -r` entre `agents/` del paquete y la configuración global de la máquina de origen
-  no reporta diferencias —incluidas `agents/orchestrator-runner.py` y
-  `agents/delegation-report-checker.py`—, excluidas las copias
-  `.bak` que el propio instalador deja (R7).
+  no reporta diferencias excluidas las copias `.bak` que el propio instalador deja (R7); el
+  binario `orchestrator-runner` no forma parte de ese `diff`.
 - La plantilla `config/opencode.jsonc` carga como JSON estricto.
 - Ningún subagente abre el permiso de acción `skill` en `allow` ni `ask`, y los cuatro de
   verificación y documentación (verify, review, docs y ui) lo
@@ -297,11 +290,12 @@ ser una introducción a la orquestación en general.
   termina con código distinto de 0 y nombra la comprobación fallida.
 - Ejecutar `bash check-package.sh` no cambia la configuración real del usuario: solo la lee
   para el `diff` contra los agentes instalados.
-- `orchestrator-runner.py --json` imprime un único objeto con `version` 1 y las once fases en
-  orden, cada una con nombre, cuándo, evidencia esperada, pasos y advertencias; no crea
-  `.run/` ni modifica el estado existente, y con otro argumento termina en 1.
+- `orchestrator-runner --json` imprime un único objeto con `version` 1 y las once fases en
+  orden, cada una con nombre, cuándo, evidencia esperada, pasos y advertencias; no crea la
+  base ni modifica el estado existente, y con otro argumento termina en 1.
 - `--json` marca un estado corrupto con `valid` en false y la fase 1, y un historial que no
-  es lista con `evidence_valid` en false sin perder la fase.
+  es lista con `evidence_valid` en false sin perder la fase; sin sesión identificable
+  devuelve el estado vacío sin crear la base.
 - Con `HOME` limpio, los dos instaladores dejan
   `~/.config/opencode/cli-plugins/orchestrator-status/` registrado en `cli.json`, con `tui.tsx`, `package.json`,
   `tsconfig.json` y `types/opencode-plugin.d.ts`, sin `node_modules`.
@@ -312,18 +306,21 @@ ser una introducción a la orquestación en general.
   previo de contenido distinto se reemplaza tras dejar `orchestrator-phase.ts.bak.<fecha>`, y
   una segunda pasada con el contenido idéntico no crea otra copia.
 - Con un estado válido, cada petición de chat recibe en su system prompt la fase actual, su
-  nombre y la evidencia que pide `next`, y la última evidencia registrada cuando la hay. Sin
+  nombre y la evidencia que pide la transición, y la última evidencia registrada cuando la
+  hay, y solo cuando la fase cambia o hay avisos pendientes. Sin
   estado, sin runner, pasado el límite de tres segundos o con una respuesta fuera del contrato
   `--json`, no se inyecta nada y la petición sigue su curso.
 - En una sesión de OpenCode con el paquete instalado, `/orquestador` abre el diálogo modal con
   scroll con la fase actual, su operativa, sus advertencias y el historial de evidencias —con
   los saltos marcados por su fase de partida y su destino—; sin estado
   muestra la fase 1 y lo indica, un estado corrupto vuelve a la fase 1 con aviso, y sin
-  `python3` o sin runner muestra un error de consulta.
-- El checker devuelve 0 sobre un informe con `status` válido y una línea por comprobación
-  esperada; devuelve 1, con los incumplimientos nombrados, cuando falta la línea `status:`
-  o una comprobación esperada. Con `--json` imprime un único objeto con `ok`, `status`,
-  `checks` y `violations`, y termina en 2 ante un error de uso.
-- Cada encargo lanzado deja una línea en el `.run/delegations.jsonl` del proyecto con sus
-  seis campos —`ts`, `phase`, `task`, `fingerprint`, `agent` y `status`—, y la misma huella
-  en `launched` se consulta antes de relanzar.
+  runner o con el binario no disponible muestra un error de consulta.
+- `deck_return` devuelve `executed` sobre un informe con `status` válido y una línea por
+  comprobación esperada, y `invalid` con los incumplimientos nombrados cuando falta la línea
+  `status:` o una comprobación esperada; conserva la evidencia válida y devuelve los
+  pendientes en la misma respuesta. Los mismos informes que aceptaba o rechazaba el checker
+  retirado producen el mismo veredicto estructural.
+- Cada encargo lanzado queda como una fila del registro del runner en `.run/orchestrator.db`,
+  con su huella e identificador de ejecución; un duplicado con la misma huella en estado
+  abierto se deniega devolviendo el `id` existente, y los cerrados no bloquean un re-encargo.
+  La migración del registro de delegaciones anterior conserva todas sus líneas.
