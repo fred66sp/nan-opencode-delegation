@@ -114,7 +114,7 @@ PHASES = [
         "evidence": "el escalón de verificación aplicado y su resultado",
         "steps": [
             "Elegir el escalón por alcance y riesgo: trivial → la comprobación localizada que toca ese archivo; funcional → los tests afectados y una prueba del flujo; transversal → la suite relevante o la puerta del repo; crítico → además, verificación independiente.",
-            "Partir de la evidencia que ya existe —el `validation` del implementador y el `git diff`— y no repetir una comprobación ya ejecutada sin motivo; `verify` entra cuando falte una comprobación, la independencia o el riesgo lo justifique, con los comandos y el alcance en el encargo.",
+            "Partir de la evidencia que ya existe —el `validation` del implementador y el `git diff`— y no repetir una comprobación ya ejecutada sin motivo; `verify` entra cuando falte una comprobación, la independencia o el riesgo lo justifique, y en un cambio crítico su encargo lleva también el objetivo, los criterios y la evidencia disponible: no lo reduzcas a una lista de comandos.",
             "Ejecutar el escalón elegido, no la batería completa por defecto: la batería entera solo cuando el cambio no permita acotar qué puede romper.",
             "Contrastar el criterio de aceptación de la tarea con el resultado real, no con el informe del subagente: el diff y el resumen se contrastan los dos, porque el resumen tiende a omitir cambios pequeños.",
         ],

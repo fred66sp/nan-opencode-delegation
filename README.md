@@ -22,7 +22,7 @@ El orquestador trabaja con ODD (Organic Driven Development): clasifica el tamañ
 | Origen | Destino | Qué es |
 |---|---|---|
 | `agents/orchestrator.md` | `~/.config/opencode/agents/orchestrator.md` | Agente primario: planifica, delega y verifica; único que cierra |
-| `agents/verify.md` | `~/.config/opencode/agents/verify.md` | Ejecuta las comprobaciones del proyecto y devuelve evidencia |
+| `agents/verify.md` | `~/.config/opencode/agents/verify.md` | Contrasta el criterio, analiza críticamente el cambio y devuelve evidencia de las comprobaciones |
 | `agents/review.md` | `~/.config/opencode/agents/review.md` | Revisa un cambio contra su criterio sin modificarlo |
 | `agents/docs.md` | `~/.config/opencode/agents/docs.md` | Documentación y CHANGELOG dentro de su perímetro |
 | `agents/ui.md` | `~/.config/opencode/agents/ui.md` | Verificación de interfaz con navegador; pide permiso para Playwright |

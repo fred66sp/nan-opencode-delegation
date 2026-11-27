@@ -8,6 +8,20 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Cambiado
 
+- `verify` evoluciona a verificación crítica e integral en una misma delegación: contrasta
+  la implementación con los criterios de aceptación, analiza críticamente el código afectado
+  —sus llamadores y sus pruebas, buscando por qué podría no ser correcta, suficiente o
+  necesaria— y ejecuta lo pedido más solo las comprobaciones adicionales que resuelvan una
+  incertidumbre relevante. Cada hallazgo exige un caso concreto con ubicación y se separa en
+  defecto, riesgo fundado o sugerencia; terminar la verificación no es aceptar la
+  implementación. El frontmatter queda congelado salvo su `description`; el orquestador
+  entrega en el encargo el objetivo, los criterios y la evidencia disponible —no solo
+  comandos— y reserva la revisión crítica para el cambio crítico, sin convertir `review` en
+  una segunda pasada obligatoria. Validación replicando el método smoke de tk-280 sobre un
+  repo desechable con un defecto que la suite existente no revela.
+
+### Retirado
+
 - Retirado `tasks-agent`: con Tasks-AI v0.2.0 las herramientas `tasks_*` de OpenCode
   desaparecieron y el tablero va directo. El orquestador ejecuta él mismo las operaciones
   deterministas del tablero por AIF (`tasks-ai aif`), el subcomando autodescriptivo cuya
