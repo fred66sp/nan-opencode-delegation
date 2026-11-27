@@ -83,7 +83,45 @@ Copy-Item -Force $runnerTmp $runnerTarget
 Remove-Item $runnerTmp -Force
 Write-Host "Runner instalado en $runnerTarget (version $runnerVersion)"
 
-# 1b. Retirada de tasks-agent: AIF cubre sus operaciones y el tablero va directo.
+# 1b. Retirada del runner Python: la transicion Go cerro con equivalencia probada y
+# el paquete ya no lo distribuye. Copia .bak siempre antes de borrar, como en
+# tasks-agent; el rollback sigue en el arnes de equivalencia y las copias previas.
+$legacyRunner = Join-Path $agentsDir 'orchestrator-runner.py'
+if (Test-Path $legacyRunner) {
+    Copy-Item $legacyRunner ($legacyRunner + '.bak.' + $stamp)
+    Write-Host "Copia previa de orchestrator-runner.py: $legacyRunner.bak.$stamp"
+    Remove-Item $legacyRunner
+    Write-Host "orchestrator-runner.py retirado de $agentsDir (el binario Go esta en uso)"
+}
+
+# 1c. El comando `runner` en el PATH del usuario, equivalente a `acm` en ~/.local/bin:
+# una copia del binario instalado en $HOME\.local\bin y una entrada en el PATH de
+# usuario (sin symlink, que en Windows exige modo desarrollador o admin). Idempotente
+# y reversible (borrar la copia y la entrada del PATH basta); si el nombre lo ocupa
+# un fichero ajeno, se avisa y no se sobrescribe.
+$binDir = Join-Path $HOME '.local\bin'
+New-Item -ItemType Directory -Force -Path $binDir | Out-Null
+$runnerCmd = Join-Path $binDir 'runner.exe'
+if (Test-Path $runnerCmd) {
+    if ((Get-FileHash $runnerTarget).Hash -ne (Get-FileHash $runnerCmd).Hash) {
+        Copy-Item $runnerCmd ($runnerCmd + '.bak.' + $stamp)
+        Write-Host "Copia previa del comando runner: $runnerCmd.bak.$stamp"
+        Copy-Item -Force $runnerTarget $runnerCmd
+        Write-Host "Comando runner actualizado en $runnerCmd"
+    }
+    else { Write-Host "Comando runner ya disponible en $runnerCmd" }
+}
+else {
+    Copy-Item $runnerTarget $runnerCmd
+    Write-Host "Comando runner instalado en $runnerCmd"
+}
+$userPath = [Environment]::GetEnvironmentVariable('Path', 'User')
+if ($userPath -split ';' -notcontains $binDir) {
+    [Environment]::SetEnvironmentVariable('Path', (($userPath -as [string]).TrimEnd(';') + ';' + $binDir), 'User')
+    Write-Host "Anadido $binDir al PATH de usuario (aplica en sesiones nuevas)"
+}
+
+# 1d. Retirada de tasks-agent: AIF cubre sus operaciones y el tablero va directo.
 # Copia .bak siempre antes de borrar: el paquete ya no distribuye el fichero y una
 # version personalizada se conservaria solo con la copia. La segunda pasada no
 # crea otra porque el fichero ya no existe.

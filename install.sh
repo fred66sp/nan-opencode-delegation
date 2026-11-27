@@ -78,7 +78,45 @@ chmod 755 "$runner_target"
 rm -f "$runner_tmp"
 echo "Runner instalado en $runner_target (versión $runner_version)"
 
-# 1b. Retirada de tasks-agent, el escritor del tablero retirado con Tasks-AI v0.2.0:
+# 1b. Retirada del runner Python: la transición Go cerró con equivalencia probada y
+# el paquete ya no lo distribuye. Copia .bak siempre antes de borrar, como en
+# tasks-agent: una versión personalizada solo se conserva con la copia, y la segunda
+# pasada no crea otra porque el fichero ya no existe. El rollback sigue en el arnés
+# de equivalencia (copia pinned) y en las copias .bak previas.
+legacy_runner="$agents_dir/orchestrator-runner.py"
+if [ -f "$legacy_runner" ]; then
+  cp "$legacy_runner" "$legacy_runner.bak.$stamp"
+  echo "Copia previa de orchestrator-runner.py: $legacy_runner.bak.$stamp"
+  rm -f "$legacy_runner"
+  echo "orchestrator-runner.py retirado de $agents_dir (el binario Go está en uso)"
+fi
+
+# 1c. El comando `runner` en el PATH del usuario, como ACM instala `acm` en
+# ~/.local/bin: un enlace simbólico al binario instalado. Idempotente (si ya apunta
+# al binario, no se toca) y reversible (borrar el enlace basta); si el nombre lo
+# ocupa otra herramienta, se avisa y no se sobrescribe.
+runner_cmd_dir="${XDG_BIN_HOME:-$HOME/.local/bin}"
+mkdir -p "$runner_cmd_dir"
+runner_cmd="$runner_cmd_dir/runner"
+if [ -L "$runner_cmd" ] && [ "$(readlink "$runner_cmd")" = "$runner_target" ]; then
+  echo "Comando runner ya disponible en $runner_cmd"
+elif [ -e "$runner_cmd" ]; then
+  echo "Aviso: existe $runner_cmd y no es el enlace de este paquete; no se sobrescribe."
+  echo "  Para apuntarlo al runner de este paquete a mano:"
+  echo "  ln -sf $runner_target $runner_cmd"
+else
+  ln -s "$runner_target" "$runner_cmd"
+  echo "Comando runner instalado en $runner_cmd -> $runner_target"
+fi
+case ":$PATH:" in
+  *":$runner_cmd_dir:"*) ;;
+  *)
+    echo "Aviso: $runner_cmd_dir no está en el PATH de esta sesión; añádelo a tu perfil:"
+    echo "  echo 'export PATH=\"$runner_cmd_dir:\$PATH\"' >> ~/.profile"
+    ;;
+esac
+
+# 1d. Retirada de tasks-agent, el escritor del tablero retirado con Tasks-AI v0.2.0:
 # AIF cubre sus operaciones y el tablero va directo. Copia .bak siempre antes de borrar:
 # el paquete ya no distribuye el fichero, así que no hay contra qué comparar y una
 # versión personalizada se conservaría solo con la copia. La segunda pasada no crea

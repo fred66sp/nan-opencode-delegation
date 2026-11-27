@@ -126,6 +126,38 @@ assert re.search(r"(?i)confirmaci[oó]n expl[ií]cita", text), "no exige confirm
 PY
 then ok; else ko; echo "    falta $cmd_c, difiere del paquete o incumple frontmatter/argumentos/confirmación"; fi
 
+# c4. El comando `runner` queda disponible en el PATH del HOME de la instalación
+# limpia: `command -v` lo resuelve y `runner --version` identifica el binario.
+step "instalación limpia: comando runner en ~/.local/bin y resoluble por PATH"
+runner_cmd_c="$home_c/.local/bin/runner"
+if [ -x "$runner_cmd_c" ] &&
+  env PATH="$home_c/.local/bin:$PATH" sh -c 'command -v runner' | grep -Fq "$runner_cmd_c" &&
+  env PATH="$home_c/.local/bin:$PATH" sh -c 'runner --version' 2>&1 | grep -Eq '^orchestrator-runner [^ ]+ '; then
+  ok
+else
+  ko
+  echo "    falta $runner_cmd_c o no se resuelve por PATH/--version"
+fi
+
+# c5. El comando runner no sobrescribe un comando ajeno y la segunda pasada es
+# idempotente: el fichero ajeno sigue igual y no nace copia .bak.
+step "runner: comando ajeno no sobrescrito y segunda pasada idempotente"
+home_r="$tmp/home-runner"
+mkdir -p "$home_r/.local/bin"
+printf '#!/bin/sh\necho foreign\n' >"$tmp/foreign-runner"
+cp "$tmp/foreign-runner" "$home_r/.local/bin/runner"
+if env -u XDG_CONFIG_HOME HOME="$home_r" bash install.sh >"$tmp/runner-foreign.log" 2>&1 &&
+  cmp -s "$tmp/foreign-runner" "$home_r/.local/bin/runner" &&
+  grep -Fq "no se sobrescribe" "$tmp/runner-foreign.log" &&
+  env -u XDG_CONFIG_HOME HOME="$home_r" bash install.sh >>"$tmp/runner-foreign.log" 2>&1 &&
+  cmp -s "$tmp/foreign-runner" "$home_r/.local/bin/runner" &&
+  ! ls "$home_r"/.local/bin/runner.bak.* >/dev/null 2>&1; then
+  ok
+else
+  ko
+  sed 's/^/    /' "$tmp/runner-foreign.log"
+fi
+
 # d. Fusión sobre una configuración con claves ajenas.
 step "fusión con claves ajenas (share, mcp) y copia .bak"
 home_d="$tmp/home-merge"

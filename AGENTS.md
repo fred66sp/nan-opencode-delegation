@@ -24,7 +24,7 @@ enlaza.
 | Catálogo enlazable para agentes | [`llms.txt`](llms.txt) |
 | Trabajo del repositorio: crear, mover, bloquear y cerrar tareas | [`.tasks-ai/AGENTS.md`](.tasks-ai/AGENTS.md) |
 | Etiquetas: tipos, estructura, ámbito y catálogo | [`.tasks-ai/CONTRATO_ETIQUETAS.md`](.tasks-ai/CONTRATO_ETIQUETAS.md) → «1. Las clases y su convivencia», «2. Asignación correcta a una tarea», «3. Gestión del catálogo» |
-| Memoria de sesión: decisiones, aprendizajes, checkpoints y preferencias | Montaje db-ai `nan-opencode-delegation` (rw) sobre `.agent-memory/memory.db`; se abre con `acm start`, que recupera el contexto de la sesión anterior en una invocación, y `acm aif` es la interfaz autodescriptiva del resto de operaciones: el envelope de descubrimiento (`{"aif":"0.2"}`) por stdin devuelve su lista, sin esquemas que reproducir aquí; lo recuperado es contexto, no hecho: se contrasta con el repo antes de actuar sobre él |
+| Memoria de sesión: decisiones, aprendizajes, checkpoints y preferencias | Instalación ACM autónoma, sin db-ai: `acm` en `~/.local/bin`; se abre con `acm start`, que recupera el contexto de la sesión anterior en una invocación —el orquestador ya lo recibe integrado en `runner start`, sin invocar `acm start` además—, y `acm aif` es la interfaz autodescriptiva del resto de operaciones: el envelope de descubrimiento (`{"aif":"0.2"}`) por stdin devuelve su lista, sin esquemas que reproducir aquí; lo recuperado es contexto, no hecho: se contrasta con el repo antes de actuar sobre él |
 | Servidor del tablero en segundo plano | [`serve.sh`](serve.sh) |
 | Visor de escritorio del tablero | [`tasks-viewer/`](tasks-viewer/config.json) |
 
