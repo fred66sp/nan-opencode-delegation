@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func execute(t *testing.T, args []string, stdin string) (int, string, string) {
@@ -113,6 +114,72 @@ func TestJSONWithoutSessionIsEmptyEvenWithState(t *testing.T) {
 	code, stdout, _ := execute(t, []string{"--json"}, "")
 	if code != 0 || !strings.Contains(stdout, `"exists": false`) || !strings.Contains(stdout, `"phase": 1`) {
 		t.Fatalf("estado sin sesión = %d, %s", code, stdout)
+	}
+}
+
+func TestJSONLatestAnswersTheMostRecentSession(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("OPENCODE_SESSION_ID", "")
+
+	// Sin sesiones con fase registrada, --latest es el mismo estado vacío del contrato.
+	code, stdout, _ := execute(t, []string{"--json", "--latest"}, "")
+	if code != 0 || !strings.Contains(stdout, `"exists": false`) || strings.Contains(stdout, `"session"`) {
+		t.Fatalf("latest sin sesiones = %d, %s", code, stdout)
+	}
+
+	code, _, _ = execute(t, []string{"aif"}, `{"aif":"0.2","operation":"phase_next","input":{"session":"ses_a","evidence":"una"}}`)
+	if code != 0 {
+		t.Fatalf("phase_next ses_a = %d", code)
+	}
+	// updated_at has second precision: without a separation the order clause
+	// does not discriminate chronology and the test would pass with the
+	// tiebreaker alone.
+	time.Sleep(1100 * time.Millisecond)
+	code, _, _ = execute(t, []string{"aif"}, `{"aif":"0.2","operation":"phase_next","input":{"session":"ses_b","evidence":"dos"}}`)
+	if code != 0 {
+		t.Fatalf("phase_next ses_b = %d", code)
+	}
+
+	// La sesión que más recientemente avanzó se nombra en el estado: el panel
+	// no presenta una fase sin decir de qué sesión viene.
+	code, stdout, _ = execute(t, []string{"--json", "--latest"}, "")
+	if code != 0 || !strings.Contains(stdout, `"exists": true`) || !strings.Contains(stdout, `"phase": 2`) {
+		t.Fatalf("latest con sesiones = %d, %s", code, stdout)
+	}
+	if !strings.Contains(stdout, `"session": "ses_b"`) {
+		t.Fatalf("latest no nombra la sesión más reciente: %s", stdout)
+	}
+
+	// El contrato sin --latest no cambia: sin entorno de sesión sigue vacío.
+	code, stdout, _ = execute(t, []string{"--json"}, "")
+	if code != 0 || !strings.Contains(stdout, `"exists": false`) {
+		t.Fatalf("el contrato de --json cambió: %d, %s", code, stdout)
+	}
+}
+
+func TestJSONLatestAnswersCorruptState(t *testing.T) {
+	root := t.TempDir()
+	t.Chdir(root)
+	t.Setenv("OPENCODE_SESSION_ID", "")
+	if err := os.MkdirAll(filepath.Join(root, ".run"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(root, ".run", "orchestrator.db"), []byte("esto no es una base de datos"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// Una base dañada responde el estado corrupto, no uno aparentemente nuevo.
+	code, stdout, _ := execute(t, []string{"--json", "--latest"}, "")
+	if code != 0 || !strings.Contains(stdout, `"exists": true`) || !strings.Contains(stdout, `"valid": false`) || strings.Contains(stdout, `"session"`) {
+		t.Fatalf("latest con base dañada = %d, %s", code, stdout)
+	}
+}
+
+func TestJSONRejectsUnknownArguments(t *testing.T) {
+	t.Setenv("OPENCODE_SESSION_ID", "")
+	code, _, stderr := execute(t, []string{"--json", "--pepe"}, "")
+	if code != 1 || !strings.Contains(stderr, "--pepe") {
+		t.Fatalf("argumento desconocido = %d, %s", code, stderr)
 	}
 }
 

@@ -48,6 +48,8 @@ type RunnerState = {
   readonly valid: boolean
   readonly evidence_valid: boolean
   readonly evidence: readonly Evidence[]
+  /** La sesión que más recientemente avanzó, cuando --latest la resolvió. */
+  readonly session?: string
 }
 
 type RunnerData = {
@@ -116,6 +118,8 @@ function parseRunnerData(raw: string): RunnerData | undefined {
   ) {
     return undefined
   }
+  // Identidad opcional del estado --latest: presente solo cuando la resolvió.
+  const session = typeof state.session === "string" ? state.session : undefined
   const parsedEvidence: Evidence[] = []
   for (const item of evidence) {
     const entry = parseEvidence(item)
@@ -124,7 +128,7 @@ function parseRunnerData(raw: string): RunnerData | undefined {
   }
   if (parsedPhases.length === 0) return undefined
 
-  return { version, phases: parsedPhases, state: { exists, phase, valid, evidence_valid, evidence: parsedEvidence } }
+  return { version, phases: parsedPhases, state: { exists, phase, valid, evidence_valid, evidence: parsedEvidence, session } }
 }
 
 /** Frontera del tablero: solo cuenta estados; un JSON que no es la lista de tareas es ausencia de señal. */
@@ -199,7 +203,10 @@ function mismatchNotice(data: RunnerData, inProgress: number, dirty: number): st
 /** Consulta el runner sin escribir nada; cualquier fallo se convierte en un mensaje estable. */
 function queryRunner(cwd: string): Promise<Snapshot> {
   return new Promise((resolve) => {
-    execFile(runnerBinary(), ["--json"], { cwd, timeout: QUERY_TIMEOUT_MS }, (error, stdout) => {
+    // --latest: el proceso TUI no lleva la identidad de sesión del orquestador,
+    // y el contrato sin sesión solo da el estado vacío; la respuesta nombra la
+    // sesión que más recientemente avanzó, o el estado queda vacío.
+    execFile(runnerBinary(), ["--json", "--latest"], { cwd, timeout: QUERY_TIMEOUT_MS }, (error, stdout) => {
       const at = Date.now()
       if (error) {
         resolve({ kind: "error", message: RUNNER_ERROR, at })
@@ -267,6 +274,9 @@ function StatusBody(props: {
   const state = () => props.data.state
   const phase = () => props.data.phases.find((item) => item.number === state().phase)
   const total = () => props.data.phases.length
+  // Sin fase identificable —sin sesiones con estado o con estado corrupto— el
+  // cuerpo no presenta una fase por defecto como si fuera real.
+  const identified = () => state().exists && state().valid
 
   return (
     <>
@@ -278,35 +288,46 @@ function StatusBody(props: {
           </>
         )}
       </Show>
-      <text fg={context.theme.text.base}>
-        {clip(`Fase ${state().phase}/${total()} · ${phase()?.name ?? "fase desconocida"}`, props.width)}
-      </text>
-      <Show when={phase()}>
-        {(current) => <Wrapped prefix="Cuándo: " text={current().when} width={props.width} fg={context.theme.text.muted} />}
-      </Show>
-
-      <text fg={context.theme.text.base}> </text>
-      <text fg={context.theme.text.base}>Operativa</text>
       <Show
-        when={(phase()?.steps.length ?? 0) > 0}
-        fallback={<text fg={context.theme.text.faint}>Sin pasos registrados.</text>}
+        when={identified()}
+        fallback={
+          <text fg={context.theme.text.feedback.warning.muted}>
+            {state().exists
+              ? clip("Estado corrupto: no se muestra fase hasta correr `runner recover`", props.width)
+              : clip("Sin estado del orquestador: ninguna sesión ha registrado fase en este proyecto", props.width)}
+          </text>
+        }
       >
-        <For each={phase()?.steps ?? []}>
-          {(step, index) => <Wrapped prefix={`${index() + 1}. `} text={step} width={props.width} fg={context.theme.text.muted} />}
-        </For>
-      </Show>
+        <text fg={context.theme.text.base}>
+          {clip(`Fase ${state().phase}/${total()} · ${phase()?.name ?? "fase desconocida"}`, props.width)}
+        </text>
+        <Show when={phase()}>
+          {(current) => <Wrapped prefix="Cuándo: " text={current().when} width={props.width} fg={context.theme.text.muted} />}
+        </Show>
 
-      <text fg={context.theme.text.base}> </text>
-      <text fg={context.theme.text.base}>Advertencias</text>
-      <Show
-        when={(phase()?.warnings.length ?? 0) > 0}
-        fallback={<text fg={context.theme.text.faint}>Ninguna.</text>}
-      >
-        <For each={phase()?.warnings ?? []}>
-          {(warning) => (
-            <Wrapped prefix="• " text={warning} width={props.width} fg={context.theme.text.feedback.warning.muted} />
-          )}
-        </For>
+        <text fg={context.theme.text.base}> </text>
+        <text fg={context.theme.text.base}>Operativa</text>
+        <Show
+          when={(phase()?.steps.length ?? 0) > 0}
+          fallback={<text fg={context.theme.text.faint}>Sin pasos registrados.</text>}
+        >
+          <For each={phase()?.steps ?? []}>
+            {(step, index) => <Wrapped prefix={`${index() + 1}. `} text={step} width={props.width} fg={context.theme.text.muted} />}
+          </For>
+        </Show>
+
+        <text fg={context.theme.text.base}> </text>
+        <text fg={context.theme.text.base}>Advertencias</text>
+        <Show
+          when={(phase()?.warnings.length ?? 0) > 0}
+          fallback={<text fg={context.theme.text.faint}>Ninguna.</text>}
+        >
+          <For each={phase()?.warnings ?? []}>
+            {(warning) => (
+              <Wrapped prefix="• " text={warning} width={props.width} fg={context.theme.text.feedback.warning.muted} />
+            )}
+          </For>
+        </Show>
       </Show>
 
       <text fg={context.theme.text.base}> </text>
@@ -409,10 +430,11 @@ function OrchestratorDialog() {
     const at = `actualizado a las ${formatClock(current.at)}`
     if (current.kind === "error") return `Error de consulta · ${at}`
     const data = current.data
-    if (!data.state.valid) return `Estado corrupto: se muestra la fase 1 · ${at}`
+    if (!data.state.valid) return `Estado corrupto: no se muestra fase hasta correr \`runner recover\` · ${at}`
     if (!data.state.evidence_valid) return `Historial inválido: el runner no registra evidencias · ${at}`
-    if (!data.state.exists) return `Sin estado guardado: fase 1 por defecto · ${at}`
-    return at
+    if (!data.state.exists) return `Sin estado identificado: no se muestra fase por defecto · ${at}`
+    const session = data.state.session ? ` · sesión ${data.state.session}` : ""
+    return `${session} ${at}`.trimStart()
   }
 
   const footerFg = () => {

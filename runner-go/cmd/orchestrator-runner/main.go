@@ -42,7 +42,16 @@ func run(args []string, stdin io.Reader, stdout, stderr io.Writer) int {
 	case "aif":
 		return runAIF(stdin, stdout, stderr, root, session)
 	case "--json":
-		return runJSON(stdout, stderr, root, session)
+		latest := false
+		for _, arg := range args[1:] {
+			if arg != "--latest" {
+				fmt.Fprintf(stderr, "error: argumento no reconocido: %s\n", arg)
+				fmt.Fprintln(stderr, "consulta `runner --json --latest`")
+				return 1
+			}
+			latest = true
+		}
+		return runJSON(stdout, stderr, root, session, latest)
 	case "start":
 		fmt.Fprint(stdout, boot.Start(root, session))
 		return 0
@@ -100,12 +109,38 @@ type stateJSON struct {
 	Valid         bool             `json:"valid"`
 	EvidenceValid bool             `json:"evidence_valid"`
 	Evidence      []phase.Evidence `json:"evidence"`
+	// Session names the session the state answers when --latest resolved it.
+	Session string `json:"session,omitempty"`
 }
 
-func runJSON(stdout, stderr io.Writer, root, session string) int {
+func runJSON(stdout, stderr io.Writer, root, session string, latest bool) int {
 	state := stateJSON{Phase: 1, Valid: true, EvidenceValid: true, Evidence: []phase.Evidence{}}
 	// Without an identifiable session the contract is the empty state: there is
-	// no invoking session whose phase could be answered.
+	// no invoking session whose phase could be answered. --latest relaxes it for
+	// read-only surfaces without a session environment (the TUI panel): it answers
+	// the phase of the session that transitioned most recently, naming it so the
+	// panel never shows an invented default as a real state.
+	if session == "" && latest {
+		s, err := store.Open(root, false)
+		if err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return 1
+		}
+		// A damaged store answers the corrupt state --latest exists for, the
+		// same shape SessionPhase answers, not an apparently fresh one.
+		if s.Corrupt() {
+			s.Close()
+			state = stateJSON{Exists: true, Valid: false, EvidenceValid: true, Evidence: []phase.Evidence{}}
+			return writeState(stdout, stderr, state)
+		}
+		id, err := s.LatestSession()
+		s.Close()
+		if err != nil {
+			fmt.Fprintf(stderr, "error: %v\n", err)
+			return 1
+		}
+		session, state.Session = id, id
+	}
 	if session != "" {
 		s, err := store.Open(root, false)
 		if err != nil {
@@ -128,8 +163,13 @@ func runJSON(stdout, stderr io.Writer, root, session string) int {
 			Valid:         current.Valid,
 			EvidenceValid: current.EvidenceValid,
 			Evidence:      evidence,
+			Session:       state.Session,
 		}
 	}
+	return writeState(stdout, stderr, state)
+}
+
+func writeState(stdout, stderr io.Writer, state stateJSON) int {
 	payload := struct {
 		Version int           `json:"version"`
 		Phases  []phase.Phase `json:"phases"`

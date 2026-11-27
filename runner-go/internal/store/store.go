@@ -278,6 +278,24 @@ func (s *Store) fail(err error) error {
 	return err
 }
 
+// LatestSession names the session that transitioned most recently, skipping
+// degenerate rows without a session. Empty when no session has a phase.
+func (s *Store) LatestSession() (string, error) {
+	if s.corrupt || s.db == nil {
+		return "", nil
+	}
+	var session string
+	err := s.db.QueryRow("SELECT session FROM sessions WHERE session <> '' ORDER BY updated_at DESC, session DESC LIMIT 1").Scan(&session)
+	if errors.Is(err, sql.ErrNoRows) {
+		return "", nil
+	}
+	if err != nil {
+		s.corrupt = true
+		return "", fmt.Errorf("%w: %v", ErrStateCorrupt, err)
+	}
+	return session, nil
+}
+
 // SessionPhase returns the state of the phases of one session.
 func (s *Store) SessionPhase(session string) (PhaseState, error) {
 	state := PhaseState{Phase: 1, Valid: true, EvidenceValid: true, Evidence: []phase.Evidence{}}

@@ -14,7 +14,11 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   invocación; `runner aif` descubre y ejecuta el catálogo de diez operaciones
   —`phase_next`, `phase_skip`, `phase_reset`, `recover`, `deck_prepare`, `deck_launch`,
   `deck_return`, `deck_close`, `deck_note` y `deck_list`—; `--version` identifica el
-  binario y `--json` responde en solo lectura a los plugins. El estado vive en
+  binario y `--json` responde en solo lectura a los plugins. Sin sesión identificable,
+  la variante `--json --latest` responde para superficies sin entorno de sesión —como el
+  panel TUI— el estado de la sesión que más recientemente avanzó, nombrándola, o el
+  estado vacío: el panel deja de presentar la fase 1 por defecto como una fase real.
+  El estado vive en
   `.run/orchestrator.db`: la primera mutación importa el estado y el registro de
   delegaciones anteriores y los archiva como `.migrated`, `recover` conserva lo
   rescatable y declara lo perdido, y `export-legacy` regenera el formato anterior para
