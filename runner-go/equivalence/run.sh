@@ -63,12 +63,13 @@ rc() { cat "$work/$1.rc"; }
 assert_ok() { [ "$(rc "$1")" = 0 ] || fail "$1: código $(rc "$1") (stderr: $(head -c 300 "$work/$1.err"))"; }
 assert_err() { [ "$(rc "$1")" != 0 ] || fail "$1: se esperaba error y salió 0"; }
 
-snap() { # label
+snap() { # label [declared]
   run_py "json-$1" "$py_dir" --json
   run_go "json-$1" "$go_dir" --json
   assert_ok "py-json-$1"
   assert_ok "go-json-$1"
   python3 "$here/compare_state.py" "$work/py-json-$1.out" "$work/go-json-$1.out" "$1" \
+    ${2:+--declared "$2"} \
     || fail "estado divergente en $1"
 }
 
@@ -132,7 +133,7 @@ assert_err py-badnext
 assert_err go-badnext
 snap tras-invalidas
 
-step "6. boot (Python) / start (Go): degradan sin fallar y no mutan"
+step "6. boot (Python) / start (Go): degradan sin fallar; solo start registra la sesión"
 run_py boot "$py_dir" boot
 run_go boot "$go_dir" start
 record_codes boot
@@ -142,7 +143,12 @@ grep -q "## Fase" "$work/py-boot.out" || fail "boot sin sección de fase"
 grep -q "## Fase" "$work/go-boot.out" || fail "start sin sección de fase"
 grep -qi "fase 1" "$work/py-boot.out" || fail "boot no muestra fase 1"
 grep -qi "fase 1" "$work/go-boot.out" || fail "start no muestra fase 1"
-snap tras-boot
+# Divergencia declarada: start registra la sesión en la fase 1 y crea la base;
+# boot no muta. El contraste permite solo state.exists False/True y exige ambos.
+snap tras-boot start
+json_assert "$work/py-json-tras-boot.out" 'd["state"]["exists"] is False' "boot mutó el estado"
+json_assert "$work/go-json-tras-boot.out" 'd["state"]["exists"] is True and d["state"]["phase"] == 1' \
+  "start no registró la sesión en la fase 1"
 
 step "7. fase terminal: no avanza y conserva el estado"
 run_py skip11 "$py_dir" skip 11 "salto al final de la prueba"
