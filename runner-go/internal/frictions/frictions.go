@@ -47,6 +47,7 @@ type Event struct {
 	Observed string `json:"observed,omitempty"`
 	Project  string `json:"project,omitempty"`
 	Fixed    bool   `json:"fixed,omitempty"`
+	Note     string `json:"note,omitempty"`
 }
 
 // Entry is the aggregation of every event of one fingerprint.
@@ -61,6 +62,7 @@ type Entry struct {
 	State    string   `json:"state"`
 	Projects []string `json:"projects"`
 	Observed string   `json:"observed"`
+	Note     string   `json:"note,omitempty"`
 
 	order int // file position of the last add, the tie-break of the list
 }
@@ -149,6 +151,9 @@ func Aggregate(events []Event) []Entry {
 		if event.Fixed {
 			if seen {
 				entries[j].State = "fixed"
+				if event.Note != "" {
+					entries[j].Note = event.Note
+				}
 			}
 			continue
 		}
@@ -170,6 +175,7 @@ func Aggregate(events []Event) []Entry {
 		entry.Last = event.T
 		entry.State = "open"
 		entry.Observed = event.Observed
+		entry.Note = "" // la nota pertenece al cierre anterior, no a la reapertura
 		entry.order = i
 		if event.Project != "" && !contains(entry.Projects, event.Project) {
 			entry.Projects = append(entry.Projects, event.Project)
@@ -241,9 +247,9 @@ func Add(path string, record Record) (Entry, error) {
 	return Entry{}, fmt.Errorf("la fricción %s no aparece tras escribirla", fp)
 }
 
-// Fix closes the entry of fp and reports whether it was open, already closed or
-// unknown.
-func Fix(path, fp string, now time.Time) (FixResult, error) {
+// Fix closes the entry of fp with an optional note on why it was fixed and
+// reports whether it was open, already closed or unknown.
+func Fix(path, fp, note string, now time.Time) (FixResult, error) {
 	events, _, err := Read(path)
 	if err != nil {
 		return UnknownFP, err
@@ -255,7 +261,7 @@ func Fix(path, fp string, now time.Time) (FixResult, error) {
 		if entry.State == "fixed" {
 			return AlreadyFixed, nil
 		}
-		return Fixed, appendLine(path, Event{T: now.UTC().Format(layout), FP: fp, Fixed: true})
+		return Fixed, appendLine(path, Event{T: now.UTC().Format(layout), FP: fp, Fixed: true, Note: note})
 	}
 	return UnknownFP, nil
 }

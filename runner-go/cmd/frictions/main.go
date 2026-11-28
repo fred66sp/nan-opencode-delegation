@@ -20,7 +20,7 @@ const usage = `frictions registra las fricciones del orquestador en un JSONL de 
 Uso:
   frictions add --class C --surface S --observed TEXTO [--key K] [--project P]
   frictions list [--min N] [--limit N] [--json] [--all]
-  frictions fixed HUELLA
+  frictions fixed HUELLA [NOTA...]
 
 Clases: contract, tool, environment, doc
 Superficies: runner, tasks-ai, acm, opencode, subagent, git
@@ -160,9 +160,13 @@ func runList(args []string, stdout, stderr io.Writer) int {
 		return 0
 	}
 	for _, entry := range entries {
-		fmt.Fprintf(stdout, "%s  %d×  %s/%s  %s  %s → %s  %s\n",
+		note := ""
+		if entry.Note != "" {
+			note = "  nota: " + truncate(entry.Note, 80)
+		}
+		fmt.Fprintf(stdout, "%s  %d×  %s/%s  %s  %s → %s  %s%s\n",
 			entry.FP, entry.Count, entry.Class, entry.Surface, entry.Key,
-			entry.First, entry.Last, truncate(entry.Observed, 80))
+			entry.First, entry.Last, truncate(entry.Observed, 80), note)
 	}
 	return 0
 }
@@ -173,18 +177,19 @@ func runFixed(args []string, stdout, stderr io.Writer) int {
 	if err := flags.Parse(args); err != nil {
 		return 2
 	}
-	if flags.NArg() != 1 {
+	if flags.NArg() < 1 {
 		fmt.Fprintln(stderr, "error: fixed exige una huella")
 		fmt.Fprint(stderr, usage)
 		return 2
 	}
 	fp := flags.Arg(0)
+	note := strings.Join(flags.Args()[1:], " ")
 	path, err := frictions.Path()
 	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
 	}
-	result, err := frictions.Fix(path, fp, time.Now())
+	result, err := frictions.Fix(path, fp, note, time.Now())
 	if err != nil {
 		fmt.Fprintf(stderr, "error: %v\n", err)
 		return 1
