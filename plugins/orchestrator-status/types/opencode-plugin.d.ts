@@ -20,6 +20,10 @@ type OrchestratorColor = {
 /** Global de Node que usa el plugin para leer variables de entorno. */
 declare const process: { readonly env: Record<string, string | undefined> }
 
+/** Temporizador del host TUI, para el refresco en segundo plano; el asa solo se devuelve a clearInterval. */
+declare function setInterval(handler: () => void, timeout: number): unknown
+declare function clearInterval(handle: unknown): void
+
 /** Resultado de componer JSX; el host lo materializa. */
 type OrchestratorElement = { readonly __orchestratorElement: never }
 

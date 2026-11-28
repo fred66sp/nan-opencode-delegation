@@ -119,8 +119,9 @@ ser una introducción a la orquestación en general.
   —sin `node_modules`, con copia `.bak.<fecha>` si reemplaza una versión distinta—, se abre
   con `/orquestador` y muestra en un diálogo modal con scroll la fase actual, su operativa, sus
   advertencias y el historial de evidencias. El panel solo lee: invoca
-  `orchestrator-runner --json` desde el directorio del proyecto y con `r` vuelve a
-  consultar; sin estado muestra la fase 1 y lo dice.
+  `orchestrator-runner --json` desde el directorio del proyecto, se refresca solo cada
+  3 s mientras está abierto y con `r` fuerza la consulta; sin estado muestra la fase 1 y
+  lo dice.
   `check-package.sh` comprueba el contrato `--json` y la instalación del plugin.
 - R11. El registro de delegaciones lo lleva el runner Go como único escritor, en la base
   SQLite `.run/orchestrator.db` del proyecto: huella calculada sobre el contenido del
@@ -315,6 +316,9 @@ ser una introducción a la orquestación en general.
   los saltos marcados por su fase de partida y su destino—; sin estado
   muestra la fase 1 y lo indica, un estado corrupto vuelve a la fase 1 con aviso, y sin
   runner o con el binario no disponible muestra un error de consulta.
+- Mientras el diálogo `/orquestador` está abierto se refresca solo cada 3 s sin mostrar
+  «consultando…» ni escribir estado, y `r` fuerza la consulta con ese aviso; al cerrarlo, el
+  refresco se detiene.
 - `deck_return` devuelve `executed` sobre un informe con `status` válido y una línea por
   comprobación esperada, y `invalid` con los incumplimientos nombrados cuando falta la línea
   `status:` o una comprobación esperada; conserva la evidencia válida y devuelve los

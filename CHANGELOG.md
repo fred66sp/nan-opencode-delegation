@@ -6,6 +6,12 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ## [Sin publicar]
 
+### Añadido
+
+- El panel `/orquestador` se refresca solo cada 3 s mientras el diálogo está abierto, sin
+  mostrar «consultando…», y deja de hacerlo al cerrarlo; `r` sigue disponible para forzar
+  la consulta con ese aviso. Sigue siendo solo lectura.
+
 ### Cambiado
 
 - El runner del orquestador sustituye la herramienta Python por un binario Go

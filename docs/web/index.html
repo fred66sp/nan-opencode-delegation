@@ -638,8 +638,8 @@ opencode api get /api/agent | grep -E 'orchestrator|verify|review|docs|ui'</code
 
     <section id="estado">
       <div class="section-head"><span class="section-num">11</span><h2 class="title">El estado en la TUI</h2></div>
-      <p class="sub">El runner ya sabe en qué fase está el orquestador; lo que añade el paquete es la ventana para verlo sin salir de la sesión. El plugin <code>plugins/orchestrator-status</code> abre con <code>/orquestador</code> un diálogo modal, grande y centrado, con la fase actual, su operativa, sus advertencias y el historial de evidencias, con scroll cuando el contenido no cabe; <code>esc</code> cierra y <code>r</code> refresca.</p>
-      <p>El diálogo no guarda estado propio: invoca <code>orchestrator-runner --json</code> desde el directorio del proyecto y pinta lo que responde. Ese modo solo lee, como se explicó en <a href="#runner">la sección 04</a>: abrir el diálogo o pulsar <code>r</code> para refrescar no cambia la fase ni crea <code>.run/orchestrator.db</code>.</p>
+      <p class="sub">El runner ya sabe en qué fase está el orquestador; lo que añade el paquete es la ventana para verlo sin salir de la sesión. El plugin <code>plugins/orchestrator-status</code> abre con <code>/orquestador</code> un diálogo modal, grande y centrado, con la fase actual, su operativa, sus advertencias y el historial de evidencias, con scroll cuando el contenido no cabe; <code>esc</code> cierra, <code>r</code> fuerza la consulta y, mientras el diálogo está abierto, se refresca solo cada 3 s.</p>
+      <p>El diálogo no guarda estado propio: invoca <code>orchestrator-runner --json</code> desde el directorio del proyecto y pinta lo que responde. Ese modo solo lee, como se explicó en <a href="#runner">la sección 04</a>: abrir el diálogo, dejarlo refrescarse solo o pulsar <code>r</code> no cambia la fase ni crea <code>.run/orchestrator.db</code>.</p>
       <div class="code"><pre data-language="bash"><code>orchestrator-runner --json</code></pre></div>
       <div class="table-wrap">
         <table>

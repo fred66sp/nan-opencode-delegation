@@ -10,6 +10,8 @@ import type { RGBA } from "@opentui/core"
 /** Binario del runner del orquestador que produce el contrato --json. */
 const RUNNER_INSTALLED = join(homedir(), ".config", "opencode", "agents", "orchestrator-runner")
 const QUERY_TIMEOUT_MS = 10_000
+/** Cadencia del refresco en segundo plano mientras el diálogo está abierto; la consulta solo lee. */
+const AUTO_REFRESH_MS = 3_000
 
 /** Localización del binario: variable de entorno, copia instalada y, por último, el PATH. */
 function runnerBinary(): string {
@@ -382,19 +384,25 @@ function OrchestratorDialog(props: { readonly sessionID: string }) {
   context.renderer?.on("resize", onResize)
   onCleanup(() => context.renderer?.off("resize", onResize))
 
-  const refresh = () => {
-    if (busy()) return
-    setBusy(true)
+  // Un solo sondeo a la vez: el período siguiente se salta si el anterior sigue en vuelo.
+  // El aviso «consultando…» se reserva al refresco manual; el automático no hace parpadear el pie.
+  let polling = false
+  const load = (announce: boolean) => {
+    if (polling) return
+    polling = true
+    if (announce) setBusy(true)
     const location = context.location ?? context.data.location.default()
     void Promise.all([queryRunner(location.directory, props.sessionID), queryBoard(location.directory), queryGitDirty(location.directory)]).then(
       ([next, running, dirty]) => {
         setSnapshot(next)
         setInProgress(running)
         setDirtyFiles(dirty)
+        polling = false
         setBusy(false)
       },
     )
   }
+  const refresh = () => load(true)
 
   context.keymap.layer(() => ({
     commands: [
@@ -417,6 +425,8 @@ function OrchestratorDialog(props: { readonly sessionID: string }) {
   }))
 
   refresh()
+  const timer = setInterval(() => load(false), AUTO_REFRESH_MS)
+  onCleanup(() => clearInterval(timer))
 
   const footerText = () => {
     if (busy()) return "consultando…"
