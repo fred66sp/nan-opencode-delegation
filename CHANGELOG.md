@@ -8,6 +8,18 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Añadido
 
+- Binario auxiliar `frictions` para que el orquestador registre lo que le frena mientras
+  trabaja: respuesta `invalid` o `input_needed` de una herramienta, comprobación que el
+  entorno impidió, retorno en prosa, skill ausente o arranque degradado. Cada acontecimiento
+  es una línea JSONL append-only en `~/.config/opencode/frictions.jsonl` (o
+  `ORCHESTRATOR_FRICTIONS`), fuera de la base del runner; `list` agrega por huella y
+  conteo, oculta las fijadas salvo con `--all`, y `fixed` cierra la entrada. Los
+  instaladores lo dejan como
+  `~/.config/opencode/agents/orchestrator-frictions` y el comando `frictions` en el PATH, con
+  la misma regla de no sobrescribir que `runner`; la regla 11 del contrato del orquestador
+  ordena registrarlo sin contenido de código y revisar `list --min 2` al cerrar la sesión.
+  El registro mide; no sustituye a la memoria de ACM ni al tablero.
+
 - El panel `/orquestador` se refresca solo cada 3 s mientras el diálogo está abierto, sin
   mostrar «consultando…», y deja de hacerlo al cerrarlo; `r` sigue disponible para forzar
   la consulta con ese aviso. Sigue siendo solo lectura.

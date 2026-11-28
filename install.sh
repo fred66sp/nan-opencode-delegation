@@ -116,7 +116,53 @@ case ":$PATH:" in
     ;;
 esac
 
-# 1d. Retirada de tasks-agent, el escritor del tablero retirado con Tasks-AI v0.2.0:
+# 1d. El registro auxiliar de fricciones: binario junto a los agentes y comando
+# `frictions` en el PATH, con la misma regla idempotente y de no sobrescribir que
+# `runner`. Es auxiliar: sin FRICTIONS_BIN ejecutable ni go se avisa y la
+# instalación sigue sin fallar.
+frictions_target="$agents_dir/orchestrator-frictions"
+frictions_tmp="$(mktemp "${TMPDIR:-/tmp}/orchestrator-frictions.XXXXXX")"
+frictions_ready=''
+if [ -n "${FRICTIONS_BIN:-}" ]; then
+  if [ -x "$FRICTIONS_BIN" ]; then
+    cp "$FRICTIONS_BIN" "$frictions_tmp"
+    frictions_ready=1
+  else
+    echo "aviso: FRICTIONS_BIN no es un ejecutable: $FRICTIONS_BIN; se intenta compilar" >&2
+  fi
+fi
+if [ -z "$frictions_ready" ] && command -v go >/dev/null 2>&1; then
+  if (cd "$here/runner-go" && go build -buildvcs=false -o "$frictions_tmp" ./cmd/frictions); then
+    frictions_ready=1
+  fi
+fi
+if [ -z "$frictions_ready" ]; then
+  rm -f "$frictions_tmp"
+  echo "aviso: no pude obtener el binario orchestrator-frictions (sin FRICTIONS_BIN ejecutable ni go); el registro de fricciones queda sin instalar." >&2
+else
+  chmod 755 "$frictions_tmp"
+  if [ -f "$frictions_target" ] && ! cmp -s "$frictions_tmp" "$frictions_target"; then
+    cp "$frictions_target" "$frictions_target.bak.$stamp"
+    echo "Copia previa de frictions: $frictions_target.bak.$stamp"
+  fi
+  cp "$frictions_tmp" "$frictions_target"
+  chmod 755 "$frictions_target"
+  rm -f "$frictions_tmp"
+  echo "Registro de fricciones instalado en $frictions_target"
+  frictions_cmd="$runner_cmd_dir/frictions"
+  if [ -L "$frictions_cmd" ] && [ "$(readlink "$frictions_cmd")" = "$frictions_target" ]; then
+    echo "Comando frictions ya disponible en $frictions_cmd"
+  elif [ -e "$frictions_cmd" ]; then
+    echo "Aviso: existe $frictions_cmd y no es el enlace de este paquete; no se sobrescribe."
+    echo "  Para apuntarlo al binario de este paquete a mano:"
+    echo "  ln -sf $frictions_target $frictions_cmd"
+  else
+    ln -s "$frictions_target" "$frictions_cmd"
+    echo "Comando frictions instalado en $frictions_cmd -> $frictions_target"
+  fi
+fi
+
+# 1e. Retirada de tasks-agent, el escritor del tablero retirado con Tasks-AI v0.2.0:
 # AIF cubre sus operaciones y el tablero va directo. Copia .bak siempre antes de borrar:
 # el paquete ya no distribuye el fichero, así que no hay contra qué comparar y una
 # versión personalizada se conservaría solo con la copia. La segunda pasada no crea

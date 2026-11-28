@@ -12,6 +12,7 @@ enlaza.
 | Qué hace cada agente, con qué modelo y qué permisos | `agents/<nombre>.md`, frontmatter y prompt |
 | Cómo se evaluaron los agentes y qué demostró cada prueba | [`docs/evals/README.md`](docs/evals/README.md) |
 | Cómo guiar el flujo del orquestador | [`runner-go/`](runner-go/) — el binario `orchestrator-runner` — y [`docs/runner/PRODUCT.md`](docs/runner/PRODUCT.md) |
+| El registro auxiliar de fricciones del orquestador | [`runner-go/internal/frictions/`](runner-go/internal/frictions/) y [`runner-go/cmd/frictions/`](runner-go/cmd/frictions/); se instala como `frictions` y escribe en `ORCHESTRATOR_FRICTIONS` o `~/.config/opencode/frictions.jsonl` |
 | Producto, requisitos, diseño y contrato del runner Go | [`docs/runner/PRODUCT.md`](docs/runner/PRODUCT.md), [`PRD.md`](docs/runner/PRD.md), [`DESIGN.md`](docs/runner/DESIGN.md) y [`orchestrator-proposal.md`](docs/runner/orchestrator-proposal.md) |
 | Cómo se valida el informe de retorno de un subagente | La operación `deck_return` de [`runner-go/internal/aifops/`](runner-go/internal/aifops/) y la regla 6 de [`agents/orchestrator.md`](agents/orchestrator.md) |
 | Cómo se ve la fase del orquestador en la sesión: panel, operativa, advertencias e historial | [`plugins/orchestrator-status/tui.tsx`](plugins/orchestrator-status/tui.tsx) y el `--json` de [`runner-go/`](runner-go/) |

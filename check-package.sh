@@ -30,10 +30,12 @@ ko() {
 # Binario del runner para toda la batería. La instalación limpia lo recibe por
 # RUNNER_BIN para no depender de la red; sin go, los grupos Go se avisan omitidos.
 runner_bin="$tmp/orchestrator-runner"
+frictions_bin="$tmp/orchestrator-frictions"
 runner_built=''
 if command -v go >/dev/null 2>&1; then
-  step "compilación del binario runner-go"
-  if (cd runner-go && go build -buildvcs=false -o "$runner_bin" ./cmd/orchestrator-runner); then
+  step "compilación de los binarios runner-go (runner y frictions)"
+  if (cd runner-go && go build -buildvcs=false -o "$runner_bin" ./cmd/orchestrator-runner) &&
+    (cd runner-go && go build -buildvcs=false -o "$frictions_bin" ./cmd/frictions); then
     ok
     runner_built=1
   else
@@ -42,7 +44,10 @@ if command -v go >/dev/null 2>&1; then
 else
   printf 'aviso: sin go en PATH; los grupos Go y la compilación se omiten\n'
 fi
-if [ -n "$runner_built" ]; then export RUNNER_BIN="$runner_bin"; fi
+if [ -n "$runner_built" ]; then
+  export RUNNER_BIN="$runner_bin"
+  export FRICTIONS_BIN="$frictions_bin"
+fi
 
 # a2. Sintaxis y vet del módulo Go, si hay toolchain.
 if command -v go >/dev/null 2>&1; then
@@ -72,6 +77,7 @@ if env -u XDG_CONFIG_HOME HOME="$home_c" bash install.sh >"$tmp/clean.log" 2>&1;
   [ -f "$cfg_c" ] || cfg_c="$home_c/.config/opencode/opencode.json"
   if [ -d "$home_c/.config/opencode/agents" ] && [ -f "$cfg_c" ] &&
     [ -x "$home_c/.config/opencode/agents/orchestrator-runner" ] &&
+    [ -x "$home_c/.config/opencode/agents/orchestrator-frictions" ] &&
     [ ! -e "$home_c/.config/opencode/agents/orchestrator-runner.py" ] &&
     python3 - "$cfg_c" <<'PY'
 import json, sys
@@ -139,6 +145,21 @@ else
   echo "    falta $runner_cmd_c o no se resuelve por PATH/--version"
 fi
 
+# c4b. El registro auxiliar de fricciones viaja en la instalación limpia: binario
+# junto a los agentes, comando en ~/.local/bin y `list` vacío sin fricciones.
+step "instalación limpia: comando frictions y listado vacío"
+frictions_cmd_c="$home_c/.local/bin/frictions"
+empty_registry="$tmp/frictions-empty.jsonl"
+if [ -x "$home_c/.config/opencode/agents/orchestrator-frictions" ] &&
+  [ -x "$frictions_cmd_c" ] &&
+  env PATH="$home_c/.local/bin:$PATH" sh -c 'command -v frictions' | grep -Fq "$frictions_cmd_c" &&
+  env ORCHESTRATOR_FRICTIONS="$empty_registry" "$frictions_cmd_c" list | grep -qx 'sin fricciones'; then
+  ok
+else
+  ko
+  echo "    falta el binario, el comando o el listado vacío"
+fi
+
 # c5. El comando runner no sobrescribe un comando ajeno y la segunda pasada es
 # idempotente: el fichero ajeno sigue igual y no nace copia .bak.
 step "runner: comando ajeno no sobrescrito y segunda pasada idempotente"
@@ -156,6 +177,25 @@ if env -u XDG_CONFIG_HOME HOME="$home_r" bash install.sh >"$tmp/runner-foreign.l
 else
   ko
   sed 's/^/    /' "$tmp/runner-foreign.log"
+fi
+
+# c5b. El comando frictions sigue la misma regla: no sobrescribe un comando ajeno
+# y la segunda pasada es idempotente.
+step "frictions: comando ajeno no sobrescrito y segunda pasada idempotente"
+home_fr="$tmp/home-frictions"
+mkdir -p "$home_fr/.local/bin"
+printf '#!/bin/sh\necho foreign\n' >"$tmp/foreign-frictions"
+cp "$tmp/foreign-frictions" "$home_fr/.local/bin/frictions"
+if env -u XDG_CONFIG_HOME HOME="$home_fr" bash install.sh >"$tmp/frictions-foreign.log" 2>&1 &&
+  cmp -s "$tmp/foreign-frictions" "$home_fr/.local/bin/frictions" &&
+  grep -Fq "no se sobrescribe" "$tmp/frictions-foreign.log" &&
+  env -u XDG_CONFIG_HOME HOME="$home_fr" bash install.sh >>"$tmp/frictions-foreign.log" 2>&1 &&
+  cmp -s "$tmp/foreign-frictions" "$home_fr/.local/bin/frictions" &&
+  ! ls "$home_fr"/.local/bin/frictions.bak.* >/dev/null 2>&1; then
+  ok
+else
+  ko
+  sed 's/^/    /' "$tmp/frictions-foreign.log"
 fi
 
 # d. Fusión sobre una configuración con claves ajenas.
@@ -219,7 +259,7 @@ fi
 cfgroot="${XDG_CONFIG_HOME:-$HOME/.config}/opencode"
 if [ -d "$cfgroot/agents" ]; then
   step "diff de agents/ contra $cfgroot/agents"
-  if diff -r -x '*.bak.*' -x 'orchestrator-runner.py' -x 'delegation-report-checker.py' -x 'orchestrator-runner' agents "$cfgroot/agents"; then ok; else ko; fi
+  if diff -r -x '*.bak.*' -x 'orchestrator-runner.py' -x 'delegation-report-checker.py' -x 'orchestrator-runner' -x 'orchestrator-frictions' agents "$cfgroot/agents"; then ok; else ko; fi
 else
   printf 'aviso: diff omitido, no hay agentes instalados en esta máquina\n'
 fi

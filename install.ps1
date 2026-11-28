@@ -121,7 +121,60 @@ if ($userPath -split ';' -notcontains $binDir) {
     Write-Host "Anadido $binDir al PATH de usuario (aplica en sesiones nuevas)"
 }
 
-# 1d. Retirada de tasks-agent: AIF cubre sus operaciones y el tablero va directo.
+# 1d. El registro auxiliar de fricciones: binario junto a los agentes y copia del
+# comando `frictions` en $HOME\.local\bin, con la misma regla que `runner`: la
+# segunda pasada no toca nada y una copia distinta se guarda como .bak antes de
+# actualizarla. Es auxiliar: sin FRICTIONS_BIN ni go se avisa y la instalacion sigue.
+$frictionsTarget = Join-Path $agentsDir 'orchestrator-frictions.exe'
+$frictionsTmp = Join-Path ([System.IO.Path]::GetTempPath()) ('orchestrator-frictions-' + [guid]::NewGuid().ToString('N') + '.exe')
+$frictionsReady = $false
+if ($env:FRICTIONS_BIN) {
+    if (Test-Path $env:FRICTIONS_BIN) {
+        Copy-Item $env:FRICTIONS_BIN $frictionsTmp
+        $frictionsReady = $true
+    }
+    else { Write-Host "aviso: FRICTIONS_BIN no existe: $env:FRICTIONS_BIN; se intenta compilar" }
+}
+if (-not $frictionsReady -and (Get-Command go -ErrorAction SilentlyContinue)) {
+    Push-Location (Join-Path $here 'runner-go')
+    try {
+        & go build -buildvcs=false -o $frictionsTmp ./cmd/frictions
+        $frictionsReady = ($LASTEXITCODE -eq 0)
+    }
+    finally {
+        Pop-Location
+    }
+}
+if (-not $frictionsReady) {
+    if (Test-Path $frictionsTmp) { Remove-Item $frictionsTmp -Force }
+    Write-Host "aviso: no pude obtener el binario orchestrator-frictions (sin FRICTIONS_BIN ni go); el registro de fricciones queda sin instalar."
+}
+else {
+    if ((Test-Path $frictionsTarget) -and ((Get-FileHash $frictionsTmp).Hash -ne (Get-FileHash $frictionsTarget).Hash)) {
+        Copy-Item $frictionsTarget ($frictionsTarget + '.bak.' + $stamp)
+        Write-Host "Copia previa de frictions: $frictionsTarget.bak.$stamp"
+    }
+    Copy-Item -Force $frictionsTmp $frictionsTarget
+    Remove-Item $frictionsTmp -Force
+    Write-Host "Registro de fricciones instalado en $frictionsTarget"
+    $frictionsCmd = Join-Path $binDir 'frictions.exe'
+    if (Test-Path $frictionsCmd) {
+        if ((Get-FileHash $frictionsTarget).Hash -eq (Get-FileHash $frictionsCmd).Hash) {
+            Write-Host "Comando frictions ya disponible en $frictionsCmd"
+        }
+        else {
+            Copy-Item $frictionsCmd ($frictionsCmd + '.bak.' + $stamp)
+            Copy-Item -Force $frictionsTarget $frictionsCmd
+            Write-Host "Comando frictions actualizado en $frictionsCmd"
+        }
+    }
+    else {
+        Copy-Item $frictionsTarget $frictionsCmd
+        Write-Host "Comando frictions instalado en $frictionsCmd"
+    }
+}
+
+# 1e. Retirada de tasks-agent: AIF cubre sus operaciones y el tablero va directo.
 # Copia .bak siempre antes de borrar: el paquete ya no distribuye el fichero y una
 # version personalizada se conservaria solo con la copia. La segunda pasada no
 # crea otra porque el fichero ya no existe.

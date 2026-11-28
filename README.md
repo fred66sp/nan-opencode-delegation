@@ -41,6 +41,27 @@ El comando `/odd-fix` viaja en esa misma copia: el instalador deja `commands/odd
 
 Los plugins no se compilan ni se instalan con npm: el instalador copia sus fuentes y OpenCode resuelve sus dependencias en runtime. El de servidor vive en `plugins/` y lo carga el servidor; el TUI va en `cli-plugins/` y se registra en `cli.json`, porque un paquete solo-TUI en `plugins/` colisiona con el OpenTUI interno. El panel no guarda estado propio: invoca `orchestrator-runner --json` desde el directorio del proyecto y pinta lo que responde, así que abrirlo, dejar que se refresque solo cada 3 s mientras está abierto o pulsar `r` no cambia la fase. Sin estado muestra la fase 1 y lo dice. El panel, de la fase 2 a la 8, avisa cuando `git status --porcelain` encuentra ficheros sin commit —trabajo en el árbol que aún no ha pasado por Riesgo y Commit—, y ese aviso tiene preferencia sobre el de la fase 1 sin evidencia. El plugin de servidor es tolerante: sin estado, sin runner o con una consulta que excede los 3 s no inyecta nada y la petición sigue.
 
+### Registro de fricciones
+
+El orquestador encuentra fricciones que antes se perdían —una respuesta `invalid` o
+`input_needed`, una comprobación que el entorno impidió, un retorno en prosa, una skill
+que faltó, un arranque degradado—. El binario auxiliar `frictions` las apunta en un JSONL
+append-only de usuario, fuera de la base del runner:
+`~/.config/opencode/frictions.jsonl` o la ruta de `ORCHESTRATOR_FRICTIONS`. Se instala
+junto a los agentes y como comando en el PATH.
+
+```sh
+frictions add --class contract --surface runner --observed "input_needed: falta evidence"
+frictions list --min 2
+frictions fixed <huella>
+```
+
+`list` oculta las fricciones ya fijadas; `--all` las incluye.
+
+No es memoria: ACM no lo lee ni sustituye una lección; no es tablero: no es una tarea.
+Solo mide; promover lo recurrente a una lección o a una tarea, y arreglarlo, es decisión
+de la persona.
+
 ## Requisitos
 
 - OpenCode V2 instalado y en el PATH ([https://opencode.ai](https://opencode.ai)).
