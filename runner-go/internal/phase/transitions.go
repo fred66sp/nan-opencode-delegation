@@ -42,19 +42,31 @@ func ReasonProblem(field, text string) *Problem {
 
 // SkipProblem validates a jump from current to target with the same rules as
 // the Python runner: forward, inside the flow, omitting at least one phase and
-// never leaving the terminal phase.
+// never leaving the terminal phase. Every rejection names the current phase and
+// the valid range so a consumer can retry with the response alone.
 func SkipProblem(current, target int) *Problem {
 	if current >= Count {
-		return &Problem{"target", fmt.Sprintf("la fase %d es la última: no hay transición", Count)}
+		return &Problem{"target", fmt.Sprintf("no hay transición: la fase actual %d (%s) es la última", current, Get(current).Name)}
+	}
+	lo := current + 2
+	valid := ""
+	if lo <= Count {
+		valid = fmt.Sprintf("el destino válido va de %d (%s) a %d (%s)",
+			lo, Get(lo).Name, Count, Get(Count).Name)
+	} else {
+		valid = fmt.Sprintf("desde la fase %d (%s) ningún salto omite una fase: usa next", current, Get(current).Name)
 	}
 	if target > Count {
-		return &Problem{"target", fmt.Sprintf("la fase de destino %d no existe: el flujo tiene %d fases", target, Count)}
+		return &Problem{"target", fmt.Sprintf("la fase de destino %d no existe: el flujo tiene %d fases; desde la fase %d (%s), %s",
+			target, Count, current, Get(current).Name, valid)}
 	}
 	if target <= current {
-		return &Problem{"target", fmt.Sprintf("no se retrocede: la fase actual es %d; el salto solo va a una fase posterior", current)}
+		return &Problem{"target", fmt.Sprintf("no se retrocede: la fase actual es %d (%s); %s",
+			current, Get(current).Name, valid)}
 	}
 	if target == current+1 {
-		return &Problem{"target", fmt.Sprintf("el salto no omitiría ninguna fase (la siguiente es %d); usa next", current+1)}
+		return &Problem{"target", fmt.Sprintf("la fase actual es %d (%s); el salto no omitiría ninguna fase: la siguiente es %d (%s); %s",
+			current, Get(current).Name, current+1, Get(current+1).Name, valid)}
 	}
 	return nil
 }

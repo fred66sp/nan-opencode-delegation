@@ -66,6 +66,12 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
   una segunda pasada obligatoria. Validación replicando el método smoke de tk-280 sobre un
   repo desechable con un defecto que la suite existente no revela.
 
+### Corregido
+
+- Los rechazos de `phase_skip` citan la fase actual y el destino válido con su nombre, no
+  solo con el número: un salto fuera del flujo o que no omite ninguna fase se corrige con
+  la propia respuesta, sin consultar `--json` para conocer el catálogo de fases.
+
 ### Retirado
 
 - `agents/orchestrator-runner.py`: lo sustituye el binario `orchestrator-runner`. La

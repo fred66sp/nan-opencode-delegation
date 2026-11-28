@@ -31,6 +31,21 @@ func TestSkipProblem(t *testing.T) {
 	}
 }
 
+func TestSkipProblemNamesTheCurrentPhaseAndTheValidTarget(t *testing.T) {
+	problem := SkipProblem(3, 4)
+	if !strings.Contains(problem.Reason, "3 (") || !strings.Contains(problem.Reason, "5 (") {
+		t.Fatalf("el rechazo no cita la fase actual y el destino válido: %q", problem.Reason)
+	}
+	problem = SkipProblem(3, 12)
+	if !strings.Contains(problem.Reason, "3 (") || !strings.Contains(problem.Reason, "11 (") {
+		t.Fatalf("el rechazo fuera de rango no cita la fase actual y el rango válido: %q", problem.Reason)
+	}
+	problem = SkipProblem(10, 9)
+	if problem == nil || !strings.Contains(problem.Reason, "10 (") || !strings.Contains(problem.Reason, "next") {
+		t.Fatalf("desde la penúltima no hay salto válido y el rechazo debe decirlo: %v", problem)
+	}
+}
+
 func TestSkippedNotes(t *testing.T) {
 	entries := []Evidence{
 		{Phase: 2, Skip: 4, Text: "una omitida"},
