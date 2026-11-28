@@ -68,6 +68,9 @@ al publicar; la historia de cada cambio, commit a commit, vive en Git.
 
 ### Corregido
 
+- El validador del retorno separa el `:` dentro del comando (`npm run test:unit`) del
+  separador `<comando>: <resultado>`: una comprobación esperada con `:` ya no acepta como
+  resultado un fragmento del propio comando cuando la línea no trae resultado observado.
 - Los rechazos de `phase_skip` citan la fase actual y el destino válido con su nombre, no
   solo con el número: un salto fuera del flujo o que no omite ninguna fase se corrige con
   la propia respuesta, sin consultar `--json` para conocer el catálogo de fases.

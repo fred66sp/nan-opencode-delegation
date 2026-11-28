@@ -102,6 +102,92 @@ func TestExpectedCheckWithColon(t *testing.T) {
 	}
 }
 
+func TestExpectedCheckWithColonWithoutResult(t *testing.T) {
+	// La línea es el comando esperado entero, ':' incluido: el lado izquierdo
+	// del ':' solo casa por similitud, y la línea completa casa mejor, así que
+	// no hay resultado observado y la comprobación no puede contar como cumplida.
+	want := []string{"npm run very-long-check-name:unit"}
+	text := "status: completed\n\nvalidation:\n  npm run very-long-check-name:unit\n"
+	result := Validate(text, want)
+	if result.OK || len(result.Checks) != 1 || result.Checks[0].Observed != "" {
+		t.Fatalf("veredicto = %+v; want !OK con observed vacío", result)
+	}
+}
+
+func TestObservedKeepsItsColons(t *testing.T) {
+	// El separador es el que cierra el comando que mejor casa: el resultado
+	// conserva sus ':'.
+	want := []string{"bash check-package.sh"}
+	text := "status: completed\n\nvalidation:\n  bash check-package.sh: 12 pasan: 0 fallan\n"
+	result := Validate(text, want)
+	if !result.OK || result.Checks[0].Observed != "12 pasan: 0 fallan" {
+		t.Fatalf("veredicto = %+v", result)
+	}
+}
+
+func TestExpectedAndObservedWithColons(t *testing.T) {
+	// El ':' del comando esperado no se confunde con el separador ni con los
+	// ':' del resultado.
+	want := []string{"npm run test:unit"}
+	text := "status: completed\n\nvalidation:\n  npm run test:unit: 12 pasan: 0 fallan\n"
+	result := Validate(text, want)
+	if !result.OK || result.Checks[0].Observed != "12 pasan: 0 fallan" {
+		t.Fatalf("veredicto = %+v", result)
+	}
+}
+
+func TestEmptyObservedIsRejected(t *testing.T) {
+	// Separador presente y nada después: la línea no cumple, tanto si el
+	// comando esperado tiene ':' como si no.
+	cases := []struct{ want, line string }{
+		{"bash check-package.sh", "bash check-package.sh:"},
+		{"npm run test:unit", "npm run test:unit:"},
+	}
+	for _, c := range cases {
+		text := "status: completed\n\nvalidation:\n  " + c.line + "\n"
+		result := Validate(text, []string{c.want})
+		if result.OK || len(result.Checks) != 1 || result.Checks[0].Observed != "" {
+			t.Fatalf("%q: veredicto = %+v; want !OK sin resultado", c.line, result)
+		}
+		if !contains(result.Violations, "sin resultado observado") {
+			t.Fatalf("%q: no nombra el resultado ausente: %v", c.line, result.Violations)
+		}
+	}
+}
+
+func TestGluedSeparatorWithExactCommandIsAccepted(t *testing.T) {
+	// cmd:resultado, sin espacio tras el separador, sigue siendo válido: con un
+	// comando sin ':' y con uno que lo lleva.
+	cases := []struct{ expected, line, observed string }{
+		{"bash check-package.sh", "bash check-package.sh:verde", "verde"},
+		{"npm run test:unit", "npm run test:unit:12 pasan", "12 pasan"},
+	}
+	for _, c := range cases {
+		text := "status: completed\n\nvalidation:\n  " + c.line + "\n"
+		result := Validate(text, []string{c.expected})
+		if !result.OK || len(result.Checks) != 1 || result.Checks[0].Observed != c.observed {
+			t.Fatalf("%q: veredicto = %+v", c.line, result)
+		}
+	}
+}
+
+func TestGluedSeparatorKeepsTolerance(t *testing.T) {
+	// El separador pegado conserva la tolerancia previa: errata en un comando
+	// sin ':' y variación del comando en uno que lleva ':'.
+	cases := []struct{ expected, line, observed string }{
+		{"python3 -m py_compile agents/orchestrator-runner.py", "python3 -m pycompile agents/orchestrator-runner.py:sin salida", "sin salida"},
+		{"npm run test:unit", "npm run tst:unit:12 pasan", "12 pasan"},
+		{"npm run test:unit", "npm run test:uni:12 pasan", "12 pasan"},
+	}
+	for _, c := range cases {
+		text := "status: completed\n\nvalidation:\n  " + c.line + "\n"
+		result := Validate(text, []string{c.expected})
+		if !result.OK || len(result.Checks) != 1 || result.Checks[0].Observed != c.observed {
+			t.Fatalf("%q: veredicto = %+v", c.line, result)
+		}
+	}
+}
+
 func contains(values []string, fragment string) bool {
 	for _, value := range values {
 		if strings.Contains(value, fragment) {

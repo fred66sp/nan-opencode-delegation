@@ -101,18 +101,32 @@ type validationLine struct{ text string }
 
 // resultOf returns the result observed after the separator that ends want.
 // The expected check may contain ':' itself (npm run test:unit), so every
-// separator in the line is tried left to right with the checker's tolerance.
+// colon is a candidate separator and the one whose left side is the closest
+// command wins: the existing tolerance, a separator glued to the result
+// (cmd:resultado) and the observed result's own colons all survive. When the
+// whole line matches want better than its best command prefix, the colon is
+// inside the command and the line is a bare expected check with ':': there is
+// no result to report.
 func (l validationLine) resultOf(want string) (string, bool) {
-	for i, r := range l.text {
+	runes := []rune(l.text)
+	wantNorm := normalize(want)
+	bestAt, bestScore := -1, 0.0
+	for i, r := range runes {
 		if r != ':' {
 			continue
 		}
-		command := strings.TrimSpace(strings.Trim(strings.TrimSpace(l.text[:i]), "`*"))
-		if command != "" && matches(want, command) {
-			return strings.TrimSpace(l.text[i+1:]), true
+		command := strings.TrimSpace(strings.Trim(strings.TrimSpace(string(runes[:i])), "`*"))
+		if command == "" || !matches(want, command) {
+			continue
+		}
+		if score := similarity(wantNorm, normalize(command)); bestAt < 0 || score > bestScore {
+			bestAt, bestScore = i, score
 		}
 	}
-	return "", false
+	if bestAt < 0 || similarity(wantNorm, normalize(string(runes))) > bestScore {
+		return "", false
+	}
+	return strings.TrimSpace(string(runes[bestAt+1:])), true
 }
 
 func validationSection(text string) (bool, []validationLine) {
