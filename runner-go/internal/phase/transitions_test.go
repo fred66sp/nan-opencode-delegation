@@ -58,3 +58,24 @@ func TestPhaseTextsMatchTheElevenPhases(t *testing.T) {
 		}
 	}
 }
+
+// TestPhaseStepsDoNotTeachRetiredFlow impide que vuelvan las instrucciones del
+// runner anterior: arranque con `acm start`, libro manual y reset sin nombre.
+func TestPhaseStepsDoNotTeachRetiredFlow(t *testing.T) {
+	if first := strings.Join(Phases[0].Steps, " "); !strings.Contains(first, "runner start") {
+		t.Fatalf("la fase 1 no nombra `runner start`: %v", Phases[0].Steps)
+	}
+	for _, p := range Phases {
+		lines := append([]string{p.Evidence}, p.Steps...)
+		for _, line := range lines {
+			for _, retired := range []string{"acm start", "delegations.jsonl", "`reset`"} {
+				if strings.Contains(line, retired) {
+					t.Fatalf("la fase %d enseña el flujo retirado %q: %q", p.Number, retired, line)
+				}
+			}
+		}
+	}
+	if last := strings.Join(Phases[Count-1].Steps, " "); !strings.Contains(last, "phase_reset") {
+		t.Fatalf("la fase terminal no nombra `phase_reset`: %v", Phases[Count-1].Steps)
+	}
+}

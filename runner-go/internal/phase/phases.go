@@ -29,15 +29,14 @@ var Phases = []Phase{
 	{
 		Name:     "Inicio de sesión",
 		When:     "al empezar cualquier sesión, antes de lanzar subagentes o tocar archivos",
-		Evidence: "qué se leyó (memoria de la sesión, tablero y `AGENTS.md` del proyecto)",
+		Evidence: "el `runner start` leído y el `AGENTS.md` del proyecto",
 		Steps: []string{
-			"Recuperar el contexto con `acm start` en la raíz del proyecto; `acm aif` es la interfaz autodescriptiva del resto de operaciones de la memoria: el envelope de descubrimiento ({\"aif\":\"0.2\"}) por stdin devuelve su lista.",
+			"Abrir la sesión con `runner start` desde la raíz del proyecto: memoria, tablero, Git, fase y encargos abiertos en una invocación. No invoques el arranque de memoria por separado: `start` ya lo hace.",
 			"Leer el `AGENTS.md` del proyecto y su mapa de fuentes antes de decidir nada.",
-			"Consultar el tablero (en curso y listas para empezar) con la CLI `tasks-ai` del proyecto, directamente: las lecturas del tablero no se delegan.",
-			"Comprobar la fase con el runner `orchestrator-runner` del proyecto; si la sesión anterior dejó otra y empiezas trabajo nuevo, invoca `phase_reset` por `runner aif` para volver a la fase 1. El estado lo escribe solo el runner: el agente no puede tocarlo.",
+			"Si la fase mostrada no es la 1 y empiezas trabajo nuevo en esta misma sesión, invoca `phase_reset` por `runner aif` con su motivo; si retomas el trabajo anterior, continúa desde la fase mostrada. El estado lo escribe solo el runner: el agente no puede tocarlo.",
 		},
 		Warnings: []string{
-			"Nada se lanza antes de leer la memoria de la sesión y el tablero.",
+			"Nada se lanza antes de ejecutar `runner start` y leer el `AGENTS.md` del proyecto.",
 			"El runner no comprueba el mundo real: informa antes de que falles; las guardas del tablero y del producto siguen siendo las que bloquean.",
 		},
 	},
@@ -109,7 +108,7 @@ var Phases = []Phase{
 			"Todo encargo lleva cuatro cosas: objetivo, archivos de su propiedad, comprobaciones esperadas y criterio de aceptación; si hay tablero, la referencia de la tarea.",
 			"En el encargo, distinguir obstáculo corriente —error, timeout, herramienta que falla—, que se diagnostica y se supera, de bloqueo deliberado —fichero marcado para no tocar, acceso retirado a propósito—, que se respeta y se comunica buscando otra vía segura; el informe de retorno se entiende sin haber visto el trabajo.",
 			"Elegir el agente por razón con nombre: `general` para implementar, `explore` para un mapa que exige más de unas cinco consultas, `docs` para documentación y `verify` y `review` para verificación independiente.",
-			"Llevar el libro de delegaciones en `.run/delegations.jsonl`: consultarlo antes de lanzar —un lanzamiento con la misma huella que siga en `launched` no se repite, se espera su aviso—, añadir la línea al lanzar y actualizar su `status` al recibir el retorno.",
+			"El ciclo de cada encargo lo lleva el runner por AIF (`deck_prepare`, `deck_launch`, `deck_return`, `deck_note`, `deck_close`): no hay libro manual ni línea que mantener.",
 			"Usar `background` solo para unidades independientes con archivos distintos, y esperar el aviso antes de integrar.",
 			"Implementar en línea solo lo trivial, inequívoco y de bajo riesgo, cuando delegar no aporte valor.",
 		},
@@ -184,12 +183,12 @@ var Phases = []Phase{
 	{
 		Name:     "Memoria y sesión",
 		When:     "tras cada decisión, bugfix o hallazgo, y antes de decir «done»",
-		Evidence: "ninguna: es la última fase y no hay transición que justificar; el reinicio lo hace `reset`",
+		Evidence: "ninguna: es la fase terminal y no hay transición que justificar; el cierre del runner lo hace `phase_reset`",
 		Steps: []string{
 			"Guardar con `acm aif` las operaciones de memoria (decision, learning, discovery, bugfix) tras una decisión, un bugfix o un hallazgo no obvio, agrupado por tema; las preferencias de la persona, su operación `preference`.",
 			"Dejar trabajo a medias: `acm aif` con su operación `checkpoint` y el estado con los siguientes pasos.",
 			"Antes de decir «done» o cerrar la sesión, `acm aif` con su operación `close` y el resumen del cierre; el cierre del tablero (si el proyecto usa tasks-ai) manda sobre el de memoria.",
-			"Antes de dar la sesión por cerrada, `reset`: una vez cerrada la sesión el estado debe quedar en fase 1 y sin historial, nunca en la fase 11; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.",
+			"Antes de dar la sesión por cerrada, `phase_reset` por `runner aif` con su motivo: deja el estado en fase 1 y sin historial, para que una sesión reutilizada no herede la fase colgada; si queda trabajo abierto, la próxima sesión lo recoge desde su tarea.",
 		},
 		Warnings: []string{
 			"Lo que no se guarda se pierde en la próxima sesión.",
