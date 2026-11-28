@@ -70,8 +70,8 @@ func Validate(text string, expected []string) Result {
 		observed := ""
 		found := false
 		for _, line := range lines {
-			if line.command != "" && matches(want, line.command) {
-				observed, found = line.result, true
+			if result, ok := line.resultOf(want); ok {
+				observed, found = result, true
 				break
 			}
 		}
@@ -97,7 +97,23 @@ func Validate(text string, expected []string) Result {
 	return Result{OK: len(violations) == 0, Status: status, Checks: checks, Violations: violations}
 }
 
-type validationLine struct{ command, result string }
+type validationLine struct{ text string }
+
+// resultOf returns the result observed after the separator that ends want.
+// The expected check may contain ':' itself (npm run test:unit), so every
+// separator in the line is tried left to right with the checker's tolerance.
+func (l validationLine) resultOf(want string) (string, bool) {
+	for i, r := range l.text {
+		if r != ':' {
+			continue
+		}
+		command := strings.TrimSpace(strings.Trim(strings.TrimSpace(l.text[:i]), "`*"))
+		if command != "" && matches(want, command) {
+			return strings.TrimSpace(l.text[i+1:]), true
+		}
+	}
+	return "", false
+}
 
 func validationSection(text string) (bool, []validationLine) {
 	heading := false
@@ -122,9 +138,7 @@ func validationSection(text string) (bool, []validationLine) {
 		if !strings.Contains(line, ":") {
 			continue
 		}
-		parts := strings.SplitN(line, ":", 2)
-		command := strings.TrimSpace(strings.Trim(strings.TrimSpace(parts[0]), "`*"))
-		lines = append(lines, validationLine{command, strings.TrimSpace(parts[1])})
+		lines = append(lines, validationLine{line})
 	}
 	return heading, lines
 }

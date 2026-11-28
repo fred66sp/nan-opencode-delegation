@@ -92,6 +92,16 @@ func TestAnaphoraWithPathIsAccepted(t *testing.T) {
 	}
 }
 
+func TestExpectedCheckWithColon(t *testing.T) {
+	// El check esperado lleva ':' y el resultado también: el corte es el que casa.
+	want := []string{"npm run test:unit"}
+	text := "status: completed\n\nvalidation:\n  npm run test:unit: 12 pasan, 0 fallan\n"
+	result := Validate(text, want)
+	if !result.OK || result.Checks[0].Observed != "12 pasan, 0 fallan" {
+		t.Fatalf("veredicto = %+v", result)
+	}
+}
+
 func contains(values []string, fragment string) bool {
 	for _, value := range values {
 		if strings.Contains(value, fragment) {
