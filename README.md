@@ -53,10 +53,12 @@ junto a los agentes y como comando en el PATH.
 ```sh
 frictions add --class contract --surface runner --observed "input_needed: falta evidence"
 frictions list --min 2
-frictions fixed <huella>
+frictions fixed <huella> <nota de resolución>
 ```
 
-`list` oculta las fricciones ya fijadas; `--all` las incluye.
+`list` oculta las fricciones ya fijadas; `--all` las incluye y muestra con cada huella
+su nota de resolución —el porqué del arreglo— cuando la lleva. Un arreglo sin nota deja
+la fricción cerrada pero sin genealogía: el porqué se pierde para la próxima sesión.
 
 No es memoria: ACM no lo lee ni sustituye una lección; no es tablero: no es una tarea.
 Solo mide; promover lo recurrente a una lección o a una tarea, y arreglarlo, es decisión
